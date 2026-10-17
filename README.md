@@ -9,8 +9,9 @@ parts everything leans on, and which parts lean on everything. The reports are
 written for engineers *and* for the people they report to, with plain-language
 explanations of why coupling matters.
 
-> **Status: early development.** The PHP scanner is the first piece. The
-> analyzer, HTML report and other languages follow; see [Roadmap](#roadmap).
+> **Status:** the PHP library (scanner, analyzer, HTML report, Graphviz
+> export) is feature-complete for v1 but not released yet. Other languages
+> follow; see [Roadmap](#roadmap).
 
 ## Credit: snakefood
 
@@ -51,7 +52,7 @@ analyzed on its own.
 
 | Language | Folder | Package | License | Status |
 | --- | --- | --- | --- | --- |
-| PHP | [`php/`](php/README.md) | `krazybean/untangled` (Composer) | MIT | Scanner in progress |
+| PHP | [`php/`](php/README.md) | `krazybean/untangled` (Composer) | MIT | v1 complete, not yet released |
 | JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | Planned |
 | Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | Planned |
 
@@ -61,12 +62,12 @@ The PHP library needs a project with a `composer.json`: it resolves classes
 through the project's Composer autoload rules.
 
 ```sh
-cd php && composer install
-bin/untangled scan /path/to/your/project > pairs.json
-bin/untangled scan /path/to/your/project --format=snakefood
+cd php && composer install --no-dev
+bin/untangled report /path/to/your/project --cluster=namespace:2 --output=report.html
 ```
 
-`utg` is a short alias for `untangled`.
+Every command (`scan`, `analyze`, `report`) and option is documented in the
+[PHP usage guide](php/README.md). `utg` is a short alias for `untangled`.
 
 ## Repository layout
 
