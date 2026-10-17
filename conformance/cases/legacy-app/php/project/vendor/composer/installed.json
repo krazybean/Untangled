@@ -1,0 +1,12 @@
+{
+  "packages": [
+    {
+      "name": "acme/polyfill",
+      "version": "1.0.0",
+      "autoload": { "classmap": ["stubs/"] },
+      "install-path": "../acme/polyfill"
+    }
+  ],
+  "dev": true,
+  "dev-package-names": []
+}

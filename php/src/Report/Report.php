@@ -81,8 +81,25 @@ final class Report
     }
 
     /**
+     * The units the map draws (spec/report.md): all of them up to $limit, else the $limit with the
+     * most connections (fan-in plus fan-out, ties by id), in the order of the analysis.
+     * @return list<string>
+     */
+    public function mapUnits(int $limit): array
+    {
+        $units = $this->analysis['units'];
+        if (count($units) <= $limit) {
+            return array_column($units, 'id');
+        }
+        $ranked = $units;
+        usort($ranked, static fn (array $a, array $b): int => [$b['fan_in'] + $b['fan_out'], $a['id']] <=> [$a['fan_in'] + $a['fan_out'], $b['id']]);
+        $keep = array_flip(array_column(array_slice($ranked, 0, $limit), 'id'));
+        return array_values(array_filter(array_column($units, 'id'), static fn (string $id): bool => isset($keep[$id])));
+    }
+
+    /**
      * The external or unresolved nodes the units depend on, with the units that use each.
-     * @return array<string, list<string>> node id => sorted unit ids, sorted by node id
+     * @return array<string, list<string>> node id => sorted unit ids, the most used first, ties by node id
      */
     public function targets(string $kind): array
     {
@@ -100,6 +117,8 @@ final class Report
         foreach ($users as &$ids) {
             sort($ids, SORT_STRING);
         }
+        unset($ids);
+        uksort($users, static fn (string $a, string $b): int => [count($users[$b]), $a] <=> [count($users[$a]), $b]);
         return $users;
     }
 }

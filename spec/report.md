@@ -36,13 +36,19 @@ It MUST contain, in this order:
    colour and a legend label, never by colour alone. Selecting a unit shows
    its metrics with their plain-language lines and its neighbours. The map
    offers the [DOT graph](#dot-graph) for download.
+   A map of more than 300 units is neither readable nor quick to lay out, so
+   it draws the 300 units with the highest `fan_in + fan_out` (ties by id),
+   and the edges between them, and says so above the map. Every unit can
+   still be selected from the search box and the tables, and its details say
+   when it is not drawn.
 5. **Cycles**: each cycle with its `example` loop written out, and its full
    member list when the example does not show every member.
 6. **Where to look first**: the units with the highest `fan_in` and the units
    with the highest `fan_out` (non-zero only), with their plain-language lines.
 7. **Every part**: a table of every unit and its metrics.
 8. **Outside the project**: the external packages and the unresolved
-   references, each with how many units use it.
+   references, each with how many units use it, the most used first (ties by
+   id). After the first 15 of each, the rest are folded away.
 9. **Groups** (clustered reports only): each cluster's members and how many
    file edges fell inside it.
 10. **How to read the numbers**: every metric shown, with its plain-language line.

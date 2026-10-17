@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 namespace Untangled\Scanner;
 
+use Untangled\Text;
+
 /** What one PHP file declares and references, before resolution. */
 final class FileResult
 {
@@ -40,7 +42,7 @@ final class FileResult
     /** @return list<string> */
     public function symbols(): array
     {
-        $symbols = array_values(array_unique(array_merge($this->classes, $this->functions, $this->constants)));
+        $symbols = array_values(array_unique(array_map(Text::utf8(...), array_merge($this->classes, $this->functions, $this->constants))));
         sort($symbols, SORT_STRING);
         return $symbols;
     }

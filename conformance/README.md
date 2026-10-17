@@ -15,6 +15,7 @@ cases/<case>/
         ├── analysis.<strategy>.json   # optional: a clustered analysis
         └── graph[.<strategy>].dot     # optional: the report's DOT graph
     clusters.rules             # optional: the rules for analysis.rules.json
+    sources                    # optional: --source paths for the scan, one per line
 ```
 
 `<strategy>` is the clustering with `:` written as `-`: `analysis.namespace-2.json`
@@ -40,6 +41,7 @@ that has a folder for its language.
 | [includes](cases/includes/README.md) | `classmap` / `files` autoload, followed and unresolved includes, functions and constants |
 | [composer-packages](cases/composer-packages/README.md) | Packages from `composer.lock`, psr-0 prefixes, imports of namespaces |
 | [vendor-installed](cases/vendor-installed/README.md) | Packages from `vendor/`, classmap packages, includes into `vendor/` |
+| [legacy-app](cases/legacy-app/README.md) | Code outside autoload added with `--source`, includes found through `--source` folders, a Latin-1 class name, a polyfill that a builtin wins over, Composer's autoloader and runtime classes |
 | [layers](cases/layers/README.md) | Clustering by namespace, folder and rules; Ca / Ce; a cycle between clusters that no file cycle shows, and a file cycle that disappears inside a cluster |
 
 ## Adding a case

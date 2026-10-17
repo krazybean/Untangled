@@ -14,8 +14,23 @@ How the PHP library turns a project into a [pairs document](../pairs-format.md).
   everything, which hides the real structure).
 - Files reached through a followed `include` / `require` (see below) are
   scanned too, even when no autoload rule covers them.
+- `--source=<path>` (repeatable) adds code that `composer.json` does not
+  autoload, as legacy applications load it with their own autoloader or
+  `include_path`: the path is relative to the project root and is read like a
+  `classmap` entry (a file, or the `.php` and `.inc` files under a folder).
+  A path that does not exist is a warning.
 - `vendor/` (or `config.vendor-dir`) and hidden directories are never scanned.
 - `module` of a file is the namespace it declares (the first one, if several).
+- The scanner warns, without failing, when the result is likely incomplete:
+  - when no `vendor/composer/installed.json` or `composer.lock` exists but
+    `composer.json` requires packages, since their classes will be unresolved;
+  - when `.php` files under the root are not scanned: not covered by any
+    `autoload` or `autoload-dev` rule, a `--source` path, or a followed
+    include, and not matched by `exclude-from-classmap` (`vendor/`,
+    `node_modules/` and hidden directories are not counted). The warning gives
+    the count and, for the top-level folders holding the most of them, the
+    deepest folder each one's files share (`database/migrations/`, `lang/`),
+    so the user can decide what to pass to `--source`.
 
 ## Resolving a class-like name
 
@@ -27,16 +42,24 @@ applying `namespace` and `use` rules):
    class, the first in path order wins and the scanner warns.
    (The scanner builds the symbol table from the scanned files themselves, which
    is what Composer's optimized classmap would contain.)
-2. **Vendor package.** If it matches a `psr-4` / `psr-0` prefix (the longest
+2. **Builtin.** If it is a class known to the PHP runtime running the scanner
+   (core and loaded extensions), the target is `builtin:<Name>`. Builtins come
+   before packages because polyfill packages (`symfony/polyfill-php80` and
+   the like) declare classes such as `Stringable` that newer PHP versions
+   build in; on a PHP that lacks the class, the polyfill's package is the
+   target.
+3. **Vendor package.** If it matches a `psr-4` / `psr-0` prefix (the longest
    matching prefix wins; empty catch-all prefixes are ignored) or a class
    declared in a `classmap` entry of an installed package, the target is
    `composer:<package-name>`. Installed packages are read from
    `vendor/composer/installed.json`, or from `composer.lock` when `vendor/` is
    absent. Classmap packages can only be resolved when `vendor/` is installed,
    since their classes are read from the package's files.
-3. **Builtin.** If it is a class known to the PHP runtime running the scanner
-   (core and loaded extensions), the target is `builtin:<Name>`.
-4. Otherwise the target is `unresolved:class:<FQCN>`.
+4. **Composer runtime.** `Composer\Autoload\ClassLoader` and
+   `Composer\InstalledVersions`, which Composer writes into `vendor/composer/`
+   itself, are `composer:composer-runtime-api` (the package name Composer
+   gives that API).
+5. Otherwise the target is `unresolved:class:<FQCN>`.
 
 `self` and `static` point at the current class, so they become self-edges and
 are dropped. `parent` is replaced by the parent class's name and resolved as
@@ -66,10 +89,15 @@ the path is a **constant expression** built from string literals, `__DIR__`,
 `dirname(__FILE__)`, `dirname(..., levels)` and the `.` operator. `__DIR__`
 forms evaluate to an absolute path. A relative result is tried against the
 project root (PHP's working directory when run from there), then against the
-including file's directory. The first candidate that exists wins.
+including file's directory, then against each `--source` folder in the order
+given (legacy applications put their source folders on `include_path`). The
+first candidate that exists wins.
 
 - An existing file inside the project → that file, which is then scanned too.
 - An existing file inside `vendor/<vendor>/<package>/` → `composer:<vendor>/<package>`.
+- Composer's own autoloader (`vendor/autoload.php`, or a file in
+  `vendor/composer/`) → not recorded. It only loads the packages, which the
+  class references already point at.
 - Missing, or outside the project → `unresolved:include:<path>`, with the
   project-relative path when it is inside the project, else the source text.
 - Any other expression (variables, function calls, constants) →

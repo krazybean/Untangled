@@ -8,8 +8,7 @@
   var SVG = 'http://www.w3.org/2000/svg';
   var units = data.units;
   var byId = {};
-  units.forEach(function (unit, index) {
-    unit.index = index;
+  units.forEach(function (unit) {
     unit.out = [];
     unit.in = [];
     byId[unit.id] = unit;
@@ -18,6 +17,12 @@
     byId[edge.from].out.push(edge.to);
     byId[edge.to].in.push(edge.from);
   });
+  // A large graph draws only its most connected parts (data.drawn); the rest stay in the
+  // details panel and the tables, so the map stays readable and quick to lay out.
+  var drawn = data.drawn ? data.drawn.map(function (id) { return byId[id]; }) : units;
+  var isDrawn = {};
+  drawn.forEach(function (unit) { isDrawn[unit.id] = true; });
+  var drawnEdges = data.edges.filter(function (edge) { return isDrawn[edge.from] && isDrawn[edge.to]; });
 
   // ---- Layout: a deterministic force-directed layout (Fruchterman-Reingold) ----
 
@@ -26,6 +31,7 @@
     var k = 80;
     var golden = Math.PI * (3 - Math.sqrt(5));
     nodes.forEach(function (node, i) {
+      node.index = i;
       // Sunflower spiral start: deterministic, and evenly spread.
       var r = k * 0.6 * Math.sqrt(i + 0.5);
       node.x = r * Math.cos(i * golden);
@@ -141,7 +147,7 @@
 
   var canvas = document.getElementById('map-canvas');
   var details = document.getElementById('map-details');
-  var showAll = units.length <= 40;
+  var showAll = drawn.length <= 40;
   var view = { x: 0, y: 0, scale: 1 };
   var svg, scene, nodeEls = {}, edgeEls = [], selected = null;
 
@@ -152,8 +158,8 @@
   }
 
   function buildMap() {
-    layout(units, data.edges);
-    svg = el('svg', { role: 'img', 'aria-label': 'Map of ' + plural(units.length, 'part') + ' and the dependencies between them' }, canvas);
+    layout(drawn, drawnEdges);
+    svg = el('svg', { role: 'img', 'aria-label': 'Map of ' + plural(drawn.length, 'part') + ' and the dependencies between them' }, canvas);
     var defs = el('defs', {}, svg);
     [['arrow', 'var(--edge)'], ['arrow-cycle', 'var(--critical)']].forEach(function (marker) {
       var m = el('marker', { id: marker[0], viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto-start-reverse' }, defs);
@@ -164,12 +170,12 @@
     var nodeLayer = el('g', {}, scene);
     var styles = getComputedStyle(document.documentElement);
 
-    data.edges.forEach(function (edge) {
+    drawnEdges.forEach(function (edge) {
       var s = byId[edge.from], t = byId[edge.to];
       var line = el('line', { class: 'edge' + (edge.cycle ? ' cycle' : ''), 'marker-end': edge.cycle ? 'url(#arrow-cycle)' : 'url(#arrow)' }, edgeLayer);
       edgeEls.push({ el: line, from: s, to: t });
     });
-    units.forEach(function (unit) {
+    drawn.forEach(function (unit) {
       var g = el('g', { class: 'node' + (unit.cycle ? ' in-cycle' : '') + (showAll ? '' : ' hide-label'), tabindex: '0', role: 'button', 'aria-label': unit.id }, nodeLayer);
       el('circle', { r: radius(unit), fill: rampColour(unit.instability, styles) }, g);
       var label = el('text', { x: radius(unit) + 4, y: 4 }, g);
@@ -186,7 +192,7 @@
       var scheme = window.matchMedia('(prefers-color-scheme: dark)');
       var recolour = function () {
         var current = getComputedStyle(document.documentElement);
-        units.forEach(function (unit) { nodeEls[unit.id].firstChild.setAttribute('fill', rampColour(unit.instability, current)); });
+        drawn.forEach(function (unit) { nodeEls[unit.id].firstChild.setAttribute('fill', rampColour(unit.instability, current)); });
       };
       if (scheme.addEventListener) scheme.addEventListener('change', recolour);
     }
@@ -211,7 +217,7 @@
   }
 
   function positionAll() {
-    units.forEach(positionNode);
+    drawn.forEach(positionNode);
     edgeEls.forEach(positionEdge);
   }
 
@@ -221,7 +227,7 @@
 
   function fit() {
     var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    units.forEach(function (u) {
+    drawn.forEach(function (u) {
       minX = Math.min(minX, u.x - 30); maxX = Math.max(maxX, u.x + 120);
       minY = Math.min(minY, u.y - 30); maxY = Math.max(maxY, u.y + 30);
     });
@@ -265,7 +271,7 @@
         return;
       }
       var target = event.target.closest('.node');
-      var unit = target ? units.find(function (u) { return nodeEls[u.id] === target; }) : null;
+      var unit = target ? drawn.find(function (u) { return nodeEls[u.id] === target; }) : null;
       var start = toScene(event.clientX, event.clientY);
       drag = { unit: unit, start: start, clientX: event.clientX, clientY: event.clientY, viewX: view.x, viewY: view.y, moved: false, offsetX: unit ? unit.x - start.x : 0, offsetY: unit ? unit.y - start.y : 0 };
       svg.setPointerCapture(event.pointerId);
@@ -369,6 +375,7 @@
       return;
     }
     details.appendChild(html('h3', unit.id, 'mono'));
+    if (!isDrawn[unit.id]) details.appendChild(html('p', 'Not drawn on the map, which shows only the ' + drawn.length + ' parts with the most connections.', 'muted small'));
     if (unit.members) details.appendChild(html('p', plural(unit.members.length, 'file') + ' in this group.', 'muted small'));
     if (unit.cycle) {
       var cycle = data.cycles[unit.cycle - 1];
@@ -404,7 +411,7 @@
     renderDetails(selected);
     if (!svg) return;
     canvas.classList.toggle('focused', !!selected);
-    units.forEach(function (u) {
+    drawn.forEach(function (u) {
       var near = !!selected && (u === selected || selected.out.indexOf(u.id) !== -1 || selected.in.indexOf(u.id) !== -1);
       nodeEls[u.id].classList.toggle('near', near);
       nodeEls[u.id].classList.toggle('selected', u === selected);
@@ -412,7 +419,7 @@
     edgeEls.forEach(function (edge) {
       edge.el.classList.toggle('near', !!selected && (edge.from === selected || edge.to === selected));
     });
-    if (selected) {
+    if (selected && isDrawn[selected.id]) {
       // Bring the part into view if it is off screen.
       var width = canvas.clientWidth, height = canvas.clientHeight;
       var sx = selected.x * view.scale + view.x, sy = selected.y * view.scale + view.y;
@@ -443,7 +450,7 @@
   labelsButton.addEventListener('click', function () {
     showAll = !showAll;
     labelsButton.setAttribute('aria-pressed', String(showAll));
-    units.forEach(function (unit) { if (nodeEls[unit.id]) nodeEls[unit.id].classList.toggle('hide-label', !showAll); });
+    drawn.forEach(function (unit) { nodeEls[unit.id].classList.toggle('hide-label', !showAll); });
   });
   document.getElementById('map-reset').addEventListener('click', function () {
     select(null);

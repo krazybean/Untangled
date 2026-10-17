@@ -82,6 +82,10 @@ Rules:
 - `nodes` MUST be sorted by `id`; `edges` by `from`, then `to` (plain byte order).
 - Absolute paths MUST NOT appear anywhere in the document, so documents are
   portable and safe to share.
+- Documents are UTF-8. A name or path read from source code or the filesystem
+  that is not valid UTF-8 (legacy code saved as Latin-1 can declare
+  `class Café`) MUST be read as Windows-1252 and written as the equivalent
+  UTF-8, so it stays distinct and readable rather than replaced or rejected.
 - Writers SHOULD emit two-space indentation and a trailing newline.
 
 ## snakefood interop

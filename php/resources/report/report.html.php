@@ -45,21 +45,21 @@ $percent = (int) round($s['units_in_cycles_ratio'] * 100);
       <span class="status-icon" aria-hidden="true">!</span>
       <div>
         <p><strong><?= $e(R::count($s['cycles'], 'dependency cycle')) ?> found.</strong>
-          <?= $e(R::count($s['units_in_cycles'], 'part')) ?> of <?= $e($s['units']) ?> (<?= $e($percent) ?>%) <?= $s['units_in_cycles'] === 1 ? 'is' : 'are' ?> caught in a loop, so <?= $s['units_in_cycles'] === 1 ? 'it' : 'they' ?> cannot be changed, tested or reused alone.</p>
+          <?= $e(R::count($s['units_in_cycles'], 'part')) ?> of <?= $e(R::number($s['units'])) ?> (<?= $e($percent) ?>%) <?= $s['units_in_cycles'] === 1 ? 'is' : 'are' ?> caught in a loop, so <?= $s['units_in_cycles'] === 1 ? 'it' : 'they' ?> cannot be changed, tested or reused alone.</p>
         <p class="sub">The largest cycle ties <?= $e(R::count($s['largest_cycle'], 'part')) ?> together. <a href="#cycles">See the cycles</a>.</p>
       </div>
     </div>
   <?php endif ?>
 
   <div class="tiles">
-    <div class="card tile"><div class="value"><?= $e($s['units']) ?></div><div class="label">parts of the code</div></div>
-    <div class="card tile"><div class="value"><?= $e($s['edges']) ?></div><div class="label">dependencies between them</div></div>
-    <div class="card tile<?= $s['cycles'] > 0 ? ' alert' : '' ?>"><div class="value"><?= $e($s['cycles']) ?></div><div class="label"><?= $s['cycles'] === 1 ? 'cycle' : 'cycles' ?> (loops of dependencies)</div></div>
+    <div class="card tile"><div class="value"><?= $e(R::number($s['units'])) ?></div><div class="label">parts of the code</div></div>
+    <div class="card tile"><div class="value"><?= $e(R::number($s['edges'])) ?></div><div class="label">dependencies between them</div></div>
+    <div class="card tile<?= $s['cycles'] > 0 ? ' alert' : '' ?>"><div class="value"><?= $e(R::number($s['cycles'])) ?></div><div class="label"><?= $s['cycles'] === 1 ? 'cycle' : 'cycles' ?> (loops of dependencies)</div></div>
     <div class="card tile<?= $s['units_in_cycles'] > 0 ? ' alert' : '' ?>"><div class="value"><?= $e($percent) ?>%</div><div class="label">of parts are in a cycle</div></div>
     <div class="card tile"><div class="value"><?= $e(number_format((float) $s['mean_fan_out'], 1)) ?></div><div class="label">other parts each one relies on, on average</div></div>
-    <div class="card tile"><div class="value"><?= $e($s['external_packages']) ?></div><div class="label">third-party <?= $s['external_packages'] === 1 ? 'package' : 'packages' ?> used</div></div>
+    <div class="card tile"><div class="value"><?= $e(R::number($s['external_packages'])) ?></div><div class="label">third-party <?= $s['external_packages'] === 1 ? 'package' : 'packages' ?> used</div></div>
     <?php if ($s['unresolved_references'] > 0): ?>
-      <div class="card tile"><div class="value"><?= $e($s['unresolved_references']) ?></div><div class="label"><?= $s['unresolved_references'] === 1 ? 'reference' : 'references' ?> we could not trace</div></div>
+      <div class="card tile"><div class="value"><?= $e(R::number($s['unresolved_references'])) ?></div><div class="label"><?= $s['unresolved_references'] === 1 ? 'reference' : 'references' ?> we could not trace</div></div>
     <?php endif ?>
   </div>
 </section>
@@ -82,7 +82,8 @@ $percent = (int) round($s['units_in_cycles_ratio'] * 100);
 
 <section id="map" aria-labelledby="map-title">
   <h2 id="map-title">Map of dependencies</h2>
-  <p class="lead">Each circle is a part of the code; each arrow points from a part to something it relies on. Click a circle to see its numbers and connections, drag to move around, and scroll or pinch to zoom.<?php if (!$clustered && count($units) > 150): ?> With <?= $e(count($units)) ?> files the map is dense; a report grouped by namespace or folder gives a clearer overview.<?php endif ?></p>
+  <p class="lead">Each circle is a part of the code; each arrow points from a part to something it relies on. Click a circle to see its numbers and connections, drag to move around, and scroll or pinch to zoom.<?php if ($drawnCount < count($units)): ?></p>
+  <p class="lead"><strong>The map shows the <?= $e(R::number($drawnCount)) ?> parts with the most connections</strong>, out of <?= $e(R::number(count($units))) ?>, because more would not be readable. Every part is still in the tables below<?php if (!$clustered): ?>, and a report grouped by namespace or folder shows the whole project on one map<?php endif ?>.<?php elseif (!$clustered && count($units) > 150): ?> With <?= $e(R::number(count($units))) ?> files the map is dense; a report grouped by namespace or folder gives a clearer overview.<?php endif ?></p>
   <div class="toolbar">
     <input type="search" id="map-search" list="map-names" placeholder="Find a part by name" aria-label="Find a part by name">
     <datalist id="map-names"></datalist>
@@ -217,11 +218,16 @@ $percent = (int) round($s['units_in_cycles_ratio'] * 100);
       <?php if ($packages === []): ?>
         <p class="muted">None used directly.</p>
       <?php else: ?>
+        <?php $package = static fn (string $id, array $users): string => '<li><span class="mono">' . $e(preg_replace('/^[a-z]+:/', '', $id)) . '</span><span class="count">used by ' . $e(R::count(count($users), 'part')) . '</span></li>' ?>
         <ul class="rank">
-          <?php foreach ($packages as $package => $users): ?>
-            <li><span class="mono"><?= $e(preg_replace('/^[a-z]+:/', '', $package)) ?></span><span class="count">used by <?= $e(R::count(count($users), 'part')) ?></span></li>
-          <?php endforeach ?>
+          <?php foreach (array_slice($packages, 0, R::LIST_LIMIT, true) as $id => $users): ?><?= $package($id, $users) ?><?php endforeach ?>
         </ul>
+        <?php if (count($packages) > R::LIST_LIMIT): ?>
+          <details>
+            <summary><?= $e(R::count(count($packages) - R::LIST_LIMIT, 'more package')) ?></summary>
+            <ul class="rank"><?php foreach (array_slice($packages, R::LIST_LIMIT, null, true) as $id => $users): ?><?= $package($id, $users) ?><?php endforeach ?></ul>
+          </details>
+        <?php endif ?>
       <?php endif ?>
     </div>
     <div class="card">
@@ -230,11 +236,16 @@ $percent = (int) round($s['units_in_cycles_ratio'] * 100);
       <?php if ($unresolved === []): ?>
         <p class="muted">None. Every reference was traced.</p>
       <?php else: ?>
+        <?php $reference = static fn (string $id, array $users): string => '<li><span class="mono">' . $e(R::unresolvedName($id)) . '</span><span class="count">in ' . $e(R::count(count($users), 'part')) . '</span></li>' ?>
         <ul class="rank">
-          <?php foreach ($unresolved as $reference => $users): ?>
-            <li><span class="mono"><?= $e(R::unresolvedName($reference)) ?></span><span class="count">in <?= $e(R::count(count($users), 'part')) ?></span></li>
-          <?php endforeach ?>
+          <?php foreach (array_slice($unresolved, 0, R::LIST_LIMIT, true) as $id => $users): ?><?= $reference($id, $users) ?><?php endforeach ?>
         </ul>
+        <?php if (count($unresolved) > R::LIST_LIMIT): ?>
+          <details>
+            <summary><?= $e(R::count(count($unresolved) - R::LIST_LIMIT, 'more reference')) ?></summary>
+            <ul class="rank"><?php foreach (array_slice($unresolved, R::LIST_LIMIT, null, true) as $id => $users): ?><?= $reference($id, $users) ?><?php endforeach ?></ul>
+          </details>
+        <?php endif ?>
       <?php endif ?>
     </div>
   </div>

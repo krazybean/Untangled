@@ -120,6 +120,26 @@ final class ApplicationTest extends TestCase
         self::assertStringContainsString('tests/B.php', $out);
     }
 
+    public function testSourceAddsFoldersToScan(): void
+    {
+        $this->project = new TempProject([
+            'composer.json' => ['autoload' => ['psr-4' => ['App\\' => 'src/']]],
+            'src/A.php' => '<?php namespace App; new \\Legacy();',
+            'lib/Legacy.php' => '<?php class Legacy {}',
+            'routes/web.php' => '<?php',
+        ]);
+        [, $out, $err] = self::cli(['scan', $this->project->root]);
+        self::assertStringNotContainsString('lib/Legacy.php', $out);
+        self::assertStringContainsString('2 PHP files are not covered', $err);
+        foreach (['scan', 'analyze', 'report'] as $command) {
+            [$code, $out, $err] = self::cli([$command, $this->project->root, '--source=lib', '--source=routes']);
+            self::assertSame(0, $code, $command);
+            self::assertStringContainsString('lib/Legacy.php', $out, $command);
+            self::assertStringContainsString('routes/web.php', $out, $command);
+            self::assertSame('', $err, $command);
+        }
+    }
+
     public function testScanWarningsGoToStandardError(): void
     {
         $this->project = new TempProject(['composer.json' => ['autoload' => ['classmap' => ['src/']]], 'src/Broken.php' => '<?php class {']);
