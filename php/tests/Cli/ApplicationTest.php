@@ -140,6 +140,34 @@ final class ApplicationTest extends TestCase
         }
     }
 
+    public function testAliasesResolveGlobalClassAliases(): void
+    {
+        $this->project = new TempProject([
+            'composer.json' => ['autoload' => ['psr-4' => ['App\\' => 'src/']]],
+            'src/A.php' => '<?php namespace App; \\DB::table("x"); \\Money::sum();',
+            'src/Money.php' => '<?php namespace App; class Money {}',
+            'aliases.json' => ['aliases' => ['Money' => 'App\\Money']],
+            'vendor/composer/installed.json' => ['packages' => [['name' => 'laravel/framework', 'autoload' => ['psr-4' => ['Illuminate\\' => 'src/']]]]],
+        ]);
+        [, $out] = self::cli(['scan', $this->project->root]);
+        self::assertStringContainsString('unresolved:class:DB', $out);
+        foreach (['scan', 'analyze', 'report'] as $command) {
+            $args = [$command, $this->project->root, '--aliases=laravel', '--aliases=' . $this->project->root . '/aliases.json'];
+            [$code, $out, $err] = self::cli($command === 'report' ? [...$args, '--format=dot'] : $args);
+            self::assertSame(0, $code, $command);
+            self::assertSame('', $err, $command);
+            self::assertStringNotContainsString($command === 'analyze' ? '"unresolved": 1' : 'unresolved:', $out, $command);
+        }
+    }
+
+    public function testAliasesThatCannotBeReadAreAnError(): void
+    {
+        [$code, $out, $err] = self::cli(['scan', '.', '--aliases=/no/such.json']);
+        self::assertSame(1, $code);
+        self::assertSame('', $out);
+        self::assertStringStartsWith('error: --aliases=/no/such.json: not a preset (laravel) or a readable file', $err);
+    }
+
     public function testScanWarningsGoToStandardError(): void
     {
         $this->project = new TempProject(['composer.json' => ['autoload' => ['classmap' => ['src/']]], 'src/Broken.php' => '<?php class {']);

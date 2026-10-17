@@ -1,0 +1,15 @@
+{
+    "packages": [
+        {
+            "name": "acme/cart",
+            "autoload": {"psr-4": {"Acme\\Cart\\": "src/"}},
+            "extra": {"laravel": {"aliases": {"Cart": "Acme\\Cart\\Facades\\Cart"}}},
+            "install-path": "../acme/cart"
+        },
+        {
+            "name": "laravel/framework",
+            "autoload": {"psr-4": {"Illuminate\\": "src/Illuminate/"}},
+            "install-path": "../laravel/framework"
+        }
+    ]
+}

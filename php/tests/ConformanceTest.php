@@ -13,12 +13,14 @@ use Untangled\Analysis\Filter;
 use Untangled\Graph\PairsDocument;
 use Untangled\Report\Dot;
 use Untangled\Report\Report;
+use Untangled\Scanner\ClassAliases;
 use Untangled\Scanner\ScanResult;
 use Untangled\Scanner\Scanner;
 
 /**
  * Runs the shared cases in conformance/cases (see conformance/README.md): every case with a
- * php/ folder, scanned with the --source paths in its php/sources file if it has one, must produce its expected pairs, every expected analysis[.<strategy>].json, and
+ * php/ folder, scanned with the --source paths in its php/sources file and the --aliases in its
+ * php/aliases file if it has them, must produce its expected pairs, every expected analysis[.<strategy>].json, and
  * every expected graph[.<strategy>].dot byte for byte.
  */
 final class ConformanceTest extends TestCase
@@ -55,7 +57,7 @@ final class ConformanceTest extends TestCase
 
     public function testThereAreCases(): void
     {
-        self::assertGreaterThanOrEqual(7, iterator_count(self::cases()));
+        self::assertGreaterThanOrEqual(8, iterator_count(self::cases()));
     }
 
     #[DataProvider('cases')]
@@ -103,11 +105,23 @@ final class ConformanceTest extends TestCase
         self::assertSame(file_get_contents($file), $actual);
     }
 
-    /** Scans a case's project, with the --source paths listed one per line in its optional `sources` file. */
+    /**
+     * Scans a case's project, with the --source paths listed one per line in its optional `sources`
+     * file and the --aliases presets or files (relative to the case) in its optional `aliases` file.
+     */
     private static function scan(string $case): ScanResult
     {
-        $sources = is_file($case . '/sources') ? (file($case . '/sources', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []) : [];
-        return (new Scanner(sources: $sources))->scan($case . '/project');
+        $aliases = array_map(
+            static fn (string $spec): string => is_file($case . '/' . $spec) ? $case . '/' . $spec : $spec,
+            self::lines($case . '/aliases'),
+        );
+        return (new Scanner(sources: self::lines($case . '/sources'), aliases: ClassAliases::load($aliases)))->scan($case . '/project');
+    }
+
+    /** @return list<string> */
+    private static function lines(string $file): array
+    {
+        return is_file($file) ? (file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []) : [];
     }
 
     /** The clustering an expected file's suffix names: '' (none), '.rules', or '.namespace-2' and the like. */

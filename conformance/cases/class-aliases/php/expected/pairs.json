@@ -1,0 +1,86 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "nodes": [
+    {
+      "id": "composer:acme/cart",
+      "kind": "external"
+    },
+    {
+      "id": "composer:laravel/framework",
+      "kind": "external"
+    },
+    {
+      "id": "src/Money.php",
+      "kind": "internal",
+      "module": "App",
+      "symbols": [
+        "App\\Money"
+      ]
+    },
+    {
+      "id": "src/OrderController.php",
+      "kind": "internal",
+      "module": "App",
+      "symbols": [
+        "App\\OrderController"
+      ]
+    },
+    {
+      "id": "unresolved:class:Acme\\Logging\\Log",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:class:Telescope",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/OrderController.php",
+      "to": "composer:acme/cart",
+      "kinds": [
+        "static"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/OrderController.php",
+      "to": "composer:laravel/framework",
+      "kinds": [
+        "import",
+        "static"
+      ],
+      "count": 4
+    },
+    {
+      "from": "src/OrderController.php",
+      "to": "src/Money.php",
+      "kinds": [
+        "static"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/OrderController.php",
+      "to": "unresolved:class:Acme\\Logging\\Log",
+      "kinds": [
+        "static"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/OrderController.php",
+      "to": "unresolved:class:Telescope",
+      "kinds": [
+        "static"
+      ],
+      "count": 1
+    }
+  ]
+}

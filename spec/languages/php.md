@@ -19,6 +19,8 @@ How the PHP library turns a project into a [pairs document](../pairs-format.md).
   `include_path`: the path is relative to the project root and is read like a
   `classmap` entry (a file, or the `.php` and `.inc` files under a folder).
   A path that does not exist is a warning.
+- `--aliases=<preset|file>` (repeatable) declares global class aliases that
+  a framework registers at runtime; see [Class aliases](#class-aliases).
 - `vendor/` (or `config.vendor-dir`) and hidden directories are never scanned.
 - `module` of a file is the namespace it declares (the first one, if several).
 - The scanner warns, without failing, when the result is likely incomplete:
@@ -59,11 +61,48 @@ applying `namespace` and `use` rules):
    `Composer\InstalledVersions`, which Composer writes into `vendor/composer/`
    itself, are `composer:composer-runtime-api` (the package name Composer
    gives that API).
-5. Otherwise the target is `unresolved:class:<FQCN>`.
+5. **Declared alias.** If the name is a [class alias](#class-aliases) the
+   user declared, the class it aliases is resolved with steps 1 to 4 (aliases
+   are not followed further), and the result is the target. When that class
+   does not resolve either, the target is `unresolved:class:<aliased class>`.
+6. Otherwise the target is `unresolved:class:<FQCN>`.
 
 `self` and `static` point at the current class, so they become self-edges and
 are dropped. `parent` is replaced by the parent class's name and resolved as
 above.
+
+### Class aliases
+
+Some frameworks register short global names at runtime with `class_alias()`
+or an alias autoloader: Laravel's `\DB` is `Illuminate\Support\Facades\DB`.
+No file declares those names, so the scanner cannot find them by itself, and
+it does not read framework configuration to look for them. Instead the user
+declares them with `--aliases=<preset|file>` (repeatable):
+
+- A **file** is JSON: `{"aliases": {"DB": "Illuminate\\Support\\Facades\\DB"}}`,
+  alias name to class name, both fully qualified (a leading `\` is allowed).
+  Alias names compare case-insensitively, as class names do in PHP. An
+  optional `"package-extra": "<key>.<key>"` names where installed packages
+  declare more aliases inside their `extra` section, read from
+  `vendor/composer/installed.json` (or `composer.lock`).
+- A **preset** is such a file shipped with the library, chosen by name.
+  `laravel` holds Laravel's default aliases
+  (`Illuminate\Support\Facades\Facade::defaultAliases()`, which also covers
+  Lumen's `withFacades()`), and reads the aliases packages declare under
+  `extra.laravel.aliases` (`Livewire`, `Socialite`). Aliases an application
+  adds in its own `config/app.php` go in a file.
+
+When several declare the same alias, the later `--aliases` wins, and any
+`--aliases` entry wins over one a package declares. A name nobody declares
+stays unresolved. An alias whose name a project file, builtin or package
+already provides is not used, since that class is what PHP loads.
+
+Presets exist only where a framework relies on global aliases and its list is
+short and stable. Symfony, CakePHP, CodeIgniter 4, Yii, Drupal and Magento
+use namespaced classes or real global classes (`Yii`, `Drupal`, `Mage`)
+instead. PrestaShop's `Product` / `ProductCore` overrides and the Laminas
+`Zend\` bridge rename classes by rule rather than by a list, so they have no
+preset.
 
 ## Functions and constants
 

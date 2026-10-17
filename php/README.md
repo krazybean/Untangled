@@ -16,6 +16,8 @@ bin/untangled scan /path/to/project            # pairs document as JSON
 bin/untangled scan /path/to/project --dev      # include autoload-dev (tests)
 bin/untangled scan /path/to/project --format=snakefood --output=deps.txt
 bin/untangled scan /path/to/project --source=lib --source=routes   # code composer.json does not autoload
+bin/untangled scan /path/to/project --aliases=laravel             # resolve \DB, \Redirect and other Laravel aliases
+bin/untangled scan /path/to/project --aliases=laravel --aliases=my-aliases.json
 
 bin/untangled analyze /path/to/project                      # cycles and metrics per file
 bin/untangled analyze /path/to/project --cluster=namespace:2
@@ -54,6 +56,11 @@ The full rules are in the [PHP profile](../spec/languages/php.md). In short:
   The scanner warns when `.php` files are left out, naming the folders that
   hold them, and when there is no `vendor/` or `composer.lock` to trace
   packages with.
+- Global aliases a framework registers at runtime (Laravel's `\DB` for
+  `Illuminate\Support\Facades\DB`) are resolved only when declared with
+  `--aliases`: the `laravel` preset, or a JSON file
+  `{"aliases": {"DB": "Illuminate\\Support\\Facades\\DB"}}` for your own.
+  Undeclared ones stay unresolved.
 - `include` / `require` with a literal path (string literals, `__DIR__`,
   `dirname()`) are followed, and the included file is scanned too. Paths
   built at runtime are reported as unresolved.

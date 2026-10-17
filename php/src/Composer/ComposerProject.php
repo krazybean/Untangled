@@ -160,7 +160,7 @@ final class ComposerProject
                     ? Path::join($vendor . '/composer', (string) $entry['install-path'])
                     : $vendor . '/' . $entry['name'];
             }
-            $packages[] = new Package($entry['name'], (array) ($entry['autoload'] ?? []), $installPath);
+            $packages[] = new Package($entry['name'], (array) ($entry['autoload'] ?? []), $installPath, (array) ($entry['extra'] ?? []));
         }
         usort($packages, static fn (Package $a, Package $b): int => strcmp($a->name, $b->name));
         return $packages;
