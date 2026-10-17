@@ -35,10 +35,10 @@ The full rules are in the [PHP profile](../spec/languages/php.md). In short:
 
 ```sh
 composer install
-php -d zend.assertions=1 -d assert.exception=1 tests/run.php
+composer test
 ```
 
-`tests/run.php` runs the shared conformance cases in
+`composer test` runs `tests/run.php`, which runs the shared conformance cases in
 [`../conformance/cases`](../conformance/README.md) plus unit checks.
 
 ## License

@@ -33,7 +33,7 @@ while IFS= read -r file; do
     status=1
   fi
 done < <(git ls-files --cached --others --exclude-standard \
-  '*.php' '*.ts' '*.mts' '*.cts' '*.js' '*.mjs' '*.cjs' '*.py' '*.sh' '*.toml' 'php/bin/*' \
+  '*.php' '*.ts' '*.mts' '*.cts' '*.js' '*.mjs' '*.cjs' '*.py' '*.sh' '*.toml' '*.yml' '*.yaml' 'php/bin/*' \
   | sort -u)
 
 if (( status == 0 )); then

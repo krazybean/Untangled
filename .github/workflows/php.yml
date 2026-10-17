@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: MIT
+# The PHP library's own CI. It runs inside php/ with Composer only; other
+# languages get their own workflow file when they gain code.
+name: PHP
+
+on:
+  pull_request:
+    paths: ['php/**', 'conformance/**', 'spec/**', '.github/workflows/php.yml']
+  push:
+    branches: [main]
+    paths: ['php/**', 'conformance/**', 'spec/**', '.github/workflows/php.yml']
+
+defaults:
+  run:
+    working-directory: php
+
+jobs:
+  php:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - run: composer validate --no-check-publish --strict
+      - run: composer install --no-interaction --no-progress
+      - run: composer test
