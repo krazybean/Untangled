@@ -25,8 +25,8 @@ use Untangled\Version;
 final class Application
 {
     private const USAGE = <<<'TXT'
-        Usage: untangled scan [<path>] [--dev] [--format=json|snakefood] [--output=<file>]
-               untangled analyze [<path>|<pairs.json>] [--dev] [--cluster=<strategy>]
+        Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--format=json|snakefood] [--output=<file>]
+               untangled analyze [<path>|<pairs.json>] [--dev] [--source=<path>]... [--cluster=<strategy>]
                                  [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
                untangled report [<path>|<pairs.json>] [--format=html|dot] [--title=<text>]
                                  [analyze options]
@@ -38,6 +38,8 @@ final class Application
 
         Options:
           --dev              Also scan autoload-dev (tests)
+          --source=PATH      Also scan the PHP files under PATH, relative to the project (repeatable),
+                             for code that composer.json does not autoload
           --format=FORMAT    scan: json (default, the Untangled pairs document) or snakefood
                              report: html (default) or dot
           --title=TEXT       report only: the report's title (default: the Composer package name)
@@ -63,6 +65,7 @@ final class Application
         $positional = [];
         $options = [];
         $patterns = [];
+        $sources = [];
         foreach ($argv as $arg) {
             if ($arg === '-h' || $arg === '--help') {
                 fwrite($this->stdout, self::USAGE);
@@ -77,6 +80,8 @@ final class Application
                 if ($name === 'include' || $name === 'exclude') {
                     // Order matters for these, so they are kept as a list rather than by name.
                     $patterns[] = [$name, $value];
+                } elseif ($name === 'source' && is_string($value)) {
+                    $sources[] = $value;
                 }
                 $options[$name] = $value;
                 continue;
@@ -90,9 +95,9 @@ final class Application
             return 2;
         }
         $allowed = match ($command) {
-            'scan' => ['dev', 'format', 'output'],
-            'analyze' => ['dev', 'cluster', 'include', 'exclude', 'output'],
-            'report' => ['dev', 'cluster', 'include', 'exclude', 'output', 'format', 'title'],
+            'scan' => ['dev', 'source', 'format', 'output'],
+            'analyze' => ['dev', 'source', 'cluster', 'include', 'exclude', 'output'],
+            'report' => ['dev', 'source', 'cluster', 'include', 'exclude', 'output', 'format', 'title'],
         };
         $unknown = array_diff(array_keys($options), $allowed);
         if ($unknown !== []) {
@@ -106,7 +111,7 @@ final class Application
             }
         }
         if ($command === 'analyze' || $command === 'report') {
-            return $this->analyze($command, $positional[0] ?? '.', $options, $patterns);
+            return $this->analyze($command, $positional[0] ?? '.', $options, $patterns, $sources);
         }
         $format = $options['format'] ?? 'json';
         if (!in_array($format, ['json', 'snakefood'], true)) {
@@ -116,7 +121,7 @@ final class Application
 
         $path = $positional[0] ?? '.';
         try {
-            $result = (new Scanner(dev: isset($options['dev'])))->scan($path);
+            $result = (new Scanner(dev: isset($options['dev']), sources: $sources))->scan($path);
         } catch (ProjectException $e) {
             fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
             return 1;
@@ -132,8 +137,9 @@ final class Application
     /**
      * @param array<string, string|true> $options
      * @param list<array{string, string}> $patterns include / exclude globs in command-line order
+     * @param list<string> $sources extra paths to scan
      */
-    private function analyze(string $command, string $path, array $options, array $patterns): int
+    private function analyze(string $command, string $path, array $options, array $patterns, array $sources): int
     {
         $format = $options['format'] ?? 'html';
         if ($command === 'report' && !in_array($format, ['html', 'dot'], true)) {
@@ -169,7 +175,7 @@ final class Application
                 }
                 $pairs = PairsDocument::fromArray(Json::decode($contents, $path), $warnings);
             } else {
-                $result = (new Scanner(dev: isset($options['dev'])))->scan($path);
+                $result = (new Scanner(dev: isset($options['dev']), sources: $sources))->scan($path);
                 $pairs = $result->pairs;
                 $warnings = $result->warnings;
             }

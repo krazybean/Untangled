@@ -159,15 +159,18 @@ final class ScannerTest extends TestCase
     {
         $result = $this->scan(
             [
-                'src/A.php' => "<?php require __DIR__ . '/../vendor/acme/pdf/src/init.php'; require __DIR__ . '/../vendor/autoload.php';",
+                'src/A.php' => "<?php require __DIR__ . '/../vendor/acme/pdf/src/init.php'; require __DIR__ . '/../vendor/autoload.php';"
+                    . " require 'vendor/composer/autoload_real.php'; require 'vendor/stray.php';",
                 'vendor/acme/pdf/src/init.php' => '<?php',
                 'vendor/autoload.php' => '<?php',
+                'vendor/composer/autoload_real.php' => '<?php',
+                'vendor/stray.php' => '<?php',
             ],
             ['classmap' => ['src/A.php']],
         );
-        // vendor/autoload.php is not inside a package folder, so it stays unresolved.
-        self::assertSame(['src/A.php>composer:acme/pdf include', 'src/A.php>unresolved:include:vendor/autoload.php include'], self::edges($result));
-        self::assertSame(['composer:acme/pdf', 'src/A.php', 'unresolved:include:vendor/autoload.php'], self::ids($result));
+        // Composer's autoloader is not recorded; a vendor/ file outside any package folder is unresolved.
+        self::assertSame(['src/A.php>composer:acme/pdf include', 'src/A.php>unresolved:include:vendor/stray.php include'], self::edges($result));
+        self::assertSame(['composer:acme/pdf', 'src/A.php', 'unresolved:include:vendor/stray.php'], self::ids($result));
     }
 
     public function testIncludesOutsideTheProjectAreUnresolvedWithTheirSourceText(): void
@@ -327,6 +330,116 @@ final class ScannerTest extends TestCase
         );
     }
 
+    public function testBuiltinsWinOverPolyfillPackages(): void
+    {
+        $result = $this->scanWith(
+            [
+                'src/A.php' => '<?php namespace App; class A implements \Stringable { function __toString(): string { return ""; } }',
+                'vendor/composer/installed.json' => ['packages' => [
+                    ['name' => 'acme/polyfill', 'autoload' => ['classmap' => ['stubs/']], 'install-path' => '../acme/polyfill'],
+                ]],
+                'vendor/acme/polyfill/stubs/Stringable.php' => '<?php if (PHP_VERSION_ID < 80000) { interface Stringable {} }',
+            ],
+            ['autoload' => ['psr-4' => ['App\\' => 'src/']]],
+        );
+        self::assertSame(['src/A.php>builtin:Stringable implements'], self::edges($result));
+    }
+
+    public function testComposerRuntimeClassesAreTheRuntimeApi(): void
+    {
+        $result = $this->scan(['src/A.php' => '<?php namespace App; use Composer\InstalledVersions; InstalledVersions::getVersion("x"); new \Composer\Autoload\ClassLoader();']);
+        self::assertSame(['src/A.php>composer:composer-runtime-api import,new,static'], self::edges($result));
+    }
+
+    public function testSourcesAddCodeOutsideAutoload(): void
+    {
+        $result = $this->scanWith(
+            [
+                'src/A.php' => '<?php namespace App; new \Legacy_Order(); require_once "Legacy/helpers.php";',
+                'lib/Legacy/Order.php' => '<?php class Legacy_Order {}',
+                'lib/Legacy/helpers.php' => '<?php function legacy() {}',
+                'lib/Legacy/Old.inc' => '<?php class Legacy_Old extends Legacy_Order {}',
+            ],
+            ['autoload' => ['psr-4' => ['App\\' => 'src/']]],
+            sources: ['lib'],
+        );
+        // The include is found through the lib folder, as include_path would find it.
+        self::assertSame([
+            'lib/Legacy/Old.inc>lib/Legacy/Order.php extends',
+            'src/A.php>lib/Legacy/Order.php new',
+            'src/A.php>lib/Legacy/helpers.php include',
+        ], self::edges($result));
+        self::assertSame([], $result->warnings);
+    }
+
+    public function testAMissingSourceWarns(): void
+    {
+        $result = $this->scanWith(['src/A.php' => '<?php namespace App;'], ['autoload' => ['psr-4' => ['App\\' => 'src/']]], sources: ['nope']);
+        self::assertSame(['--source=nope: no such file or folder in the project'], $result->warnings);
+    }
+
+    public function testFilesOutsideAutoloadAreCountedInAWarning(): void
+    {
+        $result = $this->scanWith(
+            [
+                'src/A.php' => '<?php namespace App;',
+                'src/Tests/ATest.php' => '<?php',
+                'tests/BTest.php' => '<?php',
+                'config/app.php' => '<?php',
+                'config/db.php' => '<?php',
+                'database/migrations/1.php' => '<?php',
+                'index.php' => '<?php',
+                'node_modules/x/y.php' => '<?php',
+                '.git/hooks/z.php' => '<?php',
+            ],
+            [
+                'autoload' => ['psr-4' => ['App\\' => 'src/'], 'exclude-from-classmap' => ['**/Tests/']],
+                'autoload-dev' => ['psr-4' => ['App\\Tests\\' => 'tests/']],
+            ],
+        );
+        self::assertSame(
+            ['4 PHP files are not covered by composer.json autoload rules and were not scanned (config/ 2, (project root) 1, database/migrations/ 1);'
+                . ' add folders with --source=<folder> if they hold code you want analyzed'],
+            $result->warnings,
+        );
+    }
+
+    public function testTheUncoveredWarningNamesFiveFoldersAtMost(): void
+    {
+        $files = ['src/A.php' => '<?php namespace App;'];
+        foreach (range(1, 7) as $n) {
+            $files["f{$n}/x.php"] = '<?php';
+        }
+        $files['f1/y.php'] = '<?php';
+        $result = $this->scan($files);
+        self::assertSame(
+            ['8 PHP files are not covered by composer.json autoload rules and were not scanned (f1/ 2, f2/ 1, f3/ 1, f4/ 1, f5/ 1, and 2 more);'
+                . ' add folders with --source=<folder> if they hold code you want analyzed'],
+            $result->warnings,
+        );
+    }
+
+    public function testMissingPackageListsWarn(): void
+    {
+        $result = $this->scanWith(['src/A.php' => '<?php namespace App;'], ['require' => ['php' => '^8.2', 'acme/x' => '^1.0'], 'autoload' => ['psr-4' => ['App\\' => 'src/']]]);
+        self::assertCount(1, $result->warnings);
+        self::assertStringStartsWith('no vendor/composer/installed.json or composer.lock', $result->warnings[0]);
+
+        $result = $this->scanWith(['src/A.php' => '<?php namespace App;'], ['require' => ['php' => '^8.2', 'ext-json' => '*'], 'autoload' => ['psr-4' => ['App\\' => 'src/']]]);
+        self::assertSame([], $result->warnings);
+    }
+
+    public function testLatin1NamesAreWrittenAsUtf8(): void
+    {
+        $result = $this->scan([
+            'src/Cafe.php' => "<?php namespace App; class Caf\xe9 {}",
+            'src/A.php' => "<?php namespace App; new Caf\xe9(); new Cr\xe8me();",
+        ]);
+        self::assertSame(['src/A.php>src/Cafe.php new', "src/A.php>unresolved:class:App\\Crème new"], self::edges($result));
+        self::assertSame(['App\\Café'], $result->pairs->node('src/Cafe.php')['symbols']);
+        self::assertJson($result->pairs->toJson());
+    }
+
     public function testAnEmptyAutoloadGivesAnEmptyDocument(): void
     {
         $this->project = new TempProject(['composer.json' => ['name' => 'x/y']]);
@@ -348,10 +461,11 @@ final class ScannerTest extends TestCase
      * @param array<string, string|array<mixed>> $files
      * @param array<string, mixed> $composer
      */
-    private function scanWith(array $files, array $composer, bool $dev = false): ScanResult
+    /** @param list<string> $sources */
+    private function scanWith(array $files, array $composer, bool $dev = false, array $sources = []): ScanResult
     {
         $this->project = new TempProject(['composer.json' => $composer] + $files);
-        return (new Scanner(dev: $dev))->scan($this->project->root);
+        return (new Scanner(dev: $dev, sources: $sources))->scan($this->project->root);
     }
 
     /** @return list<string> */

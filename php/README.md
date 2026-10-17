@@ -15,6 +15,7 @@ composer install
 bin/untangled scan /path/to/project            # pairs document as JSON
 bin/untangled scan /path/to/project --dev      # include autoload-dev (tests)
 bin/untangled scan /path/to/project --format=snakefood --output=deps.txt
+bin/untangled scan /path/to/project --source=lib --source=routes   # code composer.json does not autoload
 
 bin/untangled analyze /path/to/project                      # cycles and metrics per file
 bin/untangled analyze /path/to/project --cluster=namespace:2
@@ -48,6 +49,11 @@ The full rules are in the [PHP profile](../spec/languages/php.md). In short:
 
 - The project must have a `composer.json`. Its `autoload` rules (`psr-4`,
   `psr-0`, `classmap`, `files`) decide which files are scanned; `vendor/` never is.
+- Code that Composer does not autoload (a legacy `lib/` with its own autoloader,
+  a Laravel app's `routes/` and `config/`) is added with `--source=<folder>`.
+  The scanner warns when `.php` files are left out, naming the folders that
+  hold them, and when there is no `vendor/` or `composer.lock` to trace
+  packages with.
 - `include` / `require` with a literal path (string literals, `__DIR__`,
   `dirname()`) are followed, and the included file is scanned too. Paths
   built at runtime are reported as unresolved.

@@ -86,7 +86,11 @@ final class VendorIndex
             return [];
         }
         $files = [];
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS));
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY,
+            \RecursiveIteratorIterator::CATCH_GET_CHILD,
+        );
         foreach ($iterator as $file) {
             /** @var \SplFileInfo $file */
             if ($file->isFile() && in_array(strtolower($file->getExtension()), ['php', 'inc'], true)) {

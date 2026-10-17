@@ -146,6 +146,7 @@ final class HtmlReportTest extends TestCase
         self::assertSame('1 file', HtmlReport::count(1, 'file'));
         self::assertSame('0 files', HtmlReport::count(0, 'file'));
         self::assertSame('2 dependencies', HtmlReport::count(2, 'dependency', 'dependencies'));
+        self::assertSame('6,426 parts', HtmlReport::count(6426, 'part'));
     }
 
     public function testUnresolvedName(): void
@@ -162,6 +163,46 @@ final class HtmlReportTest extends TestCase
             self::assertStringContainsString(substr($package, strlen('composer:')), $html);
         }
         self::assertStringContainsString('App\\Models\\User', $html);
+    }
+
+    public function testSmallMapsDrawEveryPart(): void
+    {
+        self::assertNull(self::data(self::demo())['drawn']);
+        self::assertStringNotContainsString('<strong>The map shows', self::demo());
+    }
+
+    public function testLargeMapsDrawTheMostConnectedPartsAndSaySo(): void
+    {
+        $edges = [];
+        foreach (range(1, HtmlReport::MAP_LIMIT + 10) as $n) {
+            $edges[] = "f{$n}.php -> hub.php";
+        }
+        $html = HtmlReport::render(Report::build('Big', PairsBuilder::build($edges)));
+        $data = self::data($html);
+        self::assertCount(HtmlReport::MAP_LIMIT, $data['drawn']);
+        self::assertContains('hub.php', $data['drawn']);
+        self::assertCount(HtmlReport::MAP_LIMIT + 11, $data['units']);
+        self::assertStringContainsString('The map shows the 300 parts with the most connections</strong>, out of 311', $html);
+        self::assertStringContainsString('a report grouped by namespace or folder shows the whole project', $html);
+    }
+
+    public function testLongListsOfPackagesAndReferencesFoldAway(): void
+    {
+        $edges = [];
+        foreach (range(1, HtmlReport::LIST_LIMIT + 2) as $n) {
+            $edges[] = "a.php -> composer:p/p{$n}";
+            $edges[] = "a.php -> unresolved:class:U{$n}";
+        }
+        $html = HtmlReport::render(Report::build('Lists', PairsBuilder::build($edges)));
+        self::assertStringContainsString('<summary>2 more packages</summary>', $html);
+        self::assertStringContainsString('<summary>2 more references</summary>', $html);
+    }
+
+    /** @return array<string, mixed> the data embedded for the page's script */
+    private static function data(string $html): array
+    {
+        preg_match('{<script type="application/json" id="untangled-data">(.*?)</script>}s', $html, $m);
+        return json_decode($m[1], true, 512, JSON_THROW_ON_ERROR);
     }
 
     private static function scanned(string $case, ?Clustering $clustering = null): Report

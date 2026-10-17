@@ -62,6 +62,25 @@ final class ReportTest extends TestCase
         self::assertSame(['unresolved:class:</script><b>X' => ['c.php']], $report->targets(PairsDocument::UNRESOLVED));
     }
 
+    public function testTargetsListTheMostUsedFirst(): void
+    {
+        $report = Report::build('Uses', PairsBuilder::build(['a.php -> composer:z/z', 'b.php -> composer:z/z', 'a.php -> composer:a/a', 'a.php -> composer:m/m']));
+        self::assertSame(['composer:z/z', 'composer:a/a', 'composer:m/m'], array_keys($report->targets(PairsDocument::EXTERNAL)));
+    }
+
+    public function testTheMapDrawsEveryUnitUpToTheLimit(): void
+    {
+        self::assertSame(['a.php', 'b.php', 'c.php'], Report::build('Demo', self::demo())->mapUnits(3));
+    }
+
+    public function testBeyondTheLimitTheMapDrawsTheMostConnectedUnits(): void
+    {
+        // d has 3 connections, c 2, and a, b and e 1 (a package is not a connection); a wins the tie by id.
+        $report = Report::build('Big', PairsBuilder::build(['a.php -> d.php', 'b.php -> d.php', 'c.php -> d.php', 'c.php -> e.php', 'a.php -> composer:x/y']));
+        self::assertSame(['c.php', 'd.php'], $report->mapUnits(2));
+        self::assertSame(['a.php', 'c.php', 'd.php'], $report->mapUnits(3));
+    }
+
     public function testClusteredReportsUseTheClusterGraph(): void
     {
         $doc = PairsBuilder::build(['a/1.php -> a/2.php', 'a/1.php -> b/1.php', 'a/2.php -> composer:x/y', 'b/1.php -> composer:x/y']);

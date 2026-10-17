@@ -191,4 +191,16 @@ final class PairsDocumentTest extends TestCase
         }
         return $doc;
     }
+
+    public function testNamesThatAreNotUtf8AreStoredAsUtf8(): void
+    {
+        $doc = new PairsDocument('php');
+        $doc->addNode("src/Caf\xe9.php", PairsDocument::INTERNAL, ['module' => "App\\Caf\xe9", 'symbols' => ["App\\Caf\xe9"]]);
+        $doc->addEdge("src/Caf\xe9.php", "unresolved:class:Cr\xe8me", 'new');
+        self::assertTrue($doc->hasNode("src/Caf\xe9.php"));
+        self::assertTrue($doc->hasNode('src/Café.php'));
+        self::assertSame(['id' => 'src/Café.php', 'kind' => 'internal', 'module' => 'App\\Café', 'symbols' => ['App\\Café']], $doc->node("src/Caf\xe9.php"));
+        self::assertSame([['from' => 'src/Café.php', 'to' => 'unresolved:class:Crème', 'kinds' => ['new'], 'count' => 1]], $doc->edges());
+        self::assertJson($doc->toJson());
+    }
 }
