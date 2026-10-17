@@ -71,7 +71,8 @@ final class Filter
 
         $filtered = new PairsDocument($document->language());
         foreach ($kept as $id => $node) {
-            if ($node['kind'] === PairsDocument::INTERNAL || isset($targets[$id])) {
+            // Cluster nodes pass through so that the analyzer can refuse an already clustered document.
+            if (in_array($node['kind'], [PairsDocument::INTERNAL, PairsDocument::CLUSTER], true) || isset($targets[$id])) {
                 $filtered->addNode($id, $node['kind'], array_diff_key($node, ['id' => true, 'kind' => true]));
             }
         }
