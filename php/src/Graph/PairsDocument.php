@@ -16,6 +16,7 @@ final class PairsDocument
     public const EXTERNAL = 'external';
     public const BUILTIN = 'builtin';
     public const UNRESOLVED = 'unresolved';
+    public const CLUSTER = 'cluster';
 
     /** @var array<string, array<string, mixed>> */
     private array $nodes = [];
@@ -38,16 +39,82 @@ final class PairsDocument
         return isset($this->nodes[$id]);
     }
 
+    /** @return array<string, mixed>|null */
+    public function node(string $id): ?array
+    {
+        return $this->nodes[$id] ?? null;
+    }
+
+    public function language(): string
+    {
+        return $this->language;
+    }
+
     /** Records one reference; repeated references to the same target merge. Self-edges are dropped. */
     public function addEdge(string $from, string $to, string $kind): void
+    {
+        $this->mergeEdge($from, $to, [$kind], 1);
+    }
+
+    /**
+     * Merges an already-counted edge, as when reading a document or combining edges into clusters.
+     * @param list<string> $kinds
+     */
+    public function mergeEdge(string $from, string $to, array $kinds, int $count): void
     {
         if ($from === $to) {
             return;
         }
         $key = $from . "\0" . $to;
         $this->edges[$key] ??= ['from' => $from, 'to' => $to, 'kinds' => [], 'count' => 0];
-        $this->edges[$key]['kinds'][$kind] = true;
-        $this->edges[$key]['count']++;
+        foreach ($kinds as $kind) {
+            $this->edges[$key]['kinds'][$kind] = true;
+        }
+        $this->edges[$key]['count'] += $count;
+    }
+
+    /**
+     * Reads a pairs document, such as one written by `untangled scan` or by another library.
+     * @param array<string, mixed> $data
+     * @param list<string> $warnings receives a warning for an unknown minor version
+     * @throws DocumentException
+     */
+    public static function fromArray(array $data, array &$warnings = []): self
+    {
+        if (($data['format'] ?? null) !== 'untangled-pairs') {
+            throw new DocumentException('not an Untangled pairs document (expected "format": "untangled-pairs")');
+        }
+        $version = is_string($data['version'] ?? null) ? $data['version'] : '';
+        [$major, $minor] = array_pad(explode('.', $version, 2), 2, '');
+        [$knownMajor, $knownMinor] = explode('.', Version::SPEC, 2);
+        if ($major !== $knownMajor) {
+            throw new DocumentException("unsupported pairs document version \"{$version}\" (this library reads " . Version::SPEC . ')');
+        }
+        if ($minor !== $knownMinor) {
+            $warnings[] = "pairs document version {$version} is newer or older than " . Version::SPEC . '; reading it anyway';
+        }
+        if (!is_string($data['language'] ?? null) || !is_array($data['nodes'] ?? null) || !is_array($data['edges'] ?? null)) {
+            throw new DocumentException('pairs document needs "language", "nodes" and "edges"');
+        }
+
+        $document = new self($data['language']);
+        foreach ($data['nodes'] as $node) {
+            if (!is_array($node) || !is_string($node['id'] ?? null) || !is_string($node['kind'] ?? null)) {
+                throw new DocumentException('every node needs a string "id" and "kind"');
+            }
+            $document->addNode($node['id'], $node['kind'], array_diff_key($node, ['id' => true, 'kind' => true]));
+        }
+        foreach ($data['edges'] as $edge) {
+            if (!is_array($edge) || !is_string($edge['from'] ?? null) || !is_string($edge['to'] ?? null)) {
+                throw new DocumentException('every edge needs a string "from" and "to"');
+            }
+            if (!$document->hasNode($edge['from']) || !$document->hasNode($edge['to'])) {
+                throw new DocumentException("edge {$edge['from']} -> {$edge['to']} names a node that is not in the document");
+            }
+            $kinds = array_values(array_filter((array) ($edge['kinds'] ?? []), 'is_string'));
+            $document->mergeEdge($edge['from'], $edge['to'], $kinds, max(1, (int) ($edge['count'] ?? 1)));
+        }
+        return $document;
     }
 
     /** @return list<array{from: string, to: string, kinds: list<string>, count: int}> */
@@ -86,30 +153,28 @@ final class PairsDocument
 
     public function toJson(): string
     {
-        $json = json_encode($this->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        // json_encode indents by four spaces; the spec asks for two.
-        $json = preg_replace_callback('/^(?: {4})+/m', static fn (array $m): string => str_repeat(' ', intdiv(strlen($m[0]), 2)), $json);
-        return $json . "\n";
+        return Json::encode($this->toArray());
     }
 
     /**
      * snakefood's line format: ((root, from), (root, to)), and ((root, file), (None, None))
-     * for files without internal dependencies. Only internal nodes are written.
+     * for files without internal dependencies. Only internal nodes (or clusters) are written.
      */
     public function toSnakefood(string $root): string
     {
         $quote = static fn (string $s): string => "'" . addcslashes($s, "\\'") . "'";
+        $isUnit = fn (string $id): bool => in_array($this->nodes[$id]['kind'] ?? null, [self::INTERNAL, self::CLUSTER], true);
         $lines = [];
         $hasDeps = [];
         foreach ($this->edges() as $edge) {
-            if (($this->nodes[$edge['to']]['kind'] ?? null) !== self::INTERNAL) {
+            if (!$isUnit($edge['to'])) {
                 continue;
             }
             $hasDeps[$edge['from']] = true;
             $lines[] = sprintf('((%s, %s), (%s, %s))', $quote($root), $quote($edge['from']), $quote($root), $quote($edge['to']));
         }
         foreach ($this->nodes() as $node) {
-            if ($node['kind'] === self::INTERNAL && !isset($hasDeps[$node['id']])) {
+            if ($isUnit($node['id']) && !isset($hasDeps[$node['id']])) {
                 $lines[] = sprintf('((%s, %s), (None, None))', $quote($root), $quote($node['id']));
             }
         }

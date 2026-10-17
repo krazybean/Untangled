@@ -5,25 +5,37 @@ declare(strict_types=1);
 
 namespace Untangled\Cli;
 
+use Untangled\Analysis\Analyzer;
+use Untangled\Analysis\Clustering;
+use Untangled\Analysis\Filter;
 use Untangled\Composer\ProjectException;
+use Untangled\Graph\DocumentException;
+use Untangled\Graph\Json;
+use Untangled\Graph\PairsDocument;
 use Untangled\Scanner\Scanner;
 use Untangled\Version;
 
 /**
  * `untangled <command> [options]`. The command and option names are shared by every
- * Untangled library; v0.1 implements `scan`.
+ * Untangled library; v0.1 implements `scan` and `analyze`.
  */
 final class Application
 {
     private const USAGE = <<<'TXT'
         Usage: untangled scan [<path>] [--dev] [--format=json|snakefood] [--output=<file>]
+               untangled analyze [<path>|<pairs.json>] [--dev] [--cluster=<strategy>]
+                                 [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
 
         Commands:
           scan       Write the dependency pairs of a Composer project (default path: .)
+          analyze    Write cycles and coupling metrics for a project or a pairs document
 
         Options:
           --dev              Also scan autoload-dev (tests)
-          --format=FORMAT    json (default, the Untangled pairs document) or snakefood
+          --format=FORMAT    scan only: json (default, the Untangled pairs document) or snakefood
+          --cluster=STRATEGY analyze only: namespace:N, folder:N or rules:<file>
+          --include=GLOB     analyze only: keep files matching GLOB (repeatable, last match wins)
+          --exclude=GLOB     analyze only: drop files matching GLOB (repeatable, last match wins)
           --output=FILE      Write to FILE instead of standard output
           -h, --help         Show this help
           -V, --version      Show the version
@@ -42,6 +54,7 @@ final class Application
     {
         $positional = [];
         $options = [];
+        $patterns = [];
         foreach ($argv as $arg) {
             if ($arg === '-h' || $arg === '--help') {
                 fwrite($this->stdout, self::USAGE);
@@ -53,6 +66,10 @@ final class Application
             }
             if (str_starts_with($arg, '--')) {
                 [$name, $value] = array_pad(explode('=', substr($arg, 2), 2), 2, true);
+                if ($name === 'include' || $name === 'exclude') {
+                    // Order matters for these, so they are kept as a list rather than by name.
+                    $patterns[] = [$name, $value];
+                }
                 $options[$name] = $value;
                 continue;
             }
@@ -60,14 +77,24 @@ final class Application
         }
 
         $command = array_shift($positional);
-        if ($command !== 'scan') {
+        if ($command !== 'scan' && $command !== 'analyze') {
             fwrite($this->stderr, $command === null ? self::USAGE : "Unknown command: {$command}\n\n" . self::USAGE);
             return 2;
         }
-        $unknown = array_diff(array_keys($options), ['dev', 'format', 'output']);
+        $allowed = $command === 'scan' ? ['dev', 'format', 'output'] : ['dev', 'cluster', 'include', 'exclude', 'output'];
+        $unknown = array_diff(array_keys($options), $allowed);
         if ($unknown !== []) {
-            fwrite($this->stderr, 'Unknown option: --' . reset($unknown) . "\n");
+            fwrite($this->stderr, 'Unknown option for ' . $command . ': --' . reset($unknown) . "\n");
             return 2;
+        }
+        foreach ($options as $name => $value) {
+            if ($name !== 'dev' && !is_string($value)) {
+                fwrite($this->stderr, "Option --{$name} needs a value, as in --{$name}=...\n");
+                return 2;
+            }
+        }
+        if ($command === 'analyze') {
+            return $this->analyze($positional[0] ?? '.', $options, $patterns);
         }
         $format = $options['format'] ?? 'json';
         if (!in_array($format, ['json', 'snakefood'], true)) {
@@ -87,9 +114,74 @@ final class Application
         }
 
         $output = $format === 'json' ? $result->pairs->toJson() : $result->pairs->toSnakefood($path);
-        if (isset($options['output']) && is_string($options['output'])) {
-            if (file_put_contents($options['output'], $output) === false) {
-                fwrite($this->stderr, "error: cannot write {$options['output']}\n");
+        return $this->write($output, $options['output'] ?? null);
+    }
+
+    /**
+     * @param array<string, string|true> $options
+     * @param list<array{string, string}> $patterns include / exclude globs in command-line order
+     */
+    private function analyze(string $path, array $options, array $patterns): int
+    {
+        try {
+            $clustering = null;
+            $strategy = $options['cluster'] ?? null;
+            if (is_string($strategy) && str_starts_with($strategy, 'rules:')) {
+                $rulesFile = substr($strategy, strlen('rules:'));
+                $rules = is_file($rulesFile) ? file_get_contents($rulesFile) : false;
+                if ($rules === false) {
+                    fwrite($this->stderr, "error: cannot read rules file {$rulesFile}\n");
+                    return 1;
+                }
+                $clustering = Clustering::parseRules($rules);
+            } elseif (is_string($strategy)) {
+                $clustering = Clustering::fromString($strategy);
+            }
+        } catch (\InvalidArgumentException $e) {
+            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
+            return 2;
+        }
+
+        $warnings = [];
+        try {
+            if (is_file($path)) {
+                $contents = file_get_contents($path);
+                if ($contents === false) {
+                    fwrite($this->stderr, "error: cannot read {$path}\n");
+                    return 1;
+                }
+                $pairs = PairsDocument::fromArray(Json::decode($contents, $path), $warnings);
+            } else {
+                $result = (new Scanner(dev: isset($options['dev'])))->scan($path);
+                $pairs = $result->pairs;
+                $warnings = $result->warnings;
+            }
+        } catch (ProjectException | DocumentException $e) {
+            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
+            return 1;
+        }
+        foreach ($warnings as $warning) {
+            fwrite($this->stderr, "warning: {$warning}\n");
+        }
+
+        $filter = new Filter();
+        foreach ($patterns as [$kind, $glob]) {
+            $kind === 'include' ? $filter->include($glob) : $filter->exclude($glob);
+        }
+        try {
+            $analysis = (new Analyzer())->analyze($filter->apply($pairs), $clustering);
+        } catch (\InvalidArgumentException $e) {
+            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
+            return 1;
+        }
+        return $this->write(Json::encode($analysis), $options['output'] ?? null);
+    }
+
+    private function write(string $output, string|true|null $file): int
+    {
+        if (is_string($file)) {
+            if (file_put_contents($file, $output) === false) {
+                fwrite($this->stderr, "error: cannot write {$file}\n");
                 return 1;
             }
         } else {

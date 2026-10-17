@@ -1,0 +1,72 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 6,
+    "edges": 5,
+    "cycles": 0,
+    "largest_cycle": 0,
+    "units_in_cycles": 0,
+    "units_in_cycles_ratio": 0,
+    "mean_fan_out": 0.8333,
+    "external_packages": 0,
+    "unresolved_references": 1
+  },
+  "units": [
+    {
+      "id": "src/Billing/Document.php",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/Billing/Invoice.php",
+      "fan_in": 0,
+      "fan_out": 5,
+      "external": 0,
+      "unresolved": 1,
+      "instability": 1
+    },
+    {
+      "id": "src/Billing/Payable.php",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/Billing/Tax.php",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/Support/Clock.php",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/Support/Money.php",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    }
+  ],
+  "cycles": []
+}

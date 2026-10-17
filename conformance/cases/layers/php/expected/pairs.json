@@ -1,0 +1,167 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "nodes": [
+    {
+      "id": "bootstrap.php",
+      "kind": "internal"
+    },
+    {
+      "id": "builtin:DateTimeImmutable",
+      "kind": "builtin"
+    },
+    {
+      "id": "src/Domain/Order.php",
+      "kind": "internal",
+      "module": "App\\Domain",
+      "symbols": [
+        "App\\Domain\\Order"
+      ]
+    },
+    {
+      "id": "src/Domain/User.php",
+      "kind": "internal",
+      "module": "App\\Domain",
+      "symbols": [
+        "App\\Domain\\User"
+      ]
+    },
+    {
+      "id": "src/Http/Router.php",
+      "kind": "internal",
+      "module": "App\\Http",
+      "symbols": [
+        "App\\Http\\Router"
+      ]
+    },
+    {
+      "id": "src/Http/UserController.php",
+      "kind": "internal",
+      "module": "App\\Http",
+      "symbols": [
+        "App\\Http\\UserController"
+      ]
+    },
+    {
+      "id": "src/Infra/Clock.php",
+      "kind": "internal",
+      "module": "App\\Infra",
+      "symbols": [
+        "App\\Infra\\Clock"
+      ]
+    },
+    {
+      "id": "src/Infra/UserRepository.php",
+      "kind": "internal",
+      "module": "App\\Infra",
+      "symbols": [
+        "App\\Infra\\UserRepository"
+      ]
+    },
+    {
+      "id": "unresolved:class:App\\Cache\\Store",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "bootstrap.php",
+      "to": "src/Http/Router.php",
+      "kinds": [
+        "new"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Domain/Order.php",
+      "to": "src/Domain/User.php",
+      "kinds": [
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Domain/User.php",
+      "to": "src/Infra/Clock.php",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Http/Router.php",
+      "to": "src/Http/UserController.php",
+      "kinds": [
+        "new"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Http/UserController.php",
+      "to": "src/Domain/Order.php",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Http/UserController.php",
+      "to": "src/Http/Router.php",
+      "kinds": [
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Http/UserController.php",
+      "to": "src/Infra/UserRepository.php",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Infra/Clock.php",
+      "to": "builtin:DateTimeImmutable",
+      "kinds": [
+        "new",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Infra/UserRepository.php",
+      "to": "src/Domain/User.php",
+      "kinds": [
+        "import",
+        "new",
+        "type"
+      ],
+      "count": 3
+    },
+    {
+      "from": "src/Infra/UserRepository.php",
+      "to": "src/Infra/Clock.php",
+      "kinds": [
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Infra/UserRepository.php",
+      "to": "unresolved:class:App\\Cache\\Store",
+      "kinds": [
+        "type"
+      ],
+      "count": 1
+    }
+  ]
+}

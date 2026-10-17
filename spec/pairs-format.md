@@ -15,6 +15,9 @@ A node is identified by a string `id`. There are four kinds:
 | `builtin` | `builtin:<name>` | `builtin:DateTimeImmutable` | Part of the language or runtime. Not followed. |
 | `unresolved` | `unresolved:<what>:<text>` | `unresolved:class:App\Legacy\Foo` | A reference the scanner could not resolve. |
 
+A clustered document (see [clustering](clustering.md)) replaces internal nodes
+with a fifth kind, `cluster`, whose nodes carry the `members` they group.
+
 Rules:
 
 - Internal ids MUST be relative to the project root, use `/` separators, have

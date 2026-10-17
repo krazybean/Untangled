@@ -11,9 +11,16 @@ Applied before clustering, in this order:
 1. **Kind filter.** By default `builtin` nodes and their edges are removed.
    `external` and `unresolved` nodes are kept (reports list them) but are
    excluded from metrics, see [metrics](metrics.md).
-2. **Path filter.** Ordered `include` / `exclude` glob patterns on internal ids
-   (`**` matches across `/`). The last matching pattern wins; a file matching
-   no pattern is included. Removing a node removes its edges.
+2. **Path filter.** Ordered `include` / `exclude` glob patterns on internal ids.
+   `*` matches any characters except `/`, `?` one character except `/`, and
+   `**` any characters including `/`; `**/` also matches no directory at all,
+   so `**/Test*.php` matches `TestA.php`. A pattern matches the whole id. The
+   last matching pattern wins; a file matching no pattern is included.
+   Removing a node removes its edges.
+
+After both filters, an `external` or `unresolved` node that no remaining edge
+points to is removed too, so reports and the summary only list what the
+remaining files use.
 
 ## Clustering
 
@@ -30,13 +37,21 @@ Non-internal nodes are never clustered; they pass through unchanged.
 The output document:
 
 - has one node per cluster with `"kind": "cluster"` and a sorted `members`
-  list of the internal ids it contains;
+  list of the internal ids it contains (`{ "id": "App\\Billing", "kind":
+  "cluster", "members": ["src/Billing/Invoice.php", "src/Billing/Tax.php"] }`);
 - has one edge per `(cluster, target)` pair, where `count` is the sum and
   `kinds` the union of the merged edges;
 - drops edges whose `from` and `to` fall in the same cluster (they are
   internal to it), but reports SHOULD show how many were dropped per cluster.
 
-A rules file looks like this (one rule per line, `#` comments):
+Metrics are always computed from the file-level document plus a strategy, not
+from an already clustered document, because Ca and Ce count files (see
+[metrics](metrics.md)). Libraries MUST refuse to analyze a document that
+contains `cluster` nodes.
+
+A rules file looks like this: one rule per line, a prefix and a cluster name
+separated by whitespace (neither may contain whitespace), `#` starts a comment.
+A line with any other number of fields is an error.
 
 ```
 # prefix              cluster
