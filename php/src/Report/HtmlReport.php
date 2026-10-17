@@ -32,11 +32,18 @@ final class HtmlReport
     /** How many units the hotspot lists show. */
     private const TOP = 5;
 
+    /** How many units the map draws at most; beyond this a force layout is a slow, unreadable hairball. */
+    public const MAP_LIMIT = 300;
+
+    /** How many packages and untraced references are listed before the rest fold away. */
+    public const LIST_LIMIT = 15;
+
     public static function render(Report $report, ?\DateTimeInterface $generatedAt = null): string
     {
         $analysis = $report->analysis;
         $units = $analysis['units'];
         $cycleOf = $report->cycleOf();
+        $drawn = $report->mapUnits(self::MAP_LIMIT);
 
         $data = [
             'clustered' => $report->isClustered(),
@@ -44,6 +51,7 @@ final class HtmlReport
             'units' => array_map(static fn (array $unit): array => $unit + ['cycle' => $cycleOf[$unit['id']] ?? null], $units),
             'edges' => $report->unitEdges(),
             'cycles' => $analysis['cycles'],
+            'drawn' => count($drawn) < count($units) ? $drawn : null,
             'dot' => Dot::render($report),
         ];
 
@@ -57,6 +65,7 @@ final class HtmlReport
             'units' => $units,
             'cycles' => $analysis['cycles'],
             'cycleOf' => $cycleOf,
+            'drawnCount' => count($drawn),
             'reliedOn' => self::top($units, 'fan_in'),
             'leaning' => self::top($units, 'fan_out'),
             'packages' => $report->targets(PairsDocument::EXTERNAL),
@@ -81,7 +90,13 @@ final class HtmlReport
     /** "3 files", "1 group": counts with the right noun. */
     public static function count(int $count, string $singular, ?string $plural = null): string
     {
-        return $count . ' ' . ($count === 1 ? $singular : ($plural ?? $singular . 's'));
+        return self::number($count) . ' ' . ($count === 1 ? $singular : ($plural ?? $singular . 's'));
+    }
+
+    /** A whole number as shown to readers, with thousands separated: "6,426". */
+    public static function number(int $value): string
+    {
+        return number_format($value);
     }
 
     /** The instability value as shown to readers: two decimals, or "none" when undefined. */

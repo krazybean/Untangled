@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Untangled\Graph;
 
+use Untangled\Text;
 use Untangled\Version;
 
 /**
@@ -28,21 +29,26 @@ final class PairsDocument
     {
     }
 
-    /** @param array<string, mixed> $extra */
+    /**
+     * Ids, and the strings in $extra, are stored as UTF-8 (see Text::utf8), so a name read from
+     * Latin-1 source can be passed in as it was read.
+     * @param array<string, mixed> $extra
+     */
     public function addNode(string $id, string $kind, array $extra = []): void
     {
-        $this->nodes[$id] ??= ['id' => $id, 'kind' => $kind] + $extra;
+        $id = Text::utf8($id);
+        $this->nodes[$id] ??= ['id' => $id, 'kind' => $kind] + self::utf8Values($extra);
     }
 
     public function hasNode(string $id): bool
     {
-        return isset($this->nodes[$id]);
+        return isset($this->nodes[Text::utf8($id)]);
     }
 
     /** @return array<string, mixed>|null */
     public function node(string $id): ?array
     {
-        return $this->nodes[$id] ?? null;
+        return $this->nodes[Text::utf8($id)] ?? null;
     }
 
     public function language(): string
@@ -62,6 +68,8 @@ final class PairsDocument
      */
     public function mergeEdge(string $from, string $to, array $kinds, int $count): void
     {
+        $from = Text::utf8($from);
+        $to = Text::utf8($to);
         if ($from === $to) {
             return;
         }
@@ -115,6 +123,22 @@ final class PairsDocument
             $document->mergeEdge($edge['from'], $edge['to'], $kinds, max(1, (int) ($edge['count'] ?? 1)));
         }
         return $document;
+    }
+
+    /**
+     * @param array<array-key, mixed> $values
+     * @return array<array-key, mixed>
+     */
+    private static function utf8Values(array $values): array
+    {
+        foreach ($values as &$value) {
+            if (is_string($value)) {
+                $value = Text::utf8($value);
+            } elseif (is_array($value)) {
+                $value = self::utf8Values($value);
+            }
+        }
+        return $values;
     }
 
     /** @return list<array{from: string, to: string, kinds: list<string>, count: int}> */

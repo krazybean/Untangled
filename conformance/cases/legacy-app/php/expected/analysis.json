@@ -1,0 +1,56 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 4,
+    "edges": 5,
+    "cycles": 0,
+    "largest_cycle": 0,
+    "units_in_cycles": 0,
+    "units_in_cycles_ratio": 0,
+    "mean_fan_out": 1.25,
+    "external_packages": 1,
+    "unresolved_references": 1
+  },
+  "units": [
+    {
+      "id": "lib/Legacy/Cafe.php",
+      "fan_in": 1,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.5
+    },
+    {
+      "id": "lib/Legacy/Order.php",
+      "fan_in": 3,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 1,
+      "instability": 0
+    },
+    {
+      "id": "lib/Legacy/helpers.php",
+      "fan_in": 1,
+      "fan_out": 2,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.6667
+    },
+    {
+      "id": "src/Invoice.php",
+      "fan_in": 0,
+      "fan_out": 2,
+      "external": 1,
+      "unresolved": 0,
+      "instability": 1
+    }
+  ],
+  "cycles": []
+}

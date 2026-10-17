@@ -1,0 +1,16 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "lib/Legacy/Cafe.php";
+  "lib/Legacy/Order.php";
+  "lib/Legacy/helpers.php";
+  "src/Invoice.php";
+
+  "lib/Legacy/Cafe.php" -> "lib/Legacy/Order.php";
+  "lib/Legacy/helpers.php" -> "lib/Legacy/Cafe.php";
+  "lib/Legacy/helpers.php" -> "lib/Legacy/Order.php";
+  "src/Invoice.php" -> "lib/Legacy/Order.php";
+  "src/Invoice.php" -> "lib/Legacy/helpers.php";
+}

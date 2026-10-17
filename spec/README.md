@@ -50,7 +50,8 @@ produce for it: `pairs.json` for the scan, `analysis.json` for the analysis of
 the file graph with default filtering, and `analysis.<strategy>.json` for a
 clustered analysis, where `<strategy>` is the clustering with `:` written as
 `-` (`analysis.namespace-2.json`), or `rules` with the rules in
-`<language>/clusters.rules`. A library passes a case when its output equals
+`<language>/clusters.rules`. A case whose project needs `--source` paths
+lists them, one per line, in `<language>/sources`. A library passes a case when its output equals
 the expected document after ignoring the `generator` field and comparing
 numbers to 4 decimal places. A case may also pin the [DOT graph](report.md#dot-graph)
 in `graph.dot` (file graph) and `graph.<strategy>.dot`, compared byte for byte.

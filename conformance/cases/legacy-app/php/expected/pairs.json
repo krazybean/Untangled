@@ -1,0 +1,121 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "nodes": [
+    {
+      "id": "builtin:Stringable",
+      "kind": "builtin"
+    },
+    {
+      "id": "composer:composer-runtime-api",
+      "kind": "external"
+    },
+    {
+      "id": "lib/Legacy/Cafe.php",
+      "kind": "internal",
+      "symbols": [
+        "Café"
+      ]
+    },
+    {
+      "id": "lib/Legacy/Order.php",
+      "kind": "internal",
+      "symbols": [
+        "Legacy_Order"
+      ]
+    },
+    {
+      "id": "lib/Legacy/helpers.php",
+      "kind": "internal",
+      "symbols": [
+        "legacy_total"
+      ]
+    },
+    {
+      "id": "src/Invoice.php",
+      "kind": "internal",
+      "module": "App",
+      "symbols": [
+        "App\\Invoice"
+      ]
+    },
+    {
+      "id": "unresolved:class:Legacy_Unknown",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "lib/Legacy/Cafe.php",
+      "to": "lib/Legacy/Order.php",
+      "kinds": [
+        "extends"
+      ],
+      "count": 1
+    },
+    {
+      "from": "lib/Legacy/Order.php",
+      "to": "unresolved:class:Legacy_Unknown",
+      "kinds": [
+        "new",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "lib/Legacy/helpers.php",
+      "to": "lib/Legacy/Cafe.php",
+      "kinds": [
+        "new"
+      ],
+      "count": 1
+    },
+    {
+      "from": "lib/Legacy/helpers.php",
+      "to": "lib/Legacy/Order.php",
+      "kinds": [
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Invoice.php",
+      "to": "builtin:Stringable",
+      "kinds": [
+        "implements"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Invoice.php",
+      "to": "composer:composer-runtime-api",
+      "kinds": [
+        "import",
+        "static"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Invoice.php",
+      "to": "lib/Legacy/Order.php",
+      "kinds": [
+        "new"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Invoice.php",
+      "to": "lib/Legacy/helpers.php",
+      "kinds": [
+        "call",
+        "include"
+      ],
+      "count": 2
+    }
+  ]
+}
