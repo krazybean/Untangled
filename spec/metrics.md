@@ -19,7 +19,10 @@ Let `G` be the graph of units and `u → v` mean "`u` depends on `v`".
 | `fan_in` | number of distinct units `v ≠ u` with `v → u` | "How many other parts of the code rely on this one." |
 | `external` | number of distinct `external` nodes `u` depends on | "How many third-party packages this part uses directly." |
 | `unresolved` | number of distinct `unresolved` nodes `u` depends on | "References we could not trace; the real coupling may be higher." |
-| `instability` | `fan_out / (fan_in + fan_out)`, or `null` when both are 0 | See below. |
+| `instability` | `fan_out / (fan_in + fan_out)`, or `null` when both are 0 (on a cluster graph, `ce / (ca + ce)`, see below) | See below. |
+
+On a cluster graph, `fan_in` and `fan_out` count clusters, and `external` and
+`unresolved` count the distinct nodes that any file of the cluster depends on.
 
 **Instability** (Robert C. Martin's `I = Ce / (Ca + Ce)`) is a number from 0
 to 1. At 0, many parts depend on this one and it depends on nothing: changing
@@ -36,7 +39,12 @@ coupling) are also reported for each cluster `C`, counted in **files**:
 
 - `Ce(C)` = number of distinct internal files outside `C` that files in `C` depend on.
 - `Ca(C)` = number of distinct internal files outside `C` that depend on files in `C`.
-- `instability(C) = Ce / (Ca + Ce)`, `null` when both are 0.
+- `instability(C) = Ce / (Ca + Ce)`, `null` when both are 0. This is the value
+  written in a cluster unit's `instability` field, in place of the fan-based
+  formula, as in Robert C. Martin's package metrics.
+
+Ca and Ce are computed on the filtered file graph, before edges inside a
+cluster are dropped; edges between two files of the same cluster never count.
 
 Counting files rather than clusters means one cluster leaning heavily on
 another scores higher than one touching it once. For a cluster of exactly one
@@ -61,7 +69,9 @@ For each cycle the analysis reports:
 - `example`: one concrete loop, for explaining it in a report. It is the
   shortest path from the smallest member (byte order) back to itself, found by
   breadth-first search visiting neighbours in byte order, written as a list
-  that starts and ends with that member.
+  that starts and ends with that member. Among loops of the same length, the
+  first one that search reaches wins: for `a → b`, `a → c`, `b → a`, `c → a`
+  the example is `[a, b, a]`.
 
 Cycles are sorted by size (largest first), then by their first member.
 
@@ -106,6 +116,18 @@ abstractness measure per language).
 }
 ```
 
-`clustering` is `null` for a file graph. Cluster units additionally carry `ca`,
-`ce` and `members`. `units` is sorted by `id`. Fractions are written with at
-most 4 decimal places.
+`clustering` is `null` for a file graph, otherwise the strategy as written in
+[clustering](clustering.md): `namespace:N`, `folder:N` or `rules` (never the
+path of the rules file). `units` is sorted by `id`.
+
+Cluster units additionally carry `ca`, `ce` and `members` (the sorted internal
+ids in the cluster), in this key order:
+
+```json
+{ "id": "App\\Domain", "fan_in": 2, "fan_out": 1, "ca": 2, "ce": 1,
+  "external": 0, "unresolved": 0, "instability": 0.3333,
+  "members": ["src/Domain/Order.php", "src/Domain/User.php"] }
+```
+
+Fractions are rounded to at most 4 decimal places; whole numbers (including
+`0` and `1`) are written without a decimal point.

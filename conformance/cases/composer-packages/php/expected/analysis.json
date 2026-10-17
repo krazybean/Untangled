@@ -1,0 +1,32 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 1,
+    "edges": 0,
+    "cycles": 0,
+    "largest_cycle": 0,
+    "units_in_cycles": 0,
+    "units_in_cycles_ratio": 0,
+    "mean_fan_out": 0,
+    "external_packages": 3,
+    "unresolved_references": 1
+  },
+  "units": [
+    {
+      "id": "src/Notifier.php",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 3,
+      "unresolved": 1,
+      "instability": null
+    }
+  ],
+  "cycles": []
+}

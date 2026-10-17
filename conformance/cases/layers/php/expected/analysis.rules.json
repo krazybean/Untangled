@@ -1,0 +1,67 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "clustering": "rules",
+  "summary": {
+    "units": 3,
+    "edges": 2,
+    "cycles": 0,
+    "largest_cycle": 0,
+    "units_in_cycles": 0,
+    "units_in_cycles_ratio": 0,
+    "mean_fan_out": 0.6667,
+    "external_packages": 0,
+    "unresolved_references": 1
+  },
+  "units": [
+    {
+      "id": "Core",
+      "fan_in": 1,
+      "fan_out": 0,
+      "ca": 1,
+      "ce": 0,
+      "external": 0,
+      "unresolved": 1,
+      "instability": 0,
+      "members": [
+        "src/Domain/Order.php",
+        "src/Domain/User.php",
+        "src/Infra/Clock.php",
+        "src/Infra/UserRepository.php"
+      ]
+    },
+    {
+      "id": "Web",
+      "fan_in": 1,
+      "fan_out": 1,
+      "ca": 1,
+      "ce": 2,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.6667,
+      "members": [
+        "src/Http/Router.php",
+        "src/Http/UserController.php"
+      ]
+    },
+    {
+      "id": "bootstrap.php",
+      "fan_in": 0,
+      "fan_out": 1,
+      "ca": 0,
+      "ce": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 1,
+      "members": [
+        "bootstrap.php"
+      ]
+    }
+  ],
+  "cycles": []
+}

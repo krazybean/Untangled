@@ -45,6 +45,10 @@ know, and SHOULD warn on an unknown minor version.
 
 `conformance/cases/<case>/<language>/project/` holds an input project and
 `conformance/cases/<case>/<language>/expected/` the documents a library must
-produce for it: `pairs.json` now, `analysis.json` once the analyzer exists. A
-library passes a case when its output equals the expected document after
-ignoring the `generator` field and comparing numbers to 4 decimal places.
+produce for it: `pairs.json` for the scan, `analysis.json` for the analysis of
+the file graph with default filtering, and `analysis.<strategy>.json` for a
+clustered analysis, where `<strategy>` is the clustering with `:` written as
+`-` (`analysis.namespace-2.json`), or `rules` with the rules in
+`<language>/clusters.rules`. A library passes a case when its output equals
+the expected document after ignoring the `generator` field and comparing
+numbers to 4 decimal places.

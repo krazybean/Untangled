@@ -1,0 +1,7 @@
+{
+  "name": "untangled-fixtures/layers",
+  "autoload": {
+    "psr-4": { "App\\": "src/" },
+    "files": ["bootstrap.php"]
+  }
+}
