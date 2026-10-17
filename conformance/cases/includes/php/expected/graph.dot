@@ -1,0 +1,16 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "config/app.php" [color="#d03b3b", penwidth=2];
+  "legacy/bootstrap.php" [color="#d03b3b", penwidth=2];
+  "src/Report.php" [color="#d03b3b", penwidth=2];
+  "src/helpers.php" [color="#d03b3b", penwidth=2];
+
+  "config/app.php" -> "legacy/bootstrap.php" [color="#d03b3b", penwidth=2];
+  "legacy/bootstrap.php" -> "src/Report.php" [color="#d03b3b", penwidth=2];
+  "src/Report.php" -> "config/app.php" [color="#d03b3b", penwidth=2];
+  "src/Report.php" -> "src/helpers.php" [color="#d03b3b", penwidth=2];
+  "src/helpers.php" -> "legacy/bootstrap.php" [color="#d03b3b", penwidth=2];
+}

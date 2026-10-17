@@ -17,6 +17,7 @@ scan ──▶ pairs ──▶ filter / cluster ──▶ analyze ──▶ rend
 | [Pairs format](pairs-format.md) | Nodes, edges, external and unresolved targets, the JSON document |
 | [Clustering and filtering](clustering.md) | Grouping files into namespaces or folders, aggregating edges |
 | [Metrics](metrics.md) | Fan-in, fan-out, Ca, Ce, instability, cycles, project summary |
+| [Reports](report.md) | The `report` command: what the HTML report shows, and the Graphviz DOT graph |
 | [PHP profile](languages/php.md) | What the PHP scanner reads and how it resolves references |
 
 Later: `languages/typescript.md`, `languages/python.md`, and a trends document
@@ -51,4 +52,5 @@ clustered analysis, where `<strategy>` is the clustering with `:` written as
 `-` (`analysis.namespace-2.json`), or `rules` with the rules in
 `<language>/clusters.rules`. A library passes a case when its output equals
 the expected document after ignoring the `generator` field and comparing
-numbers to 4 decimal places.
+numbers to 4 decimal places. A case may also pin the [DOT graph](report.md#dot-graph)
+in `graph.dot` (file graph) and `graph.<strategy>.dot`, compared byte for byte.

@@ -12,12 +12,15 @@ use Untangled\Composer\ProjectException;
 use Untangled\Graph\DocumentException;
 use Untangled\Graph\Json;
 use Untangled\Graph\PairsDocument;
+use Untangled\Report\Dot;
+use Untangled\Report\HtmlReport;
+use Untangled\Report\Report;
 use Untangled\Scanner\Scanner;
 use Untangled\Version;
 
 /**
  * `untangled <command> [options]`. The command and option names are shared by every
- * Untangled library; v0.1 implements `scan` and `analyze`.
+ * Untangled library; v0.1 implements `scan`, `analyze` and `report`.
  */
 final class Application
 {
@@ -25,17 +28,22 @@ final class Application
         Usage: untangled scan [<path>] [--dev] [--format=json|snakefood] [--output=<file>]
                untangled analyze [<path>|<pairs.json>] [--dev] [--cluster=<strategy>]
                                  [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
+               untangled report [<path>|<pairs.json>] [--format=html|dot] [--title=<text>]
+                                 [analyze options]
 
         Commands:
           scan       Write the dependency pairs of a Composer project (default path: .)
           analyze    Write cycles and coupling metrics for a project or a pairs document
+          report     Write a readable HTML report (or a Graphviz DOT graph) of the analysis
 
         Options:
           --dev              Also scan autoload-dev (tests)
-          --format=FORMAT    scan only: json (default, the Untangled pairs document) or snakefood
-          --cluster=STRATEGY analyze only: namespace:N, folder:N or rules:<file>
-          --include=GLOB     analyze only: keep files matching GLOB (repeatable, last match wins)
-          --exclude=GLOB     analyze only: drop files matching GLOB (repeatable, last match wins)
+          --format=FORMAT    scan: json (default, the Untangled pairs document) or snakefood
+                             report: html (default) or dot
+          --title=TEXT       report only: the report's title (default: the Composer package name)
+          --cluster=STRATEGY analyze, report: namespace:N, folder:N or rules:<file>
+          --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
+          --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
           --output=FILE      Write to FILE instead of standard output
           -h, --help         Show this help
           -V, --version      Show the version
@@ -77,11 +85,15 @@ final class Application
         }
 
         $command = array_shift($positional);
-        if ($command !== 'scan' && $command !== 'analyze') {
+        if (!in_array($command, ['scan', 'analyze', 'report'], true)) {
             fwrite($this->stderr, $command === null ? self::USAGE : "Unknown command: {$command}\n\n" . self::USAGE);
             return 2;
         }
-        $allowed = $command === 'scan' ? ['dev', 'format', 'output'] : ['dev', 'cluster', 'include', 'exclude', 'output'];
+        $allowed = match ($command) {
+            'scan' => ['dev', 'format', 'output'],
+            'analyze' => ['dev', 'cluster', 'include', 'exclude', 'output'],
+            'report' => ['dev', 'cluster', 'include', 'exclude', 'output', 'format', 'title'],
+        };
         $unknown = array_diff(array_keys($options), $allowed);
         if ($unknown !== []) {
             fwrite($this->stderr, 'Unknown option for ' . $command . ': --' . reset($unknown) . "\n");
@@ -93,8 +105,8 @@ final class Application
                 return 2;
             }
         }
-        if ($command === 'analyze') {
-            return $this->analyze($positional[0] ?? '.', $options, $patterns);
+        if ($command === 'analyze' || $command === 'report') {
+            return $this->analyze($command, $positional[0] ?? '.', $options, $patterns);
         }
         $format = $options['format'] ?? 'json';
         if (!in_array($format, ['json', 'snakefood'], true)) {
@@ -121,8 +133,13 @@ final class Application
      * @param array<string, string|true> $options
      * @param list<array{string, string}> $patterns include / exclude globs in command-line order
      */
-    private function analyze(string $path, array $options, array $patterns): int
+    private function analyze(string $command, string $path, array $options, array $patterns): int
     {
+        $format = $options['format'] ?? 'html';
+        if ($command === 'report' && !in_array($format, ['html', 'dot'], true)) {
+            fwrite($this->stderr, "Unknown format: {$format}\n");
+            return 2;
+        }
         try {
             $clustering = null;
             $strategy = $options['cluster'] ?? null;
@@ -169,12 +186,31 @@ final class Application
             $kind === 'include' ? $filter->include($glob) : $filter->exclude($glob);
         }
         try {
-            $analysis = (new Analyzer())->analyze($filter->apply($pairs), $clustering);
+            if ($command === 'analyze') {
+                return $this->write(Json::encode((new Analyzer())->analyze($filter->apply($pairs), $clustering)), $options['output'] ?? null);
+            }
+            $title = is_string($options['title'] ?? null) ? $options['title'] : self::title($path);
+            $report = Report::build($title, $filter->apply($pairs), $clustering);
         } catch (\InvalidArgumentException $e) {
             fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
             return 1;
         }
-        return $this->write(Json::encode($analysis), $options['output'] ?? null);
+        return $this->write($format === 'dot' ? Dot::render($report) : HtmlReport::render($report), $options['output'] ?? null);
+    }
+
+    /** The default report title: the Composer package name, else the folder or file name. */
+    private static function title(string $path): string
+    {
+        if (is_file($path)) {
+            return basename($path);
+        }
+        $composer = @file_get_contents(rtrim($path, '/') . '/composer.json');
+        $name = $composer === false ? null : (json_decode($composer, true)['name'] ?? null);
+        if (is_string($name) && $name !== '') {
+            return $name;
+        }
+        $real = realpath($path);
+        return basename($real === false ? $path : $real);
     }
 
     private function write(string $output, string|true|null $file): int

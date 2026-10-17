@@ -64,6 +64,9 @@ final class ApplicationTest extends TestCase
         yield 'unknown format' => [['scan', '.', '--format=xml'], 'Unknown format: xml'];
         yield 'option without a value' => [['analyze', '.', '--cluster'], 'Option --cluster needs a value'];
         yield 'output without a value' => [['scan', '.', '--output'], 'Option --output needs a value'];
+        yield 'analyze rejects report options' => [['analyze', '.', '--title=x'], 'Unknown option for analyze: --title'];
+        yield 'report rejects scan options' => [['report', '.', '--dev', '--format=snakefood'], 'Unknown format: snakefood'];
+        yield 'report rejects an unknown format' => [['report', '.', '--format=json'], 'Unknown format: json'];
         yield 'unknown clustering' => [['analyze', '.', '--cluster=files:2'], 'unknown clustering "files:2"'];
         yield 'malformed rules' => [['analyze', '.', '--cluster=rules:' . __DIR__ . '/../../composer.json'], 'must be "<prefix> <cluster>"'];
     }
@@ -215,6 +218,57 @@ final class ApplicationTest extends TestCase
         [$code, , $err] = self::cli(['analyze', $this->project->root . '/pairs.json']);
         self::assertSame(1, $code);
         self::assertStringContainsString('already clustered', $err);
+    }
+
+    public function testReportDot(): void
+    {
+        $layers = self::CASES . '/layers/php';
+        [$code, $out, $err] = self::cli(['report', $layers . '/project', '--format=dot', '--cluster=namespace:2']);
+        self::assertSame(0, $code);
+        self::assertSame('', $err);
+        self::assertSame(file_get_contents($layers . '/expected/graph.namespace-2.dot'), $out);
+    }
+
+    public function testReportDefaultsToHtmlTitledByThePackageName(): void
+    {
+        [$code, $out] = self::cli(['report', self::CASES . '/layers/php/project']);
+        self::assertSame(0, $code);
+        self::assertStringStartsWith('<!doctype html>', $out);
+        self::assertStringContainsString('<h1>untangled-fixtures/layers</h1>', $out);
+    }
+
+    public function testReportTitleFallsBackToTheFolderName(): void
+    {
+        $this->project = new TempProject(['composer.json' => ['autoload' => ['classmap' => ['a.php']]], 'a.php' => '<?php']);
+        [, $out] = self::cli(['report', $this->project->root]);
+        self::assertStringContainsString('<h1>' . basename($this->project->root) . '</h1>', $out);
+    }
+
+    public function testReportReadsAPairsDocumentAndTakesATitle(): void
+    {
+        $pairs = self::CASES . '/layers/php/expected/pairs.json';
+        [$code, $out] = self::cli(['report', $pairs, '--title=Layers & co']);
+        self::assertSame(0, $code);
+        self::assertStringContainsString('<h1>Layers &amp; co</h1>', $out);
+        [, $out] = self::cli(['report', $pairs]);
+        self::assertStringContainsString('<h1>pairs.json</h1>', $out);
+    }
+
+    public function testReportAppliesFilters(): void
+    {
+        [, $out] = self::cli(['report', self::CASES . '/layers/php/project', '--format=dot', '--exclude=src/Http/**']);
+        self::assertStringNotContainsString('src/Http/', $out);
+        self::assertStringContainsString('"src/Domain/User.php"', $out);
+    }
+
+    public function testReportWritesAFile(): void
+    {
+        $this->project = new TempProject(['composer.json' => []]);
+        $file = $this->project->root . '/report.html';
+        [$code, $out] = self::cli(['report', self::CASES . '/three-cycle/php/project', '--output=' . $file]);
+        self::assertSame(0, $code);
+        self::assertSame('', $out);
+        self::assertStringStartsWith('<!doctype html>', (string) file_get_contents($file));
     }
 
     public function testAnalyzeAMissingProject(): void

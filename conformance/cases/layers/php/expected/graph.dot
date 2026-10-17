@@ -1,0 +1,23 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "bootstrap.php";
+  "src/Domain/Order.php";
+  "src/Domain/User.php";
+  "src/Http/Router.php" [color="#d03b3b", penwidth=2];
+  "src/Http/UserController.php" [color="#d03b3b", penwidth=2];
+  "src/Infra/Clock.php";
+  "src/Infra/UserRepository.php";
+
+  "bootstrap.php" -> "src/Http/Router.php";
+  "src/Domain/Order.php" -> "src/Domain/User.php";
+  "src/Domain/User.php" -> "src/Infra/Clock.php";
+  "src/Http/Router.php" -> "src/Http/UserController.php" [color="#d03b3b", penwidth=2];
+  "src/Http/UserController.php" -> "src/Domain/Order.php";
+  "src/Http/UserController.php" -> "src/Http/Router.php" [color="#d03b3b", penwidth=2];
+  "src/Http/UserController.php" -> "src/Infra/UserRepository.php";
+  "src/Infra/UserRepository.php" -> "src/Domain/User.php";
+  "src/Infra/UserRepository.php" -> "src/Infra/Clock.php";
+}
