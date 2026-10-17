@@ -86,6 +86,15 @@ final class ComposerProjectTest extends TestCase
         self::assertSame($this->project->root . '/vendor/z/last', $packages[1]->installPath);
     }
 
+    public function testPackagesKeepTheirExtraSection(): void
+    {
+        $extra = ['laravel' => ['aliases' => ['Cart' => 'Acme\\Cart']]];
+        $this->project = new TempProject(['composer.json' => [], 'vendor/composer/installed.json' => ['packages' => [['name' => 'acme/cart', 'extra' => $extra], ['name' => 'b/plain']]]]);
+        $packages = ComposerProject::load($this->project->root)->packages();
+        self::assertSame($extra, $packages[0]->extra);
+        self::assertSame([], $packages[1]->extra);
+    }
+
     public function testComposerOneInstalledJsonIsAList(): void
     {
         $this->project = new TempProject(['composer.json' => [], 'vendor/composer/installed.json' => [['name' => 'old/style']]]);

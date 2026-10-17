@@ -29,10 +29,12 @@ final class Scanner
     /**
      * @param list<string> $sources extra project-relative files or folders to scan, read like
      *        classmap entries, for code that composer.json does not autoload
+     * @param ClassAliases|null $aliases global class aliases registered at runtime (`--aliases`)
      */
     public function __construct(
         private readonly bool $dev = false,
         private readonly array $sources = [],
+        private readonly ?ClassAliases $aliases = null,
     ) {
         $this->fileScanner = new FileScanner();
     }
@@ -111,7 +113,9 @@ final class Scanner
             }
         }
 
-        $vendor = new VendorIndex($project->packages(), $this->fileScanner);
+        $packages = $project->packages();
+        $vendor = new VendorIndex($packages, $this->fileScanner);
+        $aliases = ($this->aliases ?? ClassAliases::none())->withPackages($packages);
         $pairs = new PairsDocument('php');
 
         foreach ($results as $file => $result) {
@@ -131,7 +135,7 @@ final class Scanner
         foreach ($results as $file => $result) {
             foreach ($result->references as $reference) {
                 $target = match ($reference['symbol']) {
-                    FileResult::CLASS_SYMBOL => $resolved[$reference['candidates'][0]] ??= $this->resolveClass($reference['candidates'][0], $classes, $vendor),
+                    FileResult::CLASS_SYMBOL => $resolved[$reference['candidates'][0]] ??= $this->resolveAlias($reference['candidates'][0], $classes, $vendor, $aliases),
                     FileResult::FUNCTION_SYMBOL => self::firstMatch($reference['candidates'], $functions, true),
                     default => self::firstMatch($reference['candidates'], $constants, false),
                 };
@@ -206,6 +210,19 @@ final class Scanner
             $pairs->addNode($to, $nodeKind);
         }
         $pairs->addEdge($from, $to, $kind);
+    }
+
+    /**
+     * Resolves a class name, then, if nothing declares it, the class it is a declared alias of.
+     * The alias target is resolved the same way but not followed further.
+     *
+     * @param array<string, string> $classes
+     */
+    private function resolveAlias(string $name, array $classes, VendorIndex $vendor, ClassAliases $aliases): string
+    {
+        $target = $this->resolveClass($name, $classes, $vendor);
+        $alias = $aliases->target($name);
+        return $alias !== null && str_starts_with($target, 'unresolved:') ? $this->resolveClass($alias, $classes, $vendor) : $target;
     }
 
     /** @param array<string, string> $classes */

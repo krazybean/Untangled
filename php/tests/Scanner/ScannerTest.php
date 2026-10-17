@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Untangled\Tests\Scanner;
 
 use PHPUnit\Framework\TestCase;
+use Untangled\Scanner\ClassAliases;
 use Untangled\Scanner\ScanResult;
 use Untangled\Scanner\Scanner;
 use Untangled\Tests\TempProject;
@@ -44,6 +45,41 @@ final class ScannerTest extends TestCase
     {
         $result = $this->scan(['src/Polyfill.php' => '<?php namespace App; if (PHP_VERSION_ID > 80000) { class P {} } else { class P {} }']);
         self::assertSame([], $result->warnings);
+    }
+
+    public function testDeclaredAliasesResolveToTheClassTheyAlias(): void
+    {
+        $result = $this->scanWith([
+            'src/A.php' => '<?php namespace App; use DB; DB::table("x"); \\Redirect::back(); \\Telescope::tag();',
+            'vendor/composer/installed.json' => ['packages' => [['name' => 'laravel/framework', 'autoload' => ['psr-4' => ['Illuminate\\' => 'src/Illuminate/']]]]],
+        ], ['autoload' => ['psr-4' => ['App\\' => 'src/']]], aliases: ClassAliases::load(['laravel']));
+        self::assertSame([
+            'src/A.php>composer:laravel/framework import,static',
+            'src/A.php>unresolved:class:Telescope static',
+        ], self::edges($result));
+    }
+
+    public function testAClassThatExistsWinsOverAnAliasOfTheSameName(): void
+    {
+        $result = $this->scanWith([
+            'src/A.php' => '<?php namespace App; \\DB::table("x"); new \\ArrayObject(); \\Gone::x();',
+            'src/DB.php' => '<?php class DB {}',
+        ], ['autoload' => ['classmap' => ['src/']]], aliases: self::aliases(['DB' => 'Nope\\DB', 'ArrayObject' => 'Nope\\AO', 'Gone' => 'Also\\Gone']));
+        self::assertSame([
+            'src/A.php>builtin:ArrayObject new',
+            'src/A.php>src/DB.php static',
+            'src/A.php>unresolved:class:Also\\Gone static',
+        ], self::edges($result));
+    }
+
+    public function testAnAliasIsNotFollowedFurther(): void
+    {
+        $result = $this->scanWith(
+            ['src/A.php' => '<?php namespace App; \\First::x();', 'src/Real.php' => '<?php namespace App; class Real {}'],
+            ['autoload' => ['psr-4' => ['App\\' => 'src/']]],
+            aliases: self::aliases(['First' => 'Second', 'Second' => 'App\\Real']),
+        );
+        self::assertSame(['src/A.php>unresolved:class:Second static'], self::edges($result));
     }
 
     public function testAFileThatFailsToParseIsStillANode(): void
@@ -478,10 +514,22 @@ final class ScannerTest extends TestCase
      * @param array<string, mixed> $composer
      */
     /** @param list<string> $sources */
-    private function scanWith(array $files, array $composer, bool $dev = false, array $sources = []): ScanResult
+    private function scanWith(array $files, array $composer, bool $dev = false, array $sources = [], ?ClassAliases $aliases = null): ScanResult
     {
         $this->project = new TempProject(['composer.json' => $composer] + $files);
-        return (new Scanner(dev: $dev, sources: $sources))->scan($this->project->root);
+        return (new Scanner(dev: $dev, sources: $sources, aliases: $aliases))->scan($this->project->root);
+    }
+
+    /** @param array<string, string> $map */
+    private static function aliases(array $map): ClassAliases
+    {
+        $file = tempnam(sys_get_temp_dir(), 'untangled-aliases');
+        file_put_contents($file, json_encode(['aliases' => $map]));
+        try {
+            return ClassAliases::load([$file]);
+        } finally {
+            unlink($file);
+        }
     }
 
     /** @return list<string> */

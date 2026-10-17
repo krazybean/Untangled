@@ -1,0 +1,6 @@
+{
+    "aliases": {
+        "Money": "App\\Money",
+        "Log": "Acme\\Logging\\Log"
+    }
+}

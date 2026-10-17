@@ -11,11 +11,13 @@ final class Package
     /**
      * @param array<string, mixed> $autoload
      * @param string|null $installPath absolute path when vendor/ is installed, null when read from composer.lock
+     * @param array<string, mixed> $extra the package's `extra` section
      */
     public function __construct(
         public readonly string $name,
         public readonly array $autoload,
         public readonly ?string $installPath,
+        public readonly array $extra = [],
     ) {
     }
 
