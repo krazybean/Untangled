@@ -1,0 +1,4 @@
+{
+  "name": "untangled-fixtures/psr4-basic",
+  "autoload": { "psr-4": { "App\\": "src/" } }
+}

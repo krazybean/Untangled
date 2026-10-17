@@ -1,0 +1,7 @@
+{
+  "name": "untangled-fixtures/includes",
+  "autoload": {
+    "classmap": ["src/"],
+    "files": ["src/helpers.php"]
+  }
+}

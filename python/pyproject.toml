@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "untangled"
+version = "0.0.0"
+description = "Dependency health your whole team can understand: cycles, coupling and trends for Python."
+readme = "README.md"
+license = "GPL-2.0-only"
+license-files = ["LICENSE"]
+authors = [{ name = "Juan Castro" }]
+requires-python = ">=3.10"
+classifiers = ["Development Status :: 1 - Planning"]
+
+[project.urls]
+Repository = "https://github.com/krazybean/Untangled"
+
+[project.scripts]
+untangled = "untangled.cli:main"
+utg = "untangled.cli:main"

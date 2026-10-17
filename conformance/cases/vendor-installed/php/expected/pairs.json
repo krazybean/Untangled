@@ -1,0 +1,47 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "nodes": [
+    {
+      "id": "composer:acme/pdf",
+      "kind": "external"
+    },
+    {
+      "id": "composer:acme/util",
+      "kind": "external"
+    },
+    {
+      "id": "src/Export.php",
+      "kind": "internal",
+      "module": "App",
+      "symbols": [
+        "App\\Export"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/Export.php",
+      "to": "composer:acme/pdf",
+      "kinds": [
+        "new",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Export.php",
+      "to": "composer:acme/util",
+      "kinds": [
+        "include",
+        "type"
+      ],
+      "count": 2
+    }
+  ]
+}

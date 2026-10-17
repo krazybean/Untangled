@@ -147,3 +147,14 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# PHP / Composer (the library's own dependencies; conformance fixtures keep theirs)
+php/vendor/
+php/composer.lock
+.phpunit.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/

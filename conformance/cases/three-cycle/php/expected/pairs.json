@@ -1,0 +1,80 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "nodes": [
+    {
+      "id": "src/Cart.php",
+      "kind": "internal",
+      "module": "Shop",
+      "symbols": [
+        "Shop\\Cart"
+      ]
+    },
+    {
+      "id": "src/Catalog.php",
+      "kind": "internal",
+      "module": "Shop",
+      "symbols": [
+        "Shop\\Catalog"
+      ]
+    },
+    {
+      "id": "src/Customer.php",
+      "kind": "internal",
+      "module": "Shop",
+      "symbols": [
+        "Shop\\Customer"
+      ]
+    },
+    {
+      "id": "src/Order.php",
+      "kind": "internal",
+      "module": "Shop",
+      "symbols": [
+        "Shop\\Order"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/Cart.php",
+      "to": "src/Order.php",
+      "kinds": [
+        "new",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Customer.php",
+      "to": "src/Cart.php",
+      "kinds": [
+        "new",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Order.php",
+      "to": "src/Cart.php",
+      "kinds": [
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Order.php",
+      "to": "src/Customer.php",
+      "kinds": [
+        "static",
+        "type"
+      ],
+      "count": 2
+    }
+  ]
+}

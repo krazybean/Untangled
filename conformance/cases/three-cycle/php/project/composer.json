@@ -1,0 +1,4 @@
+{
+  "name": "untangled-fixtures/three-cycle",
+  "autoload": { "psr-4": { "Shop\\": "src/" } }
+}
