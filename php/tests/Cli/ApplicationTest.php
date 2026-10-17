@@ -249,6 +249,26 @@ final class ApplicationTest extends TestCase
         self::assertSame(file_get_contents($layers . '/expected/graph.namespace-2.dot'), $out);
     }
 
+    public function testReportClassicStyle(): void
+    {
+        [$code, $out, $err] = self::cli(['report', self::CASES . '/layers/php/project', '--format=dot', '--style=classic']);
+        self::assertSame(0, $code);
+        self::assertSame('', $err);
+        self::assertStringContainsString('node [shape=ellipse, style=filled, fillcolor=lightgrey', $out);
+        self::assertStringNotContainsString('#d03b3b', $out);
+    }
+
+    public function testReportStyleNeedsDotAndAKnownName(): void
+    {
+        $project = self::CASES . '/layers/php/project';
+        [$code, , $err] = self::cli(['report', $project, '--format=dot', '--style=pastel']);
+        self::assertSame(2, $code);
+        self::assertStringContainsString('Unknown style: pastel', $err);
+        [$code, , $err] = self::cli(['report', $project, '--style=classic']);
+        self::assertSame(2, $code);
+        self::assertStringContainsString('--style only applies to --format=dot', $err);
+    }
+
     public function testReportDefaultsToHtmlTitledByThePackageName(): void
     {
         [$code, $out] = self::cli(['report', self::CASES . '/layers/php/project']);

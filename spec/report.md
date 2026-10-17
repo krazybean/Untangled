@@ -8,6 +8,7 @@ options as `analyze` (a project or a pairs document, `--cluster`, `--include`,
 | --- | --- |
 | `--format=html` | The HTML report (default). |
 | `--format=dot` | The unit graph as Graphviz DOT, see [DOT graph](#dot-graph). |
+| `--style=classic` | With `--format=dot` only: the [classic style](#classic-style), snakefood's black and white look. |
 | `--title=TEXT` | The report's title. Default: the project's package name (for PHP, `name` in `composer.json`), else the folder or file name. |
 
 ## HTML report
@@ -91,3 +92,39 @@ digraph untangled {
 - A unit in a cycle, and an edge whose two ends are in the same cycle, get
   `color="#d03b3b", penwidth=2`, after the label if there is one.
 - Two-space indentation, `\n` line endings, and a trailing newline.
+
+### Classic style
+
+`--style=classic` writes the graph the way snakefood's `sfood-graph` draws it:
+grey ellipses for the project's units, white ellipses for what they use outside
+the project, plain black edges, small serif labels, no cycle colour. Unlike the
+default style it also draws the `external` and `unresolved` nodes that units
+depend on (as the report's "Outside the project" section lists them); `builtin`
+nodes stay out. Any other `--style` value, or `--style` without `--format=dot`,
+is a usage error.
+
+```dot
+digraph untangled {
+  graph [rankdir=LR];
+  node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname="Times-Roman", fontsize=7];
+  edge [color=black];
+
+  "src/A.php";
+  "src/B.php";
+  "composer:x/y" [fillcolor=white];
+
+  "src/A.php" -> "composer:x/y";
+  "src/A.php" -> "src/B.php";
+  "src/B.php" -> "src/A.php";
+}
+```
+
+- The four header lines are written exactly as above.
+- One statement per unit, in the order of the analysis `units` list (a cluster
+  unit keeps its `label`, and nothing else), then one per used `external` or
+  `unresolved` node with `[fillcolor=white]`, in the order of the document's
+  nodes, then one per edge from a unit to a unit or to such a node, in the order
+  of the document's edges. A node is "used" when at least one of those edges
+  points to it. A blank line precedes each of the two blocks when it is not
+  empty.
+- Quoting, indentation, line endings and the trailing newline are as above.

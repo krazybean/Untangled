@@ -8,6 +8,7 @@ namespace Untangled\Tests\Report;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Untangled\Analysis\Clustering;
+use Untangled\Analysis\Filter;
 use Untangled\Graph\PairsDocument;
 use Untangled\Report\Dot;
 use Untangled\Report\Report;
@@ -89,5 +90,51 @@ final class DotTest extends TestCase
         $doc = PairsBuilder::build(['a.php -> b.php'], modules: ['a.php' => 'App\\Http', 'b.php' => 'App\\Domain']);
         $dot = Dot::render(Report::build('x', $doc, Clustering::fromString('namespace:2')));
         self::assertStringContainsString('  "App\\\\Http" -> "App\\\\Domain";', $dot);
+    }
+
+    private const CLASSIC_HEADER = "digraph untangled {\n  graph [rankdir=LR];\n  node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname=\"Times-Roman\", fontsize=7];\n  edge [color=black];\n";
+
+    public function testClassicDrawsUnitsGreyAndWhatTheyUseWhiteWithNoCycleColour(): void
+    {
+        $doc = PairsBuilder::build([
+            'src/A.php -> src/B.php', 'src/B.php -> src/A.php', 'src/A.php -> composer:x/y',
+            'src/B.php -> builtin:DateTime', 'src/B.php -> unresolved:class:Q', 'src/B.php -> composer:x/y',
+        ]);
+        self::assertSame(self::CLASSIC_HEADER . <<<'DOT'
+
+              "src/A.php";
+              "src/B.php";
+              "composer:x/y" [fillcolor=white];
+              "unresolved:class:Q" [fillcolor=white];
+
+              "src/A.php" -> "composer:x/y";
+              "src/A.php" -> "src/B.php";
+              "src/B.php" -> "composer:x/y";
+              "src/B.php" -> "src/A.php";
+              "src/B.php" -> "unresolved:class:Q";
+            }
+
+            DOT, Dot::render(Report::build('x', $doc), 'classic'));
+    }
+
+    public function testClassicOfAnEmptyGraphIsJustTheHeader(): void
+    {
+        self::assertSame(self::CLASSIC_HEADER . "}\n", Dot::render(Report::build('x', new PairsDocument('php')), 'classic'));
+    }
+
+    public function testClassicLeavesOutWhatFilteredUnitsUse(): void
+    {
+        $doc = PairsBuilder::build(['a.php -> b.php', 'b.php -> composer:x/y']);
+        $dot = Dot::render(Report::build('x', (new Filter())->exclude('b.php')->apply($doc)), 'classic');
+        self::assertSame(self::CLASSIC_HEADER . "\n  \"a.php\";\n}\n", $dot);
+    }
+
+    public function testClassicLabelsClustersAndKeepsTheirExternalEdges(): void
+    {
+        $doc = PairsBuilder::build(['App/A.php -> Lib/B.php', 'App/C.php -> composer:x/y']);
+        $dot = Dot::render(Report::build('x', $doc, Clustering::fromString('folder:1')), 'classic');
+        self::assertStringContainsString("  \"App\" [label=\"App\\n2 files\"];\n", $dot);
+        self::assertStringContainsString("  \"App\" -> \"composer:x/y\";\n", $dot);
+        self::assertStringContainsString("  \"composer:x/y\" [fillcolor=white];\n", $dot);
     }
 }

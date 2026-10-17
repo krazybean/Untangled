@@ -28,8 +28,8 @@ final class Application
         Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--format=json|snakefood] [--output=<file>]
                untangled analyze [<path>|<pairs.json>] [--dev] [--source=<path>]... [--cluster=<strategy>]
                                  [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
-               untangled report [<path>|<pairs.json>] [--format=html|dot] [--title=<text>]
-                                 [analyze options]
+               untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
+                                 [--title=<text>] [analyze options]
 
         Commands:
           scan       Write the dependency pairs of a Composer project (default path: .)
@@ -42,6 +42,8 @@ final class Application
                              for code that composer.json does not autoload
           --format=FORMAT    scan: json (default, the Untangled pairs document) or snakefood
                              report: html (default) or dot
+          --style=STYLE      report --format=dot only: default, or classic for snakefood's
+                             black and white sfood-graph look
           --title=TEXT       report only: the report's title (default: the Composer package name)
           --cluster=STRATEGY analyze, report: namespace:N, folder:N or rules:<file>
           --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
@@ -97,7 +99,7 @@ final class Application
         $allowed = match ($command) {
             'scan' => ['dev', 'source', 'format', 'output'],
             'analyze' => ['dev', 'source', 'cluster', 'include', 'exclude', 'output'],
-            'report' => ['dev', 'source', 'cluster', 'include', 'exclude', 'output', 'format', 'title'],
+            'report' => ['dev', 'source', 'cluster', 'include', 'exclude', 'output', 'format', 'style', 'title'],
         };
         $unknown = array_diff(array_keys($options), $allowed);
         if ($unknown !== []) {
@@ -144,6 +146,15 @@ final class Application
         $format = $options['format'] ?? 'html';
         if ($command === 'report' && !in_array($format, ['html', 'dot'], true)) {
             fwrite($this->stderr, "Unknown format: {$format}\n");
+            return 2;
+        }
+        $style = $options['style'] ?? 'default';
+        if (!in_array($style, Dot::STYLES, true)) {
+            fwrite($this->stderr, "Unknown style: {$style}\n");
+            return 2;
+        }
+        if (isset($options['style']) && $format !== 'dot') {
+            fwrite($this->stderr, "--style only applies to --format=dot\n");
             return 2;
         }
         try {
@@ -201,7 +212,7 @@ final class Application
             fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
             return 1;
         }
-        return $this->write($format === 'dot' ? Dot::render($report) : HtmlReport::render($report), $options['output'] ?? null);
+        return $this->write($format === 'dot' ? Dot::render($report, $style) : HtmlReport::render($report), $options['output'] ?? null);
     }
 
     /** The default report title: the Composer package name, else the folder or file name. */
