@@ -38,7 +38,9 @@ When the graph is clustered, `Ca` (afferent coupling) and `Ce` (efferent
 coupling) are also reported for each cluster `C`, counted in **files**:
 
 - `Ce(C)` = number of distinct internal files outside `C` that files in `C` depend on.
+  Plain language: *"How many files outside this group it relies on."*
 - `Ca(C)` = number of distinct internal files outside `C` that depend on files in `C`.
+  Plain language: *"How many files outside this group rely on it."*
 - `instability(C) = Ce / (Ca + Ce)`, `null` when both are 0. This is the value
   written in a cluster unit's `instability` field, in place of the fan-based
   formula, as in Robert C. Martin's package metrics.
