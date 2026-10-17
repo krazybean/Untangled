@@ -62,8 +62,11 @@ composer install
 composer test
 ```
 
-`composer test` runs `tests/run.php`, which runs the shared conformance cases in
-[`../conformance/cases`](../conformance/README.md) plus unit checks.
+`composer test` runs PHPUnit (a dev dependency in `composer.json`). The suite
+has one test file per class under `tests/`, mirroring `src/`, plus
+`tests/ConformanceTest.php`, which runs every shared case in
+[`../conformance/cases`](../conformance/README.md). Tests that need files on
+disk write a throwaway project with `tests/TempProject.php`.
 
 ## License
 

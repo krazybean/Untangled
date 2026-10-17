@@ -20,6 +20,9 @@
     "php": ">=8.2",
     "nikic/php-parser": "^5.0"
   },
+  "require-dev": {
+    "phpunit/phpunit": "^11.5"
+  },
   "autoload": {
     "psr-4": {
       "Untangled\\": "src/"
@@ -40,6 +43,6 @@
   "minimum-stability": "stable",
   "prefer-stable": true,
   "scripts": {
-    "test": "php -d zend.assertions=1 -d assert.exception=1 tests/run.php"
+    "test": "@php -d zend.assertions=1 -d assert.exception=1 vendor/bin/phpunit"
   }
 }

@@ -216,7 +216,7 @@ final class Application
     private function write(string $output, string|true|null $file): int
     {
         if (is_string($file)) {
-            if (file_put_contents($file, $output) === false) {
+            if (@file_put_contents($file, $output) === false) {
                 fwrite($this->stderr, "error: cannot write {$file}\n");
                 return 1;
             }
