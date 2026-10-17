@@ -156,12 +156,24 @@ final class Scanner
     /** @param non-empty-list<string> $files */
     private static function uncoveredWarning(array $files): string
     {
-        $folders = [];
+        // One entry per top-level folder, named by the deepest folder its files share
+        // (database/migrations/ rather than database/, lang/ rather than every lang/xx/).
+        $groups = [];
         foreach ($files as $file) {
-            // Two levels name the folder well enough to act on: app/code/, database/migrations/.
             $directories = array_slice(explode('/', $file), 0, -1);
-            $folder = $directories === [] ? '(project root)' : implode('/', array_slice($directories, 0, 2)) . '/';
-            $folders[$folder] = ($folders[$folder] ?? 0) + 1;
+            $groups[$directories[0] ?? ''][] = $directories;
+        }
+        $folders = [];
+        foreach ($groups as $top => $paths) {
+            $common = $paths[0];
+            foreach ($paths as $path) {
+                $length = 0;
+                while ($length < count($common) && $length < count($path) && $common[$length] === $path[$length]) {
+                    $length++;
+                }
+                $common = array_slice($common, 0, $length);
+            }
+            $folders[$top === '' ? '(project root)' : implode('/', $common) . '/'] = count($paths);
         }
         uksort($folders, static fn (string $a, string $b): int => [$folders[$b], $a] <=> [$folders[$a], $b]);
         $named = [];

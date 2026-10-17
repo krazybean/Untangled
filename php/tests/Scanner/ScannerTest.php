@@ -404,6 +404,22 @@ final class ScannerTest extends TestCase
         );
     }
 
+    public function testTheUncoveredWarningNamesTheDeepestFolderEachTopFolderShares(): void
+    {
+        $result = $this->scan([
+            'src/A.php' => '<?php namespace App;',
+            'lang/en/a.php' => '<?php',
+            'lang/fr/a.php' => '<?php',
+            'app/code/core/X.php' => '<?php',
+            'app/code/local/Y.php' => '<?php',
+        ]);
+        self::assertSame(
+            ['4 PHP files are not covered by composer.json autoload rules and were not scanned (app/code/ 2, lang/ 2);'
+                . ' add folders with --source=<folder> if they hold code you want analyzed'],
+            $result->warnings,
+        );
+    }
+
     public function testTheUncoveredWarningNamesFiveFoldersAtMost(): void
     {
         $files = ['src/A.php' => '<?php namespace App;'];
