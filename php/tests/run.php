@@ -17,6 +17,9 @@ use Untangled\Cli\Application;
 use Untangled\Graph\DocumentException;
 use Untangled\Graph\PairsDocument;
 use Untangled\Path;
+use Untangled\Report\Dot;
+use Untangled\Report\HtmlReport;
+use Untangled\Report\Report;
 use Untangled\Scanner\Scanner;
 
 $failures = 0;
@@ -90,6 +93,16 @@ foreach ($cases as $case) {
         $actual = (new Analyzer())->analyze((new Filter())->apply($pairs), $clustering);
         $same = sameDocument(withoutGenerator(readJson($file)), withoutGenerator($actual));
         check("conformance {$name} " . basename($file), $same, $same ? '' : json_encode(withoutGenerator($actual), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+    foreach (glob($case . '/expected/graph*.dot') ?: [] as $file) {
+        $suffix = substr(basename($file, '.dot'), strlen('graph'));
+        $clustering = match (true) {
+            $suffix === '' => null,
+            $suffix === '.rules' => Clustering::parseRules((string) file_get_contents($case . '/clusters.rules')),
+            default => Clustering::fromString(preg_replace('/-(?=[0-9]+$)/', ':', substr($suffix, 1))),
+        };
+        $actual = Dot::render(Report::build($name, (new Filter())->apply($pairs), $clustering));
+        check("conformance {$name} " . basename($file), $actual === file_get_contents($file), $actual);
     }
 }
 
@@ -235,6 +248,42 @@ check('no units, no cycles', Cycles::find([]) === []);
 $empty = (new Analyzer())->analyze(new PairsDocument('php'));
 check('empty project summary', $empty['summary'] === ['units' => 0, 'edges' => 0, 'cycles' => 0, 'largest_cycle' => 0, 'units_in_cycles' => 0, 'units_in_cycles_ratio' => 0, 'mean_fan_out' => 0, 'external_packages' => 0, 'unresolved_references' => 0]);
 
+// Reports.
+check('dot quotes backslashes, quotes and newlines', Dot::quote("App\\X \"y\"\nz") === '"App\\\\X \\"y\\"\\nz"');
+$doc = new PairsDocument('php');
+$doc->addNode('a.php', PairsDocument::INTERNAL);
+$doc->addNode('b.php', PairsDocument::INTERNAL);
+$doc->addNode('c.php', PairsDocument::INTERNAL);
+$doc->addNode('composer:x/y', PairsDocument::EXTERNAL);
+$doc->addNode("unresolved:class:</script><b>X", PairsDocument::UNRESOLVED);
+$doc->addEdge('a.php', 'b.php', 'new');
+$doc->addEdge('b.php', 'a.php', 'new');
+$doc->addEdge('b.php', 'c.php', 'new');
+$doc->addEdge('a.php', 'composer:x/y', 'import');
+$doc->addEdge('c.php', 'composer:x/y', 'import');
+$doc->addEdge('c.php', "unresolved:class:</script><b>X", 'new');
+$report = Report::build('Demo <app>', $doc);
+check('report marks edges inside a cycle', array_map(static fn (array $e): string => $e['from'] . '>' . $e['to'] . ($e['cycle'] ? '*' : ''), $report->unitEdges()) === ['a.php>b.php*', 'b.php>a.php*', 'b.php>c.php']);
+check('report lists who uses each package', $report->targets(PairsDocument::EXTERNAL) === ['composer:x/y' => ['a.php', 'c.php']]);
+$html = HtmlReport::render($report, new DateTimeImmutable('2026-10-17'));
+check('html report is one self-contained page', str_starts_with($html, '<!doctype html>') && !preg_match('/<(?:script|link)[^>]+(?:src|href)=/i', $html));
+check('html report escapes names in markup and data', str_contains($html, '<h1>Demo &lt;app&gt;</h1>') && !str_contains($html, '</script><b>') && substr_count($html, '</script>') === 2);
+check('html report states the cycles', str_contains($html, '1 dependency cycle found.') && str_contains($html, '2 parts of 3 (67%) are caught in a loop'));
+foreach (HtmlReport::PLAIN as $key => $sentence) {
+    if (!in_array($key, ['ca', 'ce'], true)) {
+        check("html report uses the plain-language line for {$key}", str_contains($html, htmlspecialchars($sentence, ENT_QUOTES)));
+    }
+}
+check('html report shows the generation date', str_contains($html, 'Generated 17 October 2026'));
+preg_match('#<script type="application/json" id="untangled-data">(.*?)</script>#s', $html, $match);
+$embedded = json_decode($match[1] ?? '', true);
+check('html report embeds the graph and the dot file', is_array($embedded) && count($embedded['units']) === 3 && $embedded['dot'] === Dot::render($report) && $embedded['units'][0]['cycle'] === 1);
+$calm = HtmlReport::render(Report::build('Calm', (new Filter())->apply((new Scanner())->scan(__DIR__ . '/../../conformance/cases/psr4-basic/php/project')->pairs)));
+check('html report says when there are no cycles', str_contains($calm, 'No dependency cycles.') && !str_contains($calm, 'id="groups"'));
+$grouped = HtmlReport::render(Report::build('Grouped', (new Filter())->apply((new Scanner())->scan(__DIR__ . '/../../conformance/cases/layers/php/project')->pairs), Clustering::fromString('namespace:2')));
+check('clustered html report explains the grouping and lists group members', str_contains($grouped, 'share the first 2 levels of their namespace') && str_contains($grouped, 'id="groups"') && str_contains($grouped, htmlspecialchars(HtmlReport::PLAIN['ca'])));
+check('an empty project still renders', str_contains(HtmlReport::render(Report::build('Empty', new PairsDocument('php'))), 'nothing to report yet'));
+
 // CLI.
 $run = static function (array $args): array {
     $out = fopen('php://memory', 'w+');
@@ -262,6 +311,16 @@ check('cli analyze applies --include / --exclude in order', $code === 0 && in_ar
 check('cli analyze rejects an unknown clustering', $code === 2 && str_contains($err, 'unknown clustering'));
 [$code] = $run(['analyze', $layers . '/project', '--format=snakefood']);
 check('cli analyze rejects scan-only options', $code === 2);
+[$code, $out] = $run(['report', $layers . '/project', '--format=dot', '--cluster=namespace:2']);
+check('cli report --format=dot', $code === 0 && $out === file_get_contents($layers . '/expected/graph.namespace-2.dot'));
+[$code, $out] = $run(['report', $layers . '/project']);
+check('cli report defaults to html titled by the package name', $code === 0 && str_contains($out, '<h1>untangled-fixtures/layers</h1>'));
+[$code, $out] = $run(['report', $layers . '/expected/pairs.json', '--title=Layers']);
+check('cli report reads a pairs document and takes a title', $code === 0 && str_contains($out, '<h1>Layers</h1>'));
+[$code, , $err] = $run(['report', $layers . '/project', '--format=json']);
+check('cli report rejects an unknown format', $code === 2 && str_contains($err, 'Unknown format'));
+[$code] = $run(['analyze', $layers . '/project', '--title=x']);
+check('cli analyze rejects report-only options', $code === 2);
 [$code, , $err] = $run(['analyze', __FILE__]);
 check('cli analyze rejects a file that is not a pairs document', $code === 1 && str_contains($err, 'not valid JSON'));
 

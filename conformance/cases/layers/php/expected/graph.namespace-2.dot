@@ -1,0 +1,16 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "." [label=".\n1 file"];
+  "App\\Domain" [label="App\\Domain\n2 files", color="#d03b3b", penwidth=2];
+  "App\\Http" [label="App\\Http\n2 files"];
+  "App\\Infra" [label="App\\Infra\n2 files", color="#d03b3b", penwidth=2];
+
+  "." -> "App\\Http";
+  "App\\Domain" -> "App\\Infra" [color="#d03b3b", penwidth=2];
+  "App\\Http" -> "App\\Domain";
+  "App\\Http" -> "App\\Infra";
+  "App\\Infra" -> "App\\Domain" [color="#d03b3b", penwidth=2];
+}

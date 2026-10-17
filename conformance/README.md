@@ -12,7 +12,8 @@ cases/<case>/
     └── expected/
         ├── pairs.json                 # the expected pairs document
         ├── analysis.json              # the expected analysis of the file graph
-        └── analysis.<strategy>.json   # optional: a clustered analysis
+        ├── analysis.<strategy>.json   # optional: a clustered analysis
+        └── graph[.<strategy>].dot     # optional: the report's DOT graph
     clusters.rules             # optional: the rules for analysis.rules.json
 ```
 
@@ -26,7 +27,8 @@ example, three files that depend on each other in a loop), so the libraries
 can be compared on equal terms.
 
 A library passes a case when its output equals the expected document after
-ignoring the `generator` field. Each library's test suite runs every case
+ignoring the `generator` field, and its DOT graph (`untangled report
+--format=dot`) equals `graph[.<strategy>].dot` byte for byte. Each library's test suite runs every case
 that has a folder for its language.
 
 ## Cases

@@ -1,0 +1,18 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "src/Billing/Document.php";
+  "src/Billing/Invoice.php";
+  "src/Billing/Payable.php";
+  "src/Billing/Tax.php";
+  "src/Support/Clock.php";
+  "src/Support/Money.php";
+
+  "src/Billing/Invoice.php" -> "src/Billing/Document.php";
+  "src/Billing/Invoice.php" -> "src/Billing/Payable.php";
+  "src/Billing/Invoice.php" -> "src/Billing/Tax.php";
+  "src/Billing/Invoice.php" -> "src/Support/Clock.php";
+  "src/Billing/Invoice.php" -> "src/Support/Money.php";
+}
