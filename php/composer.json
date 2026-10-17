@@ -1,0 +1,45 @@
+{
+  "name": "krazybean/untangled",
+  "description": "Dependency health your whole team can understand: cycles, coupling and trends for PHP projects.",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "dependencies",
+    "coupling",
+    "cycles",
+    "architecture",
+    "static-analysis",
+    "graph"
+  ],
+  "authors": [
+    {
+      "name": "Juan Castro"
+    }
+  ],
+  "require": {
+    "php": ">=8.2",
+    "nikic/php-parser": "^5.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Untangled\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Untangled\\Tests\\": "tests/"
+    }
+  },
+  "bin": [
+    "bin/untangled",
+    "bin/utg"
+  ],
+  "support": {
+    "issues": "https://github.com/krazybean/Untangled/issues"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "scripts": {
+    "test": "php -d zend.assertions=1 -d assert.exception=1 tests/run.php"
+  }
+}

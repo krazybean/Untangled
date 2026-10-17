@@ -1,0 +1,72 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "nodes": [
+    {
+      "id": "composer:acme/legacy-pdf",
+      "kind": "external"
+    },
+    {
+      "id": "composer:monolog/monolog",
+      "kind": "external"
+    },
+    {
+      "id": "composer:psr/log",
+      "kind": "external"
+    },
+    {
+      "id": "src/Notifier.php",
+      "kind": "internal",
+      "module": "App",
+      "symbols": [
+        "App\\Notifier"
+      ]
+    },
+    {
+      "id": "unresolved:class:App\\Models\\User",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/Notifier.php",
+      "to": "composer:acme/legacy-pdf",
+      "kinds": [
+        "new",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Notifier.php",
+      "to": "composer:monolog/monolog",
+      "kinds": [
+        "import",
+        "new"
+      ],
+      "count": 4
+    },
+    {
+      "from": "src/Notifier.php",
+      "to": "composer:psr/log",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Notifier.php",
+      "to": "unresolved:class:App\\Models\\User",
+      "kinds": [
+        "static"
+      ],
+      "count": 1
+    }
+  ]
+}

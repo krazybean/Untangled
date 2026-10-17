@@ -1,0 +1,5 @@
+{
+  "name": "untangled-fixtures/composer-packages",
+  "require": { "monolog/monolog": "^3.0", "acme/legacy-pdf": "^1.0" },
+  "autoload": { "psr-4": { "App\\": "src/" } }
+}

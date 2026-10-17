@@ -1,0 +1,3 @@
+# Composer: a library does not commit its lockfile or installed dependencies.
+/vendor/
+/composer.lock

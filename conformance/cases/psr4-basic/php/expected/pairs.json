@@ -1,0 +1,129 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "nodes": [
+    {
+      "id": "builtin:DateTimeImmutable",
+      "kind": "builtin"
+    },
+    {
+      "id": "src/Billing/Document.php",
+      "kind": "internal",
+      "module": "App\\Billing",
+      "symbols": [
+        "App\\Billing\\Document"
+      ]
+    },
+    {
+      "id": "src/Billing/Invoice.php",
+      "kind": "internal",
+      "module": "App\\Billing",
+      "symbols": [
+        "App\\Billing\\Invoice"
+      ]
+    },
+    {
+      "id": "src/Billing/Payable.php",
+      "kind": "internal",
+      "module": "App\\Billing",
+      "symbols": [
+        "App\\Billing\\Payable"
+      ]
+    },
+    {
+      "id": "src/Billing/Tax.php",
+      "kind": "internal",
+      "module": "App\\Billing",
+      "symbols": [
+        "App\\Billing\\Tax"
+      ]
+    },
+    {
+      "id": "src/Support/Clock.php",
+      "kind": "internal",
+      "module": "App\\Support",
+      "symbols": [
+        "App\\Support\\Clock"
+      ]
+    },
+    {
+      "id": "src/Support/Money.php",
+      "kind": "internal",
+      "module": "App\\Support",
+      "symbols": [
+        "App\\Support\\Money"
+      ]
+    },
+    {
+      "id": "unresolved:class:App\\Legacy\\Ledger",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/Billing/Invoice.php",
+      "to": "builtin:DateTimeImmutable",
+      "kinds": [
+        "new",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Billing/Invoice.php",
+      "to": "src/Billing/Document.php",
+      "kinds": [
+        "extends"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Billing/Invoice.php",
+      "to": "src/Billing/Payable.php",
+      "kinds": [
+        "implements"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Billing/Invoice.php",
+      "to": "src/Billing/Tax.php",
+      "kinds": [
+        "new",
+        "static"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Billing/Invoice.php",
+      "to": "src/Support/Clock.php",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Billing/Invoice.php",
+      "to": "src/Support/Money.php",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Billing/Invoice.php",
+      "to": "unresolved:class:App\\Legacy\\Ledger",
+      "kinds": [
+        "static"
+      ],
+      "count": 1
+    }
+  ]
+}

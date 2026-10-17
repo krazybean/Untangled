@@ -1,0 +1,105 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "nodes": [
+    {
+      "id": "config/app.php",
+      "kind": "internal"
+    },
+    {
+      "id": "legacy/bootstrap.php",
+      "kind": "internal",
+      "symbols": [
+        "LEGACY_MODE",
+        "legacy_boot"
+      ]
+    },
+    {
+      "id": "src/Report.php",
+      "kind": "internal",
+      "symbols": [
+        "Report"
+      ]
+    },
+    {
+      "id": "src/helpers.php",
+      "kind": "internal",
+      "symbols": [
+        "APP_VERSION",
+        "format_total"
+      ]
+    },
+    {
+      "id": "unresolved:include:$theme . '/header.php'",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:include:config/missing.php",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "config/app.php",
+      "to": "legacy/bootstrap.php",
+      "kinds": [
+        "const"
+      ],
+      "count": 1
+    },
+    {
+      "from": "legacy/bootstrap.php",
+      "to": "src/Report.php",
+      "kinds": [
+        "new"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Report.php",
+      "to": "config/app.php",
+      "kinds": [
+        "include"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Report.php",
+      "to": "src/helpers.php",
+      "kinds": [
+        "call",
+        "const"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Report.php",
+      "to": "unresolved:include:$theme . '/header.php'",
+      "kinds": [
+        "include"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/Report.php",
+      "to": "unresolved:include:config/missing.php",
+      "kinds": [
+        "include"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/helpers.php",
+      "to": "legacy/bootstrap.php",
+      "kinds": [
+        "include"
+      ],
+      "count": 1
+    }
+  ]
+}
