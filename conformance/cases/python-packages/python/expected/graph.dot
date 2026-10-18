@@ -1,0 +1,22 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "main.py";
+  "scripts/my-tool.py";
+  "shop/__init__.py" [color="#d03b3b", penwidth=2];
+  "shop/cart.py" [color="#d03b3b", penwidth=2];
+  "shop/catalog/items.py";
+  "shop/pricing.py";
+  "util.py";
+  "util/__init__.py";
+
+  "main.py" -> "shop/__init__.py";
+  "main.py" -> "util/__init__.py";
+  "scripts/my-tool.py" -> "shop/cart.py";
+  "shop/__init__.py" -> "shop/cart.py" [color="#d03b3b", penwidth=2];
+  "shop/cart.py" -> "shop/__init__.py" [color="#d03b3b", penwidth=2];
+  "shop/cart.py" -> "shop/pricing.py";
+  "shop/pricing.py" -> "shop/catalog/items.py";
+}

@@ -1,0 +1,70 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 4,
+    "edges": 4,
+    "cycles": 1,
+    "largest_cycle": 3,
+    "units_in_cycles": 3,
+    "units_in_cycles_ratio": 0.75,
+    "mean_fan_out": 1,
+    "external_packages": 0,
+    "unresolved_references": 0
+  },
+  "units": [
+    {
+      "id": "src/cart.py",
+      "fan_in": 2,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.3333
+    },
+    {
+      "id": "src/catalog.py",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": null
+    },
+    {
+      "id": "src/customer.py",
+      "fan_in": 1,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.5
+    },
+    {
+      "id": "src/order.py",
+      "fan_in": 1,
+      "fan_out": 2,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.6667
+    }
+  ],
+  "cycles": [
+    {
+      "members": [
+        "src/cart.py",
+        "src/customer.py",
+        "src/order.py"
+      ],
+      "size": 3,
+      "example": [
+        "src/cart.py",
+        "src/order.py",
+        "src/cart.py"
+      ]
+    }
+  ]
+}

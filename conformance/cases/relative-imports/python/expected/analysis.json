@@ -1,0 +1,85 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 6,
+    "edges": 5,
+    "cycles": 1,
+    "largest_cycle": 2,
+    "units_in_cycles": 2,
+    "units_in_cycles_ratio": 0.3333,
+    "mean_fan_out": 0.8333,
+    "external_packages": 0,
+    "unresolved_references": 3
+  },
+  "units": [
+    {
+      "id": "manage.py",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 1,
+      "instability": null
+    },
+    {
+      "id": "pkg/__init__.py",
+      "fan_in": 0,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 1
+    },
+    {
+      "id": "pkg/a.py",
+      "fan_in": 2,
+      "fan_out": 2,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.5
+    },
+    {
+      "id": "pkg/b.py",
+      "fan_in": 2,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 1,
+      "instability": 0
+    },
+    {
+      "id": "pkg/sub/__init__.py",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": null
+    },
+    {
+      "id": "pkg/sub/c.py",
+      "fan_in": 1,
+      "fan_out": 2,
+      "external": 0,
+      "unresolved": 1,
+      "instability": 0.6667
+    }
+  ],
+  "cycles": [
+    {
+      "members": [
+        "pkg/a.py",
+        "pkg/sub/c.py"
+      ],
+      "size": 2,
+      "example": [
+        "pkg/a.py",
+        "pkg/sub/c.py",
+        "pkg/a.py"
+      ]
+    }
+  ]
+}

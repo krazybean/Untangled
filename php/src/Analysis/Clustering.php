@@ -93,7 +93,10 @@ final class Clustering
             return $id;
         }
         if ($this->strategy === 'namespace' && is_string($node['module'] ?? null) && $node['module'] !== '') {
-            return implode('\\', array_slice(explode('\\', $node['module']), 0, $this->depth));
+            // Segments are separated by `\` (PHP namespaces) or `.` (Python modules); the
+            // separators are kept, so the cluster id reads like the module it shortens.
+            $parts = preg_split('/([\\\\.])/', $node['module'], -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$node['module']];
+            return implode('', array_slice($parts, 0, 2 * $this->depth - 1));
         }
         $directories = explode('/', $id);
         array_pop($directories);

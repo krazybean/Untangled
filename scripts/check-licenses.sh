@@ -32,7 +32,7 @@ while IFS= read -r file; do
     echo "wrong license (${header#SPDX-License-Identifier: }, $expected expected): $file"
     status=1
   fi
-done < <(git ls-files --cached --others --exclude-standard \
+done < <(git -c core.quotePath=false ls-files --cached --others --exclude-standard \
   '*.php' '*.ts' '*.mts' '*.cts' '*.js' '*.mjs' '*.cjs' '*.py' '*.sh' '*.toml' '*.yml' '*.yaml' 'php/bin/*' \
   | sort -u)
 

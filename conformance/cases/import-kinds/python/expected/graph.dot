@@ -1,0 +1,16 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "app/__init__.py";
+  "app/main.py";
+  "app/models.py";
+  "app/plugins/__init__.py";
+  "app/plugins/pdf.py";
+  "app/plugins/sheet.py";
+
+  "app/main.py" -> "app/models.py";
+  "app/main.py" -> "app/plugins/pdf.py";
+  "app/main.py" -> "app/plugins/sheet.py";
+}

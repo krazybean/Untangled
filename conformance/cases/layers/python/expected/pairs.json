@@ -1,0 +1,144 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "bootstrap.py",
+      "kind": "internal",
+      "module": "bootstrap"
+    },
+    {
+      "id": "builtin:datetime",
+      "kind": "builtin"
+    },
+    {
+      "id": "src/app/domain/order.py",
+      "kind": "internal",
+      "module": "app.domain.order"
+    },
+    {
+      "id": "src/app/domain/user.py",
+      "kind": "internal",
+      "module": "app.domain.user"
+    },
+    {
+      "id": "src/app/http/router.py",
+      "kind": "internal",
+      "module": "app.http.router"
+    },
+    {
+      "id": "src/app/http/user_controller.py",
+      "kind": "internal",
+      "module": "app.http.user_controller"
+    },
+    {
+      "id": "src/app/infra/clock.py",
+      "kind": "internal",
+      "module": "app.infra.clock"
+    },
+    {
+      "id": "src/app/infra/user_repository.py",
+      "kind": "internal",
+      "module": "app.infra.user_repository"
+    },
+    {
+      "id": "unresolved:module:app.cache.store",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "bootstrap.py",
+      "to": "src/app/http/router.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/domain/order.py",
+      "to": "src/app/domain/user.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/domain/user.py",
+      "to": "src/app/infra/clock.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/http/router.py",
+      "to": "src/app/http/user_controller.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/http/user_controller.py",
+      "to": "src/app/domain/order.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/http/user_controller.py",
+      "to": "src/app/http/router.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/http/user_controller.py",
+      "to": "src/app/infra/user_repository.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/infra/clock.py",
+      "to": "builtin:datetime",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/infra/user_repository.py",
+      "to": "src/app/domain/user.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/infra/user_repository.py",
+      "to": "src/app/infra/clock.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app/infra/user_repository.py",
+      "to": "unresolved:module:app.cache.store",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    }
+  ]
+}

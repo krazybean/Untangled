@@ -1,0 +1,92 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "clustering": "namespace:2",
+  "summary": {
+    "units": 4,
+    "edges": 5,
+    "cycles": 1,
+    "largest_cycle": 2,
+    "units_in_cycles": 2,
+    "units_in_cycles_ratio": 0.5,
+    "mean_fan_out": 1.25,
+    "external_packages": 0,
+    "unresolved_references": 1
+  },
+  "units": [
+    {
+      "id": "app.domain",
+      "fan_in": 2,
+      "fan_out": 1,
+      "ca": 2,
+      "ce": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.3333,
+      "members": [
+        "src/app/domain/order.py",
+        "src/app/domain/user.py"
+      ]
+    },
+    {
+      "id": "app.http",
+      "fan_in": 1,
+      "fan_out": 2,
+      "ca": 1,
+      "ce": 2,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.6667,
+      "members": [
+        "src/app/http/router.py",
+        "src/app/http/user_controller.py"
+      ]
+    },
+    {
+      "id": "app.infra",
+      "fan_in": 2,
+      "fan_out": 1,
+      "ca": 2,
+      "ce": 1,
+      "external": 0,
+      "unresolved": 1,
+      "instability": 0.3333,
+      "members": [
+        "src/app/infra/clock.py",
+        "src/app/infra/user_repository.py"
+      ]
+    },
+    {
+      "id": "bootstrap",
+      "fan_in": 0,
+      "fan_out": 1,
+      "ca": 0,
+      "ce": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 1,
+      "members": [
+        "bootstrap.py"
+      ]
+    }
+  ],
+  "cycles": [
+    {
+      "members": [
+        "app.domain",
+        "app.infra"
+      ],
+      "size": 2,
+      "example": [
+        "app.domain",
+        "app.infra",
+        "app.domain"
+      ]
+    }
+  ]
+}

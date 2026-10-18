@@ -19,6 +19,8 @@ final class ClusteringTest extends TestCase
         yield 'namespace:2' => ['namespace:2', 'src/Billing/Tax.php', 'App\\Billing\\Tax', 'App\\Billing'];
         yield 'namespace:1' => ['namespace:1', 'src/Billing/Tax.php', 'App\\Billing', 'App'];
         yield 'namespace:N keeps a shorter namespace whole' => ['namespace:3', 'src/Tax.php', 'App', 'App'];
+        yield 'namespace:N splits Python modules on dots' => ['namespace:2', 'src/shop/billing/tax.py', 'shop.billing.tax', 'shop.billing'];
+        yield 'namespace:N keeps a shorter Python module whole' => ['namespace:2', 'manage.py', 'manage', 'manage'];
         yield 'namespace:N falls back to folder:N without a module' => ['namespace:2', 'lib/a/b/x.php', null, 'lib/a'];
         yield 'namespace:N falls back for an empty module' => ['namespace:2', 'lib/a/b/x.php', '', 'lib/a'];
         yield 'namespace:N fallback puts root files in "."' => ['namespace:2', 'index.php', null, '.'];

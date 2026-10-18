@@ -28,7 +28,7 @@ Clustering maps every internal node to a **cluster id**. A strategy is one of:
 
 | strategy | cluster id of an internal node |
 | --- | --- |
-| `namespace:N` | The first `N` segments of its `module` (`App\Billing\Tax` with N=2 → `App\Billing`). A node with no `module` falls back to `folder:N`. |
+| `namespace:N` | The first `N` segments of its `module`, which are separated by `\` or `.` (`App\Billing\Tax` with N=2 → `App\Billing`, `shop.billing.tax` → `shop.billing`). A node with no `module` falls back to `folder:N`. |
 | `folder:N` | The first `N` directory segments of its id (`src/Billing/Tax.php` with N=2 → `src/Billing`). A file with fewer directories keeps its full directory path; a file at the root goes to `.`. |
 | `rules` | An ordered list of `prefix → cluster` rules on the node id; the first matching prefix wins; an unmatched node keeps its own id (it is its own cluster). This mirrors snakefood's `sfood-cluster`. |
 

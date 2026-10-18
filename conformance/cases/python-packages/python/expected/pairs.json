@@ -1,0 +1,132 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "main.py",
+      "kind": "internal",
+      "module": "main"
+    },
+    {
+      "id": "scripts/my-tool.py",
+      "kind": "internal"
+    },
+    {
+      "id": "shop/__init__.py",
+      "kind": "internal",
+      "module": "shop"
+    },
+    {
+      "id": "shop/cart.py",
+      "kind": "internal",
+      "module": "shop.cart"
+    },
+    {
+      "id": "shop/catalog/items.py",
+      "kind": "internal",
+      "module": "shop.catalog.items"
+    },
+    {
+      "id": "shop/pricing.py",
+      "kind": "internal",
+      "module": "shop.pricing"
+    },
+    {
+      "id": "unresolved:module:shop.catalog.missing",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:shop.missing",
+      "kind": "unresolved"
+    },
+    {
+      "id": "util.py",
+      "kind": "internal",
+      "module": "util"
+    },
+    {
+      "id": "util/__init__.py",
+      "kind": "internal",
+      "module": "util"
+    }
+  ],
+  "edges": [
+    {
+      "from": "main.py",
+      "to": "shop/__init__.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "main.py",
+      "to": "unresolved:module:shop.missing",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "main.py",
+      "to": "util/__init__.py",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "scripts/my-tool.py",
+      "to": "shop/cart.py",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "shop/__init__.py",
+      "to": "shop/cart.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "shop/cart.py",
+      "to": "shop/__init__.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "shop/cart.py",
+      "to": "shop/pricing.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "shop/catalog/items.py",
+      "to": "unresolved:module:shop.catalog.missing",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "shop/pricing.py",
+      "to": "shop/catalog/items.py",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}

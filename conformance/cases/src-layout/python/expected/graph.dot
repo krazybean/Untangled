@@ -1,0 +1,19 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "lib/vendored/__init__.py";
+  "lib/vendored/helper.py";
+  "manage.py";
+  "scripts/run.py";
+  "src/billing/__init__.py";
+  "src/billing/invoice.py";
+  "tools/devtool.py";
+
+  "manage.py" -> "src/billing/invoice.py";
+  "manage.py" -> "tools/devtool.py";
+  "scripts/run.py" -> "tools/devtool.py";
+  "src/billing/invoice.py" -> "lib/vendored/helper.py";
+  "tools/devtool.py" -> "src/billing/invoice.py";
+}

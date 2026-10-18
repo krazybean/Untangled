@@ -15,3 +15,11 @@ A small layered app with three namespaces (`App\Domain`, `App\Infra`,
 - `UserRepository` uses `App\Cache\Store`, which does not exist: one unresolved
   reference. `Clock` uses `DateTimeImmutable`, a builtin, which the default
   filter drops before analysis.
+
+The Python version (`python/`) has the same shape, with the packages
+`app.domain`, `app.infra` and `app.http` under `src/` and `bootstrap.py` at the
+project root, and its own `python/clusters.rules`. Its analyses have the same
+summaries as PHP's. With `namespace:2`, `bootstrap.py` has the module
+`bootstrap`, so it keeps that one segment as its cluster instead of falling back
+to `.`. `app.cache.store` does not exist (one unresolved reference) and
+`datetime` is a builtin.

@@ -1,0 +1,65 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "src/cart.py",
+      "kind": "internal",
+      "module": "cart"
+    },
+    {
+      "id": "src/catalog.py",
+      "kind": "internal",
+      "module": "catalog"
+    },
+    {
+      "id": "src/customer.py",
+      "kind": "internal",
+      "module": "customer"
+    },
+    {
+      "id": "src/order.py",
+      "kind": "internal",
+      "module": "order"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/cart.py",
+      "to": "src/order.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/customer.py",
+      "to": "src/cart.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/order.py",
+      "to": "src/cart.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/order.py",
+      "to": "src/customer.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    }
+  ]
+}

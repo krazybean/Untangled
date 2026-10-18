@@ -1,0 +1,80 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "legacy/__init__.py",
+      "kind": "internal",
+      "module": "legacy"
+    },
+    {
+      "id": "legacy/café.py",
+      "kind": "internal",
+      "module": "legacy.café"
+    },
+    {
+      "id": "legacy/cookie.py",
+      "kind": "internal",
+      "module": "legacy.cookie"
+    },
+    {
+      "id": "legacy/helpers.py",
+      "kind": "internal",
+      "module": "legacy.helpers"
+    },
+    {
+      "id": "legacy/menu.py",
+      "kind": "internal",
+      "module": "legacy.menu"
+    },
+    {
+      "id": "legacy/old.py",
+      "kind": "internal",
+      "module": "legacy.old"
+    },
+    {
+      "id": "legacy/test/client.py",
+      "kind": "internal",
+      "module": "legacy.test.client"
+    }
+  ],
+  "edges": [
+    {
+      "from": "legacy/cookie.py",
+      "to": "legacy/café.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "legacy/helpers.py",
+      "to": "legacy/test/client.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "legacy/menu.py",
+      "to": "legacy/café.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "legacy/menu.py",
+      "to": "legacy/helpers.py",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}

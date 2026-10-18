@@ -1,10 +1,14 @@
 # SPDX-License-Identifier: MIT
 # One entry per language folder, each in its own ecosystem. Add npm for
-# typescript/ and pip for python/ once they declare dependencies.
+# typescript/ once it declares dependencies.
 version: 2
 updates:
   - package-ecosystem: composer
     directory: /php
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /python
     schedule:
       interval: weekly
   - package-ecosystem: github-actions

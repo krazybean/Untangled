@@ -1,0 +1,5 @@
+# Rules for the `rules` clustering of this case (spec/clustering.md).
+# prefix            cluster
+src/app/domain/     Core
+src/app/infra/      Core
+src/                Web

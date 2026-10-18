@@ -1,0 +1,187 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "app.py",
+      "kind": "internal",
+      "module": "app"
+    },
+    {
+      "id": "builtin:__future__",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:collections",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:distutils",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:json",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:os",
+      "kind": "builtin"
+    },
+    {
+      "id": "logging.py",
+      "kind": "internal",
+      "module": "logging"
+    },
+    {
+      "id": "pypi:cffi",
+      "kind": "external"
+    },
+    {
+      "id": "pypi:django",
+      "kind": "external"
+    },
+    {
+      "id": "pypi:google-auth",
+      "kind": "external"
+    },
+    {
+      "id": "pypi:protobuf",
+      "kind": "external"
+    },
+    {
+      "id": "pypi:pyyaml",
+      "kind": "external"
+    },
+    {
+      "id": "pypi:typing-extensions",
+      "kind": "external"
+    },
+    {
+      "id": "unresolved:module:google",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:requests",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "app.py",
+      "to": "builtin:__future__",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "builtin:collections",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "builtin:distutils",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "builtin:json",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "builtin:os",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "logging.py",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "pypi:cffi",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "pypi:django",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "pypi:google-auth",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "pypi:protobuf",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "pypi:pyyaml",
+      "kinds": [
+        "import"
+      ],
+      "count": 2
+    },
+    {
+      "from": "app.py",
+      "to": "pypi:typing-extensions",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "unresolved:module:google",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "unresolved:module:requests",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}
