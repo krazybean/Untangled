@@ -4,13 +4,14 @@ every import resolves to a project file, a builtin, a PyPI distribution, an
 unresolved node, or (for a namespace package) nothing."""
 
 import os
+import platform
 from collections import deque
 from dataclasses import dataclass, field
 
 from untangled.graph import BUILTIN, EXTERNAL, INTERNAL, UNRESOLVED, PairsDocument
 from untangled.scanner import imports
 from untangled.scanner.packages import PackageIndex
-from untangled.scanner.project import Project, module_name
+from untangled.scanner.project import EXTENSION_SUFFIXES, Project, module_name
 from untangled.scanner.stdlib import is_stdlib
 
 RELATIVE = "relative"
@@ -44,6 +45,7 @@ class Scanner:
 
         # Scan the default files, then any test file a scanned file imports.
         results: dict[str, imports.FileImports] = {}
+        partial: list[str] = []
         targets: dict[str, list[tuple[str, list[str]]]] = {}
         queue = deque(file for file in project.files if self.dev or file not in project.tests)
         while queue:
@@ -58,6 +60,8 @@ class Scanner:
             results[file] = result
             if result.error is not None:
                 warnings.append(f"{file}: {result.error}")
+            elif result.partial is not None:
+                partial.append(f"{file}: {result.partial}")
             targets[file] = []
             for item in result.imports:
                 for target in resolver.resolve(file, item):
@@ -74,10 +78,24 @@ class Scanner:
             pairs.add_node(file, INTERNAL, **({"module": name} if name is not None else {}))
         for file in sorted(results):
             for target, kinds in targets[file]:
-                if not pairs.has_node(target):
+                if not pairs.has_node(target) and ":" not in target:
+                    # A stub or an extension module: a project file that is not scanned.
+                    name = project.module_name(target)
+                    pairs.add_node(target, INTERNAL, **({"module": name} if name is not None else {}))
+                elif not pairs.has_node(target):
                     prefix = target.split(":", 1)[0]
                     pairs.add_node(target, {"builtin": BUILTIN, "pypi": EXTERNAL, "unresolved": UNRESOLVED}[prefix])
                 pairs.add_edge(file, target, kinds)
+
+        if partial:
+            # Usually code for a newer Python: one warning, not one per file.
+            files = "; ".join(partial[:3]) + (f"; and {len(partial) - 3} more" if len(partial) > 3 else "")
+            warnings.append(
+                f"{len(partial)} file{'s' if len(partial) > 1 else ''} could not be parsed whole by Python"
+                f" {platform.python_version()}, so their imports were read statement by statement, which misses"
+                f" imports inside statements that do not parse (usually syntax from a newer Python; run Untangled"
+                f" with the Python the project targets for a complete scan): {files}"
+            )
 
         outside = sorted(
             {name.split(".")[0] for name in resolver.outside if pairs.has_node(f"unresolved:module:{name}")}
@@ -97,10 +115,24 @@ class _Resolver:
         self.project = project
         self.packages = packages
         # Every module name a file has under any import root; roots earlier in the
-        # list win, and within a root a package's __init__.py wins over a module file.
+        # list win, and within a root a package's __init__.py wins over a module file,
+        # and a .py file over a stub or an extension module.
         self.modules: dict[str, str] = {}
         self.namespaces: set[str] = set()
         packages_first = sorted(project.files, key=lambda file: not file.endswith("/__init__.py"))
+        packages_first += sorted(
+            project.extensions,
+            key=lambda file: (
+                not file.rpartition("/")[2].startswith("__init__."),
+                next(i for i, suffix in enumerate(EXTENSION_SUFFIXES) if file.endswith(suffix)),
+            ),
+        )
+        self.extension_paths: dict[str, str] = {}
+        for file in packages_first[len(project.files) :]:
+            folder, _, name = file.rpartition("/")
+            stem = name.split(".")[0]
+            path = f"{folder}/{stem}" if folder else stem
+            self.extension_paths.setdefault(path[: -len("/__init__")] if stem == "__init__" else path, file)
         for root in project.roots:
             for file in packages_first:
                 if root and not file.startswith(root + "/"):
@@ -120,6 +152,8 @@ class _Resolver:
         if item.kind == imports.DYNAMIC and item.module is None:
             return [f"unresolved:dynamic:{item.text}"]
         base = item.module
+        if item.level and self.project.module_name(file) is None:
+            return self.resolve_by_path(file, item)
         if item.level:
             base = self.absolute(file, item.level, item.module)
             if base is None:
@@ -132,6 +166,34 @@ class _Resolver:
         if item.kind != imports.FROM:
             return [self.resolve_name(base)]
         return [self.resolve_from(base, name) for name in item.names]
+
+    def resolve_by_path(self, file: str, item: imports.Import) -> list[str | None]:
+        """A relative import in a file without a module name, such as one in a package whose
+        parent folder is not an import root or not an identifier (packages/my-plugin/my_plugin/).
+        It is resolved from the file's folder, as Python does once the package is importable:
+        each folder it goes through must be a regular package (have an __init__.py)."""
+        dots = "." * item.level
+        written = [f"{dots}{item.module or ('' if name == '*' else name)}" for name in item.names]
+        unresolved: list[str | None] = [f"unresolved:module:{name}" for name in written]
+        folder = file.rpartition("/")[0]
+        for step in range(item.level):
+            if step:
+                folder = folder.rpartition("/")[0]
+            if not folder or not self.project.has_file(f"{folder}/__init__.py"):
+                return unresolved
+        base = "/".join([folder, *item.module.split(".")]) if item.module else folder
+        targets: list[str | None] = []
+        for name, missing in zip(item.names, unresolved, strict=True):
+            found = self.file_at(f"{base}/{name}") if name != "*" else None
+            targets.append(found or self.file_at(base) or missing)
+        return targets
+
+    def file_at(self, path: str) -> str | None:
+        """The project file that is the module at a path without extension, if any."""
+        for candidate in (f"{path}/__init__.py", f"{path}.py"):
+            if self.project.has_file(candidate):
+                return candidate
+        return self.extension_paths.get(path)
 
     def absolute(self, file: str, level: int, module: str | None) -> str | None:
         name = self.project.module_name(file)

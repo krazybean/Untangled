@@ -1,0 +1,110 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "app/__init__.py",
+      "kind": "internal",
+      "module": "app"
+    },
+    {
+      "id": "app/fast.py",
+      "kind": "internal",
+      "module": "app.fast"
+    },
+    {
+      "id": "app/format.py",
+      "kind": "internal",
+      "module": "app.format"
+    },
+    {
+      "id": "app/models.py",
+      "kind": "internal",
+      "module": "app.models"
+    },
+    {
+      "id": "app/types.py",
+      "kind": "internal",
+      "module": "app.types"
+    },
+    {
+      "id": "builtin:__future__",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:json",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:typing",
+      "kind": "builtin"
+    }
+  ],
+  "edges": [
+    {
+      "from": "app/fast.py",
+      "to": "builtin:json",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app/models.py",
+      "to": "app/fast.py",
+      "kinds": [
+        "conditional",
+        "import",
+        "local"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app/models.py",
+      "to": "app/format.py",
+      "kinds": [
+        "from",
+        "local"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app/models.py",
+      "to": "app/types.py",
+      "kinds": [
+        "from",
+        "type-checking"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app/models.py",
+      "to": "builtin:__future__",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app/models.py",
+      "to": "builtin:json",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app/models.py",
+      "to": "builtin:typing",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    }
+  ]
+}

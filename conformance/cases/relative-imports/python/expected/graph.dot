@@ -9,10 +9,16 @@ digraph untangled {
   "pkg/b.py";
   "pkg/sub/__init__.py";
   "pkg/sub/c.py" [color="#d03b3b", penwidth=2];
+  "tools/my-plugin/my_plugin/__init__.py";
+  "tools/my-plugin/my_plugin/core.py";
+  "tools/my-plugin/my_plugin/sub/__init__.py";
+  "tools/my-plugin/my_plugin/sub/deep.py";
 
   "pkg/__init__.py" -> "pkg/a.py";
   "pkg/a.py" -> "pkg/b.py";
   "pkg/a.py" -> "pkg/sub/c.py" [color="#d03b3b", penwidth=2];
   "pkg/sub/c.py" -> "pkg/a.py" [color="#d03b3b", penwidth=2];
   "pkg/sub/c.py" -> "pkg/b.py";
+  "tools/my-plugin/my_plugin/__init__.py" -> "tools/my-plugin/my_plugin/core.py";
+  "tools/my-plugin/my_plugin/sub/deep.py" -> "tools/my-plugin/my_plugin/core.py";
 }

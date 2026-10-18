@@ -6,7 +6,8 @@ Builtins and third-party packages. The project has a virtualenv in `.venv/`
 
 - Standard library modules are `builtin:<top-level>`: `os.path` is
   `builtin:os`. `distutils`, removed in Python 3.12, is still a builtin, on
-  every Python. `from __future__ import annotations` is `builtin:__future__`.
+  every Python, and so is `annotationlib`, added in Python 3.14.
+  `from __future__ import annotations` is `builtin:__future__`.
 - `import yaml` and `import _yaml` are `pypi:pyyaml`, read from the `RECORD`
   of `PyYAML` (an import name that differs from the distribution name), and
   `import _cffi_backend` is `pypi:cffi`, from a native module in its `RECORD`.
@@ -16,6 +17,9 @@ Builtins and third-party packages. The project has a virtualenv in `.venv/`
   unresolved.
 - `typing_extensions` and `django` are declared in `requirements.txt` but not
   installed: they match by name, `pypi:typing-extensions` and `pypi:django`.
+- `jaraco.abode` is declared too: `from jaraco.abode.devices import light` is
+  `pypi:jaraco-abode`, matched by the longest declared dotted prefix, as for
+  any distribution of a namespace package.
 - `requests` is neither installed nor declared: unresolved.
 - `logging.py` at the project root shadows the standard library's `logging`,
   so `import logging` points at it, as when Python runs `app.py`.

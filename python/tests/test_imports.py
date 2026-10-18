@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 import textwrap
+from pathlib import Path
 
 from untangled.scanner.imports import (
     CONDITIONAL,
@@ -11,6 +12,7 @@ from untangled.scanner.imports import (
     Import,
     collect,
     read_source,
+    read_statements,
 )
 
 
@@ -216,3 +218,119 @@ def test_source_that_is_not_utf8_is_read_as_windows_1252() -> None:
 
 def test_source_with_a_wrong_coding_comment_is_read_as_windows_1252() -> None:
     assert read_source(b"# coding: nonsense\nx = 1\n") == "# coding: nonsense\nx = 1\n"
+
+
+# Statement by statement, for files the running Python cannot parse as a whole.
+
+
+def test_a_file_that_does_not_parse_is_read_statement_by_statement() -> None:
+    code = textwrap.dedent(
+        """
+        import a
+        x = = 1  # not Python in any version
+        from typing import TYPE_CHECKING
+        if TYPE_CHECKING: import tc
+        class K:
+            def f(self):
+                try:
+                    import guarded; import also
+                except (ImportError, ValueError):
+                    import fallback
+                except KeyError:
+                    import plain
+                y = importlib.import_module("dyn")
+        """
+    )
+    result = collect(code.encode())
+    assert result.error is None
+    assert result.partial == "cannot parse as Python 3: invalid syntax (line 3)"
+    assert result.imports == [
+        Import(IMPORT, "a"),
+        Import(FROM, "typing", 0, ("TYPE_CHECKING",)),
+        Import(IMPORT, "tc", contexts=frozenset({TYPE_CHECKING})),
+        Import(IMPORT, "guarded", contexts=frozenset({LOCAL, CONDITIONAL})),
+        Import(IMPORT, "also", contexts=frozenset({LOCAL, CONDITIONAL})),
+        Import(IMPORT, "fallback", contexts=frozenset({LOCAL, CONDITIONAL})),
+        Import(IMPORT, "plain", contexts=frozenset({LOCAL})),
+        Import(DYNAMIC, "dyn", contexts=frozenset({LOCAL})),
+    ]
+
+
+def test_statement_by_statement_reads_what_the_parser_reads() -> None:
+    # Every file of this library parses whole: reading it statement by statement must
+    # find the same imports, in the same order, with the same contexts.
+    sources = sorted((Path(__file__).resolve().parents[1] / "src").rglob("*.py")) + sorted(
+        Path(__file__).resolve().parent.glob("*.py")
+    )
+    assert len(sources) > 20
+    for path in sources:
+        source = path.read_text(encoding="utf-8")
+        assert read_statements(source) == collect(path.read_bytes()).imports, path
+
+
+def test_newer_syntax_is_read_statement_by_statement() -> None:
+    code = textwrap.dedent(
+        """
+        type Alias = list[int]
+        class Box[T]:
+            def f(self) -> str:
+                import inner
+                return f"{self.x["k"]}"
+        try:
+            import fast
+        except ImportError, ModuleNotFoundError:
+            import slow
+        match command:
+            case "go":
+                import go
+        lam = lambda: (yield)
+        @decorate(lambda x: x)
+        async def g[T](x: T) -> T: from . import rel
+        """
+    )
+    assert read_statements(code) == [
+        Import(IMPORT, "inner", contexts=frozenset({LOCAL})),
+        Import(IMPORT, "fast", contexts=frozenset({CONDITIONAL})),
+        Import(IMPORT, "slow", contexts=frozenset({CONDITIONAL})),
+        Import(IMPORT, "go"),
+        Import(FROM, None, 1, ("rel",), frozenset({LOCAL})),
+    ]
+
+
+def test_python_2_files_are_not_read_statement_by_statement() -> None:
+    for statement in ('print "hello"', 'exec "code"', "raise E, 'message'", "x = 0777",
+                      "x = 10L", "x = `y`", "if a <> b: pass"):  # fmt: skip
+        result = collect(f"import urllib2\n{statement}\n".encode())
+        assert result.imports == [] and result.error is not None, statement
+
+
+def test_a_file_that_cannot_be_tokenized_is_an_error() -> None:
+    result = collect(b"import a\nx = (1,\n")
+    assert result.imports == [] and result.error is not None
+
+
+def test_statement_by_statement_reads_headers_and_decorators() -> None:
+    code = textwrap.dedent(
+        """
+        x = = 1
+        if import_module("in_if"):
+            pass
+        elif __import__("in_elif"):
+            pass
+        elif TYPE_CHECKING:
+            import tc
+        else:
+            import plain
+        @register(__import__("deco"))
+        def f(arg=__import__("default")):
+            import inner
+        """
+    )
+    assert read_statements(code) == [
+        Import(DYNAMIC, "in_elif"),
+        Import(IMPORT, "tc", contexts=frozenset({TYPE_CHECKING})),
+        Import(IMPORT, "plain"),
+        Import(DYNAMIC, "deco"),
+        Import(DYNAMIC, "default"),
+        Import(IMPORT, "inner", contexts=frozenset({LOCAL})),
+    ]

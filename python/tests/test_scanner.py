@@ -280,3 +280,63 @@ def test_a_pyproject_with_unexpected_types_is_ignored(project) -> None:
     root = project({"pyproject.toml": 'project = "x"\ntool = "y"\n', "a.py": "import b\n", "b.py": ""})
     result = Scanner().scan(root)
     assert [edge["to"] for edge in json.loads(result.pairs.to_json())["edges"]] == ["b.py"]
+
+
+def test_relative_imports_in_files_without_a_module_name_resolve_by_folder(project) -> None:
+    root = project(
+        {
+            "tools/my-plugin/my_plugin/__init__.py": "from .core import run\nfrom . import missing\n",
+            "tools/my-plugin/my_plugin/core.py": "",
+            "tools/my-plugin/my_plugin/sub/__init__.py": "",
+            "tools/my-plugin/my_plugin/sub/deep.py": "from .. import core\nfrom ...outside import x\n",
+            "tools/my-plugin/my_plugin/sub/fast.pyi": "",
+            "tools/my-plugin/my_plugin/sub/user.py": "from .fast import f\n",
+        }
+    )
+    document, _ = scan(root)
+    plugin = "tools/my-plugin/my_plugin/"
+    # `from . import missing` names something in the package's own __init__.py: no edge.
+    assert targets(document, plugin + "__init__.py") == [plugin + "core.py"]
+    # my-plugin has no __init__.py, so ... goes above the top-level package.
+    assert targets(document, plugin + "sub/deep.py") == [plugin + "core.py", "unresolved:module:...outside"]
+    assert targets(document, plugin + "sub/user.py") == [plugin + "sub/fast.pyi"]
+
+
+def test_stubs_and_extension_modules_are_import_targets_that_are_not_scanned(project) -> None:
+    root = project(
+        {
+            "app.py": "import fast._speedups, fast._native, fast.helpers, fast._gone\nfrom fast import _only_stub\n",
+            "fast/__init__.py": "",
+            "fast/_speedups.pyx": "cimport cython\n",
+            "fast/_speedups.pyi": "import never_read\n",
+            "fast/_native.cpython-313-x86_64-linux-gnu.so": b"\x7fELF",
+            "fast/helpers.py": "",
+            "fast/helpers.pyi": "",
+            "fast/_only_stub.pyi": "",
+        }
+    )
+    document, warnings = scan(root)
+    assert warnings == []
+    assert targets(document, "app.py") == [
+        "fast/_native.cpython-313-x86_64-linux-gnu.so",
+        "fast/_only_stub.pyi",
+        "fast/_speedups.pyi",
+        "fast/helpers.py",
+        "unresolved:module:fast._gone",
+    ]
+    modules = {node["id"]: node.get("module") for node in document["nodes"]}
+    assert modules["fast/_native.cpython-313-x86_64-linux-gnu.so"] == "fast._native"
+    assert modules["fast/_speedups.pyi"] == "fast._speedups"
+    assert not any(edge["from"].endswith((".pyi", ".so")) for edge in document["edges"])
+
+
+def test_files_read_statement_by_statement_give_one_warning(project) -> None:
+    files = {f"m{i}.py": "import os\nx = = 1\n" for i in range(5)}
+    document, warnings = scan(project(files))
+    assert targets(document, "m0.py") == ["builtin:os"]
+    assert len(warnings) == 1
+    assert warnings[0].startswith("5 files could not be parsed whole by Python ")
+    assert warnings[0].endswith(
+        ": m0.py: cannot parse as Python 3: invalid syntax (line 2); m1.py: cannot parse as Python 3: invalid syntax"
+        " (line 2); m2.py: cannot parse as Python 3: invalid syntax (line 2); and 2 more"
+    )

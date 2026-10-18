@@ -28,9 +28,11 @@ untangled --version
 
 `utg` is a short alias for `untangled`, and `python -m untangled` works too.
 Untangled reads the project you point it at and never imports or runs it, so
-it does not need to be installed into that project's virtualenv. Run it with
-the newest Python you have: it can only parse code written for the Python it
-runs on or older.
+it does not need to be installed into that project's virtualenv. It runs on
+Python 3.11 or newer, whatever Python the project targets: a file using syntax
+from a newer Python than the one running Untangled is read statement by
+statement, which finds the same imports except in the rare statement that
+still does not parse, and the scan says which files were read that way.
 
 ## Commands
 
@@ -112,14 +114,15 @@ red. `--style=classic` draws the black and white look of snakefood's
 - **Files:** every `.py` file under the project folder, except virtualenvs,
   hidden folders, `__pycache__`, `node_modules`, `site-packages`,
   `*.egg-info`, and `build/` and `dist/` at the top. Tests only with `--dev`,
-  unless real code imports them.
+  unless real code imports them. Stubs (`.pyi`), Cython sources (`.pyx`) and
+  compiled extensions (`.so`, `.pyd`) are import targets, but are not read.
 - **Import roots:** the project folder, `src/` (the src layout), the folders
   `pyproject.toml` gives setuptools, and `--source` folders.
 - **Packages:** the project's virtualenv (any folder in it with a
   `pyvenv.cfg`, such as `.venv/`), read from each installed distribution's
   `RECORD`, so `import yaml` is `pypi:pyyaml`. Without one, an import matches a
   dependency declared in `pyproject.toml` or `requirements*.txt` only when the
-  names are equal.
+  names are equal (`import jaraco.abode` matches a declared `jaraco.abode`).
 
 Every import ends up as a project file, a standard library module
 (`builtin:os`), a package (`pypi:requests`) or an unresolved reference
@@ -133,7 +136,7 @@ that does not exist is unresolved, never an edge to its parent package. The
 or rules file cannot be read, or the output cannot be written, `2` for a usage
 error. Warnings go to standard error and
 do not change the exit code: a file that does not parse (such as Python 2
-code), a `--source` or `--venv` that does not exist, and unresolved imports
+code), files read statement by statement, a `--source` or `--venv` that does not exist, and unresolved imports
 of modules outside the project when no virtualenv was found.
 
 ## Development

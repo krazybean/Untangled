@@ -38,6 +38,22 @@
       "module": "pkg.sub.c"
     },
     {
+      "id": "tools/my-plugin/my_plugin/__init__.py",
+      "kind": "internal"
+    },
+    {
+      "id": "tools/my-plugin/my_plugin/core.py",
+      "kind": "internal"
+    },
+    {
+      "id": "tools/my-plugin/my_plugin/sub/__init__.py",
+      "kind": "internal"
+    },
+    {
+      "id": "tools/my-plugin/my_plugin/sub/deep.py",
+      "kind": "internal"
+    },
+    {
       "id": "unresolved:module:...outside",
       "kind": "unresolved"
     },
@@ -116,6 +132,33 @@
     },
     {
       "from": "pkg/sub/c.py",
+      "to": "unresolved:module:...outside",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    },
+    {
+      "from": "tools/my-plugin/my_plugin/__init__.py",
+      "to": "tools/my-plugin/my_plugin/core.py",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    },
+    {
+      "from": "tools/my-plugin/my_plugin/sub/deep.py",
+      "to": "tools/my-plugin/my_plugin/core.py",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 2
+    },
+    {
+      "from": "tools/my-plugin/my_plugin/sub/deep.py",
       "to": "unresolved:module:...outside",
       "kinds": [
         "from",
