@@ -1,7 +1,21 @@
 # SPDX-License-Identifier: GPL-2.0-only
 import json
+from typing import Any
 
-from untangled.graph import BUILTIN, INTERNAL, UNRESOLVED, PairsDocument, encode
+import pytest
+
+from untangled import version
+from untangled.graph import (
+    BUILTIN,
+    CLUSTER,
+    INTERNAL,
+    UNRESOLVED,
+    DocumentError,
+    PairsDocument,
+    encode,
+    number,
+    round_half_up,
+)
 
 
 def sample() -> PairsDocument:
@@ -89,3 +103,123 @@ def test_snakefood_quotes_backslashes_and_quotes() -> None:
 
 def test_snakefood_of_an_empty_document_is_empty() -> None:
     assert PairsDocument("python").to_snakefood(".") == ""
+
+
+def minimal(**fields: Any) -> dict[str, Any]:
+    return {
+        "format": "untangled-pairs",
+        "version": version.SPEC,
+        "language": "python",
+        "nodes": [],
+        "edges": [],
+    } | fields
+
+
+def test_from_dict_round_trips() -> None:
+    document = sample()
+    assert PairsDocument.from_dict(document.to_dict()).to_dict() == document.to_dict()
+
+
+def test_from_dict_keeps_cluster_nodes_and_their_members() -> None:
+    data = minimal(nodes=[{"id": "app", "kind": CLUSTER, "members": ["a.py"]}])
+    assert PairsDocument.from_dict(data).nodes() == [{"id": "app", "kind": "cluster", "members": ["a.py"]}]
+
+
+def test_from_dict_defaults_a_missing_count_to_one() -> None:
+    data = minimal(
+        nodes=[{"id": "a.py", "kind": "internal"}, {"id": "b.py", "kind": "internal"}],
+        edges=[{"from": "a.py", "to": "b.py", "kinds": ["import"]}],
+    )
+    assert PairsDocument.from_dict(data).edges()[0]["count"] == 1
+
+
+def test_from_dict_merges_repeated_edges() -> None:
+    data = minimal(
+        nodes=[{"id": "a.py", "kind": "internal"}, {"id": "b.py", "kind": "internal"}],
+        edges=[
+            {"from": "a.py", "to": "b.py", "kinds": ["import"], "count": 2},
+            {"from": "a.py", "to": "b.py", "kinds": ["from"], "count": 3},
+        ],
+    )
+    assert PairsDocument.from_dict(data).edges() == [
+        {"from": "a.py", "to": "b.py", "kinds": ["from", "import"], "count": 5}
+    ]
+
+
+def test_from_dict_warns_on_an_unknown_minor_version() -> None:
+    warnings: list[str] = []
+    PairsDocument.from_dict(minimal(version="0.99"), warnings)
+    assert warnings == [f"pairs document version 0.99 is newer or older than {version.SPEC}; reading it anyway"]
+    warnings = []
+    PairsDocument.from_dict(minimal(), warnings)
+    assert warnings == []
+
+
+def test_from_dict_without_a_warnings_list_still_reads_an_unknown_minor_version() -> None:
+    assert PairsDocument.from_dict(minimal(version="0.99")).language == "python"
+
+
+def _without(key: str) -> dict[str, Any]:
+    return {k: v for k, v in minimal().items() if k != key}
+
+
+@pytest.mark.parametrize(
+    ("data", "message"),
+    [
+        pytest.param(minimal(format="untangled-analysis"), "not an Untangled pairs document", id="another format"),
+        pytest.param(_without("format"), "not an Untangled pairs document", id="no format"),
+        pytest.param(["not", "a", "dict"], "not an Untangled pairs document", id="not an object"),
+        pytest.param(minimal(version="1.0"), 'unsupported pairs document version "1.0"', id="unknown major version"),
+        pytest.param(minimal(version=0.1), "unsupported pairs document version", id="version not a string"),
+        pytest.param(_without("nodes"), 'needs "language", "nodes" and "edges"', id="no nodes"),
+        pytest.param(_without("language"), 'needs "language", "nodes" and "edges"', id="no language"),
+        pytest.param(
+            minimal(nodes=[{"id": "a.py"}]), 'every node needs a string "id" and "kind"', id="node without kind"
+        ),
+        pytest.param(minimal(nodes=["a.py"]), "every node needs", id="node not an object"),
+        pytest.param(
+            minimal(nodes=[{"id": "a.py", "kind": "internal"}], edges=[{"from": "a.py"}]),
+            'every edge needs a string "from" and "to"',
+            id="edge without to",
+        ),
+        pytest.param(
+            minimal(nodes=[{"id": "a.py", "kind": "internal"}], edges=[{"from": "a.py", "to": "b.py"}]),
+            "edge a.py -> b.py names a node that is not in the document",
+            id="edge to a missing node",
+        ),
+    ],
+)
+def test_from_dict_rejects(data: Any, message: str) -> None:
+    with pytest.raises(DocumentError) as error:
+        PairsDocument.from_dict(data)
+    assert message in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (1 / 3, 0.3333),
+        (2 / 3, 0.6667),
+        (5 / 6, 0.8333),
+        (0.5, 0.5),
+        (0.00005, 0.0001),
+        (-0.00005, -0.0001),
+        (0.99995, 1),
+        (1.0, 1),
+        (0, 0),
+    ],
+)
+def test_number_rounds_half_away_from_zero_to_four_places(value: float, expected: float) -> None:
+    assert number(value) == expected
+
+
+def test_number_writes_whole_numbers_as_integers() -> None:
+    assert type(number(1.0)) is int and type(number(0.0)) is int and type(number(0.5)) is float
+    assert encode({"x": number(2 / 2), "y": number(1 / 4)}) == '{\n  "x": 1,\n  "y": 0.25\n}\n'
+
+
+def test_round_half_up_goes_through_the_shortest_decimal_form() -> None:
+    # 0.125 and 2.675 are not exact in binary; rounding their written form gives what people expect.
+    assert str(round_half_up(0.125, 2)) == "0.13"
+    assert str(round_half_up(2.675, 2)) == "2.68"
+    assert str(round_half_up(66.5, 0)) == "67"

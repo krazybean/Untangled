@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-only
+import json
 import os
 from typing import Any
 
@@ -273,3 +274,9 @@ def test_an_unreadable_file_is_a_node_and_a_warning(project, tmp_path) -> None:
     document, warnings = scan(root)
     assert [n["id"] for n in document["nodes"]] == ["a.py", "b.py"]
     assert warnings == ["a.py: cannot read it: Permission denied"]
+
+
+def test_a_pyproject_with_unexpected_types_is_ignored(project) -> None:
+    root = project({"pyproject.toml": 'project = "x"\ntool = "y"\n', "a.py": "import b\n", "b.py": ""})
+    result = Scanner().scan(root)
+    assert [edge["to"] for edge in json.loads(result.pairs.to_json())["edges"]] == ["b.py"]

@@ -13,3 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: scripts/check-licenses.sh
+      # Shared report script and styles: the copies must match php/resources/report.
+      - run: scripts/sync-report-assets.sh --check
+      # Libraries must agree on the analyses of the cases they share.
+      - run: scripts/check-cross-language.py

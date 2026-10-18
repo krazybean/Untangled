@@ -11,6 +11,11 @@ declare -A license=(
   [php]=MIT [typescript]=MIT [spec]=MIT [conformance]=MIT [docs]=MIT
   [python]=GPL-2.0-only
 )
+# Verbatim copies of MIT files inside other folders (see scripts/sync-report-assets.sh).
+declare -A copied=(
+  [python/src/untangled/report/assets/report.js]=MIT
+  [python/src/untangled/report/assets/report.css]=MIT
+)
 status=0
 
 for folder in "${!license[@]}"; do
@@ -23,7 +28,7 @@ done
 while IFS= read -r file; do
   top=${file%%/*}
   [[ $top == "$file" ]] && top=.
-  expected=${license[$top]:-MIT}
+  expected=${copied[$file]:-${license[$top]:-MIT}}
   header=$(head -n 5 "$file" | grep -o 'SPDX-License-Identifier: [A-Za-z0-9.+-]*' | head -n 1 || true)
   if [[ -z $header ]]; then
     echo "no SPDX header ($expected expected): $file"
@@ -33,7 +38,7 @@ while IFS= read -r file; do
     status=1
   fi
 done < <(git -c core.quotePath=false ls-files --cached --others --exclude-standard \
-  '*.php' '*.ts' '*.mts' '*.cts' '*.js' '*.mjs' '*.cjs' '*.py' '*.sh' '*.toml' '*.yml' '*.yaml' 'php/bin/*' \
+  '*.php' '*.ts' '*.mts' '*.cts' '*.js' '*.mjs' '*.cjs' '*.py' '*.css' '*.sh' '*.toml' '*.yml' '*.yaml' 'php/bin/*' \
   | sort -u)
 
 if (( status == 0 )); then

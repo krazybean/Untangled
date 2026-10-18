@@ -118,7 +118,7 @@ def _top_level_modules(file: str) -> set[str]:
 
 def _declared(root: str, pyproject: dict[str, Any]) -> set[str]:
     requirements: list[str] = []
-    project = pyproject.get("project", {})
+    project = _dict(pyproject.get("project"))
     requirements += _strings(project.get("dependencies"))
     for group in _dict(project.get("optional-dependencies")).values():
         requirements += _strings(group)

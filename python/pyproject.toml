@@ -37,6 +37,9 @@ version = { attr = "untangled.version.VERSION" }
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"untangled.report" = ["assets/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

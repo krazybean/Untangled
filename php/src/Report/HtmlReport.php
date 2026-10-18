@@ -60,7 +60,7 @@ final class HtmlReport
             'generatedAt' => ($generatedAt ?? new \DateTimeImmutable())->format('j F Y'),
             'generator' => Version::NAME . ' ' . Version::VERSION,
             'clustered' => $report->isClustered(),
-            'grouping' => self::describeGrouping($analysis['clustering']),
+            'grouping' => self::describeGrouping($analysis['clustering'], $analysis['language']),
             'summary' => $analysis['summary'],
             'units' => $units,
             'cycles' => $analysis['cycles'],
@@ -112,7 +112,7 @@ final class HtmlReport
         return count($parts) === 3 ? "{$parts[2]} ({$parts[1]})" : $id;
     }
 
-    private static function describeGrouping(?string $clustering): string
+    private static function describeGrouping(?string $clustering, string $language = 'php'): string
     {
         if ($clustering === null) {
             return 'Each part is one file.';
@@ -122,8 +122,10 @@ final class HtmlReport
         }
         [$strategy, $depth] = explode(':', $clustering);
         $levels = self::count((int) $depth, 'level');
+        // Python has packages where PHP has namespaces.
+        $namespace = $language === 'python' ? 'package path' : 'namespace';
         return $strategy === 'namespace'
-            ? "Each part is a group of files that share the first {$levels} of their namespace."
+            ? "Each part is a group of files that share the first {$levels} of their {$namespace}."
             : "Each part is a group of files that share the first {$levels} of their folder path.";
     }
 

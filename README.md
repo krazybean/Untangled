@@ -54,7 +54,7 @@ analyzed on its own.
 | --- | --- | --- | --- | --- |
 | PHP | [`php/`](php/README.md) | `krazybean/untangled` (Composer) | MIT | v1 complete, not yet released |
 | JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | Planned |
-| Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | Scanner in progress |
+| Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | scan, analyze and report work; not published yet |
 
 ## Quick start (PHP)
 
@@ -77,7 +77,7 @@ Every command (`scan`, `analyze`, `report`) and option is documented in the
 | [`conformance/`](conformance/README.md) | Fixture projects and the output every library must produce for them |
 | [`php/`](php/README.md) | The PHP library and CLI |
 | [`typescript/`](typescript/README.md) | The JavaScript/TypeScript library (planned) |
-| [`python/`](python/README.md) | The Python library (scanner so far) |
+| [`python/`](python/README.md) | The Python library |
 | [`docs/`](docs/README.md) | User documentation and design notes |
 
 ## Roadmap
@@ -89,8 +89,8 @@ Graphviz DOT export.
 
 **v2:** trends over git history.
 
-**Next:** Python (scanner first, then analyze and report), then
-JavaScript/TypeScript, each with its own scanner built on a real parser.
+**Next:** a real-world shakedown of the Python library, then
+JavaScript/TypeScript, with its own scanner built on a real parser.
 Importing dependency-cruiser output may come later as an `import` command.
 
 ## License

@@ -52,7 +52,9 @@ class Project:
                 warnings.append(f"--source={source}: no such folder in the project")
             else:
                 roots.append(folder)
-        setuptools = pyproject.get("tool", {}).get("setuptools", {})
+        tool = pyproject.get("tool")
+        setuptools = tool.get("setuptools") if isinstance(tool, dict) else None
+        setuptools = setuptools if isinstance(setuptools, dict) else {}
         declared = []
         package_dir = setuptools.get("package-dir", {})
         if isinstance(package_dir, dict) and isinstance(package_dir.get(""), str):
