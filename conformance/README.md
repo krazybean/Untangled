@@ -46,11 +46,13 @@ that has a folder for its language.
 | [class-aliases](cases/class-aliases/README.md) | Global class aliases from `--aliases`: a preset, aliases packages declare, a file that overrides the preset, and names nobody declares |
 | [layers](cases/layers/README.md) | Clustering by namespace, folder and rules; Ca / Ce; a cycle between clusters that no file cycle shows, and a file cycle that disappears inside a cluster |
 | [python-packages](cases/python-packages/README.md) | Python: submodules versus names in `from` imports, namespace packages, a package shadowing a module, a missing module in a project package |
-| [relative-imports](cases/relative-imports/README.md) | Python: relative imports, including above the top-level package and from a top-level module |
+| [relative-imports](cases/relative-imports/README.md) | Python: relative imports, including above the top-level package, from a top-level module and from a package outside the import roots |
 | [src-layout](cases/src-layout/README.md) | Python: import roots from `src/`, `pyproject.toml` and `--source` |
-| [stdlib-and-packages](cases/stdlib-and-packages/README.md) | Python: builtins, distributions from a virtualenv's `RECORD` files, declared dependencies, a module shadowing the standard library |
+| [stdlib-and-packages](cases/stdlib-and-packages/README.md) | Python: builtins from every Python, distributions from a virtualenv's `RECORD` files, declared dependencies (also of namespace packages), a module shadowing the standard library |
 | [import-kinds](cases/import-kinds/README.md) | Python: `TYPE_CHECKING`, `try`/`except ImportError`, local and dynamic imports |
 | [legacy-python](cases/legacy-python/README.md) | Python: a Python 2 file, Latin-1 and Windows-1252 files, test folders and a test module real code imports |
+| [extension-modules](cases/extension-modules/README.md) | Python: stubs, Cython sources and compiled extensions as import targets |
+| [newer-syntax](cases/newer-syntax/README.md) | Python: syntax from Python 3.12 to 3.14, read the same on older Pythons |
 
 ## Adding a case
 

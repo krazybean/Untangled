@@ -1,0 +1,3 @@
+# SPDX-License-Identifier: MIT
+
+def call() -> None: ...

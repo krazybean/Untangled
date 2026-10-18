@@ -17,6 +17,10 @@
       "kind": "builtin"
     },
     {
+      "id": "builtin:annotationlib",
+      "kind": "builtin"
+    },
+    {
       "id": "builtin:collections",
       "kind": "builtin"
     },
@@ -50,6 +54,10 @@
       "kind": "external"
     },
     {
+      "id": "pypi:jaraco-abode",
+      "kind": "external"
+    },
+    {
       "id": "pypi:protobuf",
       "kind": "external"
     },
@@ -76,6 +84,14 @@
       "to": "builtin:__future__",
       "kinds": [
         "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "builtin:annotationlib",
+      "kinds": [
+        "import"
       ],
       "count": 1
     },
@@ -140,6 +156,14 @@
       "to": "pypi:google-auth",
       "kinds": [
         "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app.py",
+      "to": "pypi:jaraco-abode",
+      "kinds": [
+        "from"
       ],
       "count": 1
     },

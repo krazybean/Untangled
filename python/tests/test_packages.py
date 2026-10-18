@@ -139,3 +139,14 @@ def test_installed_wins_over_declared(project) -> None:
     root = project({**dist("pyyaml", ["yaml/__init__.py"]), "requirements.txt": "yaml\n"})
     index, _ = load(root)
     assert index.package_for("yaml") == "pyyaml"
+
+
+def test_declared_names_match_dotted_prefixes(project) -> None:
+    root = project({"requirements.txt": "jaraco.abode\ngoogle-genai\nazure_eventhub\ngoogle\n"})
+    index, _ = load(root, venvs=[], pyproject={})
+    assert index.package_for("jaraco.abode.devices.light") == "jaraco-abode"
+    assert index.package_for("google.genai.types") == "google-genai"
+    assert index.package_for("azure.eventhub.aio") == "azure-eventhub"
+    # The longest declared prefix wins; a prefix nobody declared names nothing.
+    assert index.package_for("google.cloud.pubsub_v1") == "google"
+    assert index.package_for("jaraco.functools") is None

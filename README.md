@@ -89,8 +89,10 @@ Graphviz DOT export.
 
 **v2:** trends over git history.
 
-**Next:** a real-world shakedown of the Python library, then
-JavaScript/TypeScript, with its own scanner built on a real parser.
+**Python:** scan, analyze and report, checked on Django, Flask, pandas and
+Home Assistant core.
+
+**Next:** JavaScript/TypeScript, with its own scanner built on a real parser.
 Importing dependency-cruiser output may come later as an `import` command.
 
 ## License

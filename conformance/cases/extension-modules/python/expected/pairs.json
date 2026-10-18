@@ -1,0 +1,82 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "fast/__init__.py",
+      "kind": "internal",
+      "module": "fast"
+    },
+    {
+      "id": "fast/_ctypes_only.pyi",
+      "kind": "internal",
+      "module": "fast._ctypes_only"
+    },
+    {
+      "id": "fast/_native.cpython-312-x86_64-linux-gnu.so",
+      "kind": "internal",
+      "module": "fast._native"
+    },
+    {
+      "id": "fast/_speedups.pyi",
+      "kind": "internal",
+      "module": "fast._speedups"
+    },
+    {
+      "id": "fast/helpers.py",
+      "kind": "internal",
+      "module": "fast.helpers"
+    },
+    {
+      "id": "unresolved:module:fast._not_built",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "fast/__init__.py",
+      "to": "fast/_ctypes_only.pyi",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "fast/__init__.py",
+      "to": "fast/_native.cpython-312-x86_64-linux-gnu.so",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "fast/__init__.py",
+      "to": "fast/_speedups.pyi",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "fast/__init__.py",
+      "to": "fast/helpers.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "fast/__init__.py",
+      "to": "unresolved:module:fast._not_built",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}

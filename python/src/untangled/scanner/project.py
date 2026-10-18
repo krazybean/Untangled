@@ -13,6 +13,9 @@ from untangled.text import path_text
 _SKIPPED_FOLDERS = {"__pycache__", "node_modules", "site-packages"}
 _SKIPPED_AT_ROOT = {"build", "dist"}
 _TEST_FOLDERS = {"test", "tests"}
+# Modules without Python source, importable but not scanned: stubs, Cython sources and
+# compiled extensions, in the order they win when a folder has several for one module.
+EXTENSION_SUFFIXES = (".pyi", ".pyx", ".so", ".pyd")
 
 
 class ProjectError(Exception):
@@ -32,6 +35,8 @@ class Project:
     pyproject: dict[str, Any]
     venvs: list[str] = field(default_factory=list)
     """Folders directly under the root that hold a pyvenv.cfg."""
+    extensions: list[str] = field(default_factory=list)
+    """Modules without a .py file (see EXTENSION_SUFFIXES), sorted by id: import targets, never scanned."""
     warnings: list[str] = field(default_factory=list)
     _paths: dict[str, str] = field(default_factory=dict)
 
@@ -42,7 +47,7 @@ class Project:
         root = os.path.abspath(path)
         warnings: list[str] = []
         pyproject = _read_pyproject(root, warnings)
-        files, tests, venvs, paths = _walk(root)
+        files, tests, venvs, paths, extensions = _walk(root)
         roots: list[str] = []
         for source in sources or []:
             folder = _relative_folder(root, source)
@@ -71,7 +76,7 @@ class Project:
             roots.append("src")
         roots.append("")
         unique = list(dict.fromkeys(roots))
-        return cls(root, files, tests, unique, pyproject, venvs, warnings, paths)
+        return cls(root, files, tests, unique, pyproject, venvs, extensions, warnings, paths)
 
     def has_file(self, file_id: str) -> bool:
         return file_id in self._paths
@@ -92,7 +97,12 @@ class Project:
 def module_name(file_id: str, root: str) -> str | None:
     """The module name of a file relative to one import root, or None when it has none."""
     relative = file_id[len(root) + 1 :] if root else file_id
-    parts = relative[: -len(".py")].split("/")
+    folder, _, name = relative.rpartition("/")
+    if name.endswith((".so", ".pyd")):
+        name = name.split(".")[0]  # _yaml.cpython-313-x86_64-linux-gnu.so is _yaml
+    else:
+        name = name.rpartition(".")[0]
+    parts = (folder.split("/") if folder else []) + [name]
     if parts[-1] == "__init__":
         parts.pop()
     if not parts or not all(part.isidentifier() and not keyword.iskeyword(part) for part in parts):
@@ -131,8 +141,9 @@ def _read_pyproject(root: str, warnings: list[str]) -> dict[str, Any]:
         return {}
 
 
-def _walk(root: str) -> tuple[list[str], set[str], list[str], dict[str, str]]:
+def _walk(root: str) -> tuple[list[str], set[str], list[str], dict[str, str], list[str]]:
     paths: dict[str, str] = {}
+    extensions: list[str] = []
     tests: set[str] = set()
     venvs: list[str] = []
     for folder, subfolders, names in os.walk(root):
@@ -157,10 +168,12 @@ def _walk(root: str) -> tuple[list[str], set[str], list[str], dict[str, str]]:
             kept.append(name)
         subfolders[:] = kept
         for name in names:
+            if name.endswith(EXTENSION_SUFFIXES) and os.path.isfile(os.path.join(folder, name)):
+                extensions.append(prefix + path_text(name))
             if not name.endswith(".py") or not os.path.isfile(os.path.join(folder, name)):
                 continue
             file_id = prefix + path_text(name)
             paths[file_id] = os.path.join(folder, name)
             if in_tests or is_test_file(path_text(name)):
                 tests.add(file_id)
-    return sorted(paths), tests, venvs, paths
+    return sorted(paths), tests, venvs, paths, sorted(extensions)

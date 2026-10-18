@@ -1,0 +1,16 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "fast/__init__.py";
+  "fast/_ctypes_only.pyi";
+  "fast/_native.cpython-312-x86_64-linux-gnu.so";
+  "fast/_speedups.pyi";
+  "fast/helpers.py";
+
+  "fast/__init__.py" -> "fast/_ctypes_only.pyi";
+  "fast/__init__.py" -> "fast/_native.cpython-312-x86_64-linux-gnu.so";
+  "fast/__init__.py" -> "fast/_speedups.pyi";
+  "fast/__init__.py" -> "fast/helpers.py";
+}

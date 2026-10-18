@@ -3,18 +3,18 @@
   "version": "0.1",
   "language": "python",
   "generator": {
-    "name": "untangled-php",
-    "version": "0.1.0-dev"
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
   },
   "clustering": null,
   "summary": {
-    "units": 6,
-    "edges": 5,
+    "units": 10,
+    "edges": 7,
     "cycles": 1,
     "largest_cycle": 2,
     "units_in_cycles": 2,
-    "units_in_cycles_ratio": 0.3333,
-    "mean_fan_out": 0.8333,
+    "units_in_cycles_ratio": 0.2,
+    "mean_fan_out": 0.7,
     "external_packages": 0,
     "unresolved_references": 3
   },
@@ -66,6 +66,38 @@
       "external": 0,
       "unresolved": 1,
       "instability": 0.6667
+    },
+    {
+      "id": "tools/my-plugin/my_plugin/__init__.py",
+      "fan_in": 0,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 1
+    },
+    {
+      "id": "tools/my-plugin/my_plugin/core.py",
+      "fan_in": 2,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "tools/my-plugin/my_plugin/sub/__init__.py",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": null
+    },
+    {
+      "id": "tools/my-plugin/my_plugin/sub/deep.py",
+      "fan_in": 0,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 1,
+      "instability": 1
     }
   ],
   "cycles": [

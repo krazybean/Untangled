@@ -1,4 +1,5 @@
 # Declared but not installed in .venv
 typing_extensions>=4.0
 Django==5.0  # a comment
+jaraco.abode>=6
 -r more-requirements.txt

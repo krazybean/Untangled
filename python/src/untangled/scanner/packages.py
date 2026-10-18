@@ -31,8 +31,13 @@ class PackageIndex:
             names = self.installed.get(".".join(parts[:length]))
             if names:
                 return next(iter(names)) if len(names) == 1 else None
-        top = normalize(parts[0])
-        return top if top in self.declared else None
+        # A declared name matches a dotted prefix, longest first, so `import jaraco.abode`
+        # is the jaraco.abode distribution (a namespace package) and `import yaml` is not pyyaml.
+        for length in range(len(parts), 0, -1):
+            name = normalize(".".join(parts[:length]))
+            if name in self.declared:
+                return name
+        return None
 
     @classmethod
     def load(cls, root: str, venvs: list[str], pyproject: dict[str, Any], warnings: list[str]) -> "PackageIndex":

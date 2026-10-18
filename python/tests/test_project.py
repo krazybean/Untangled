@@ -133,6 +133,11 @@ def test_a_missing_folder_is_an_error(tmp_path) -> None:
         ("pkg/class.py", "", None),
         ("pkg/café.py", "", "pkg.café"),
         ("2fa/x.py", "", None),
+        ("pkg/_speedups.pyi", "", "pkg._speedups"),
+        ("pkg/_speedups.pyx", "", "pkg._speedups"),
+        ("pkg/__init__.pyi", "", "pkg"),
+        ("pkg/_yaml.cpython-313-x86_64-linux-gnu.so", "", "pkg._yaml"),
+        ("pkg/_yaml.cp313-win_amd64.pyd", "", "pkg._yaml"),
     ],
 )
 def test_module_name(file: str, root: str, expected: str | None) -> None:
@@ -157,3 +162,19 @@ def test_file_names_that_are_not_utf8_are_read_as_windows_1252(tmp_path) -> None
     loaded = Project.load(str(tmp_path))
     assert loaded.files == ["café.py"]
     assert os.path.exists(loaded.path("café.py"))
+
+
+def test_stubs_and_extension_modules_are_listed_apart(project) -> None:
+    root = project(
+        {
+            "a.py": "",
+            "a.pyi": "",
+            "pkg/_c.pyx": "",
+            "pkg/_c.cpython-313-x86_64-linux-gnu.so": "",
+            "pkg/notes.txt": "",
+            "build/b.pyi": "",
+        }
+    )
+    loaded = Project.load(root)
+    assert loaded.files == ["a.py"]
+    assert loaded.extensions == ["a.pyi", "pkg/_c.cpython-313-x86_64-linux-gnu.so", "pkg/_c.pyx"]

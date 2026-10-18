@@ -1,0 +1,15 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "app/__init__.py";
+  "app/fast.py";
+  "app/format.py";
+  "app/models.py";
+  "app/types.py";
+
+  "app/models.py" -> "app/fast.py";
+  "app/models.py" -> "app/format.py";
+  "app/models.py" -> "app/types.py";
+}

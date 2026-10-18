@@ -1,0 +1,3 @@
+# SPDX-License-Identifier: MIT
+
+def add(a: int, b: int) -> int: ...
