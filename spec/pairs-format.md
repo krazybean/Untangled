@@ -11,7 +11,7 @@ A node is identified by a string `id`. There are four kinds:
 | kind | id form | example | meaning |
 | --- | --- | --- | --- |
 | `internal` | project-relative POSIX path | `src/Billing/Invoice.php` | A source file of the project. Followed. |
-| `external` | `<ecosystem>:<package>` | `composer:monolog/monolog` | A third-party package. Not followed. |
+| `external` | `<ecosystem>:<package>` | `composer:monolog/monolog`, `pypi:requests`, `npm:lodash` | A third-party package. Not followed. |
 | `builtin` | `builtin:<name>` | `builtin:DateTimeImmutable` | Part of the language or runtime. Not followed. |
 | `unresolved` | `unresolved:<what>:<text>` | `unresolved:class:App\Legacy\Foo` | A reference the scanner could not resolve. |
 
@@ -28,7 +28,7 @@ Rules:
   clustering) and `symbols` (the names it declares, sorted).
 - External nodes are per package, not per class or file inside the package.
 - `<what>` in unresolved ids is defined by the language profile (for PHP:
-  `class`, `function`, `include`).
+  `class`, `function`, `include`; for Python: `module`, `dynamic`).
 
 ## Edges
 

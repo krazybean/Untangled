@@ -1,0 +1,4 @@
+# Declared but not installed in .venv
+typing_extensions>=4.0
+Django==5.0  # a comment
+-r more-requirements.txt

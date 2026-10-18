@@ -1,0 +1,154 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "app/__init__.py",
+      "kind": "internal",
+      "module": "app"
+    },
+    {
+      "id": "app/main.py",
+      "kind": "internal",
+      "module": "app.main"
+    },
+    {
+      "id": "app/models.py",
+      "kind": "internal",
+      "module": "app.models"
+    },
+    {
+      "id": "app/plugins/__init__.py",
+      "kind": "internal",
+      "module": "app.plugins"
+    },
+    {
+      "id": "app/plugins/pdf.py",
+      "kind": "internal",
+      "module": "app.plugins.pdf"
+    },
+    {
+      "id": "app/plugins/sheet.py",
+      "kind": "internal",
+      "module": "app.plugins.sheet"
+    },
+    {
+      "id": "builtin:importlib",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:json",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:typing",
+      "kind": "builtin"
+    },
+    {
+      "id": "unresolved:dynamic:f\"app.plugins.{name}\"",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:dynamic:name",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:ujson",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "app/main.py",
+      "to": "app/models.py",
+      "kinds": [
+        "dynamic",
+        "from",
+        "import",
+        "local",
+        "type-checking"
+      ],
+      "count": 3
+    },
+    {
+      "from": "app/main.py",
+      "to": "app/plugins/pdf.py",
+      "kinds": [
+        "dynamic",
+        "from",
+        "local"
+      ],
+      "count": 2
+    },
+    {
+      "from": "app/main.py",
+      "to": "app/plugins/sheet.py",
+      "kinds": [
+        "dynamic",
+        "from",
+        "local",
+        "type-checking"
+      ],
+      "count": 2
+    },
+    {
+      "from": "app/main.py",
+      "to": "builtin:importlib",
+      "kinds": [
+        "from",
+        "import"
+      ],
+      "count": 2
+    },
+    {
+      "from": "app/main.py",
+      "to": "builtin:json",
+      "kinds": [
+        "conditional",
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app/main.py",
+      "to": "builtin:typing",
+      "kinds": [
+        "from",
+        "import"
+      ],
+      "count": 2
+    },
+    {
+      "from": "app/main.py",
+      "to": "unresolved:dynamic:f\"app.plugins.{name}\"",
+      "kinds": [
+        "dynamic",
+        "local"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app/main.py",
+      "to": "unresolved:dynamic:name",
+      "kinds": [
+        "dynamic",
+        "local"
+      ],
+      "count": 1
+    },
+    {
+      "from": "app/main.py",
+      "to": "unresolved:module:ujson",
+      "kinds": [
+        "conditional",
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}

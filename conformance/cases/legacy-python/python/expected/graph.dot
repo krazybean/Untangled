@@ -1,0 +1,18 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "legacy/__init__.py";
+  "legacy/café.py";
+  "legacy/cookie.py";
+  "legacy/helpers.py";
+  "legacy/menu.py";
+  "legacy/old.py";
+  "legacy/test/client.py";
+
+  "legacy/cookie.py" -> "legacy/café.py";
+  "legacy/helpers.py" -> "legacy/test/client.py";
+  "legacy/menu.py" -> "legacy/café.py";
+  "legacy/menu.py" -> "legacy/helpers.py";
+}

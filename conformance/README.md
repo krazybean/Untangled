@@ -45,6 +45,12 @@ that has a folder for its language.
 | [legacy-app](cases/legacy-app/README.md) | Code outside autoload added with `--source`, includes found through `--source` folders, a Latin-1 class name, a polyfill that a builtin wins over, Composer's autoloader and runtime classes |
 | [class-aliases](cases/class-aliases/README.md) | Global class aliases from `--aliases`: a preset, aliases packages declare, a file that overrides the preset, and names nobody declares |
 | [layers](cases/layers/README.md) | Clustering by namespace, folder and rules; Ca / Ce; a cycle between clusters that no file cycle shows, and a file cycle that disappears inside a cluster |
+| [python-packages](cases/python-packages/README.md) | Python: submodules versus names in `from` imports, namespace packages, a package shadowing a module, a missing module in a project package |
+| [relative-imports](cases/relative-imports/README.md) | Python: relative imports, including above the top-level package and from a top-level module |
+| [src-layout](cases/src-layout/README.md) | Python: import roots from `src/`, `pyproject.toml` and `--source` |
+| [stdlib-and-packages](cases/stdlib-and-packages/README.md) | Python: builtins, distributions from a virtualenv's `RECORD` files, declared dependencies, a module shadowing the standard library |
+| [import-kinds](cases/import-kinds/README.md) | Python: `TYPE_CHECKING`, `try`/`except ImportError`, local and dynamic imports |
+| [legacy-python](cases/legacy-python/README.md) | Python: a Python 2 file, Latin-1 and Windows-1252 files, test folders and a test module real code imports |
 
 ## Adding a case
 
@@ -53,5 +59,11 @@ that has a folder for its language.
    `php/bin/untangled scan conformance/cases/<case>/php/project --output=conformance/cases/<case>/php/expected/pairs.json`
    and `php/bin/untangled analyze conformance/cases/<case>/php/project --output=conformance/cases/<case>/php/expected/analysis.json`
    (add `--cluster=namespace:2` and so on for a clustered analysis).
+   For Python, with the library installed (`pip install -e python`):
+   `untangled scan conformance/cases/<case>/python/project --output=conformance/cases/<case>/python/expected/pairs.json`,
+   adding `--source=...` for each line of `python/sources`. Until the Python library has `analyze` and `report`, its
+   expected analyses and DOT graphs are made by the PHP library from that
+   pairs document (`php/bin/untangled analyze .../python/expected/pairs.json`),
+   which works because both read the same format.
 3. **Read the expected output line by line** and check it against the spec
    before committing. Generated output is only a starting point.

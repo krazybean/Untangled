@@ -1,0 +1,93 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 7,
+    "edges": 9,
+    "cycles": 1,
+    "largest_cycle": 2,
+    "units_in_cycles": 2,
+    "units_in_cycles_ratio": 0.2857,
+    "mean_fan_out": 1.2857,
+    "external_packages": 0,
+    "unresolved_references": 1
+  },
+  "units": [
+    {
+      "id": "bootstrap.py",
+      "fan_in": 0,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 1
+    },
+    {
+      "id": "src/app/domain/order.py",
+      "fan_in": 1,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.5
+    },
+    {
+      "id": "src/app/domain/user.py",
+      "fan_in": 2,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.3333
+    },
+    {
+      "id": "src/app/http/router.py",
+      "fan_in": 2,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.3333
+    },
+    {
+      "id": "src/app/http/user_controller.py",
+      "fan_in": 1,
+      "fan_out": 3,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.75
+    },
+    {
+      "id": "src/app/infra/clock.py",
+      "fan_in": 2,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/app/infra/user_repository.py",
+      "fan_in": 1,
+      "fan_out": 2,
+      "external": 0,
+      "unresolved": 1,
+      "instability": 0.6667
+    }
+  ],
+  "cycles": [
+    {
+      "members": [
+        "src/app/http/router.py",
+        "src/app/http/user_controller.py"
+      ],
+      "size": 2,
+      "example": [
+        "src/app/http/router.py",
+        "src/app/http/user_controller.py",
+        "src/app/http/router.py"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "lib/vendored/__init__.py",
+      "kind": "internal",
+      "module": "vendored"
+    },
+    {
+      "id": "lib/vendored/helper.py",
+      "kind": "internal",
+      "module": "vendored.helper"
+    },
+    {
+      "id": "manage.py",
+      "kind": "internal",
+      "module": "manage"
+    },
+    {
+      "id": "scripts/run.py",
+      "kind": "internal",
+      "module": "scripts.run"
+    },
+    {
+      "id": "src/billing/__init__.py",
+      "kind": "internal",
+      "module": "billing"
+    },
+    {
+      "id": "src/billing/invoice.py",
+      "kind": "internal",
+      "module": "billing.invoice"
+    },
+    {
+      "id": "tools/devtool.py",
+      "kind": "internal",
+      "module": "devtool"
+    }
+  ],
+  "edges": [
+    {
+      "from": "manage.py",
+      "to": "src/billing/invoice.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "manage.py",
+      "to": "tools/devtool.py",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "scripts/run.py",
+      "to": "tools/devtool.py",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/billing/invoice.py",
+      "to": "lib/vendored/helper.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    },
+    {
+      "from": "tools/devtool.py",
+      "to": "src/billing/invoice.py",
+      "kinds": [
+        "from"
+      ],
+      "count": 1
+    }
+  ]
+}

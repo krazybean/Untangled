@@ -1,0 +1,23 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "bootstrap.py";
+  "src/app/domain/order.py";
+  "src/app/domain/user.py";
+  "src/app/http/router.py" [color="#d03b3b", penwidth=2];
+  "src/app/http/user_controller.py" [color="#d03b3b", penwidth=2];
+  "src/app/infra/clock.py";
+  "src/app/infra/user_repository.py";
+
+  "bootstrap.py" -> "src/app/http/router.py";
+  "src/app/domain/order.py" -> "src/app/domain/user.py";
+  "src/app/domain/user.py" -> "src/app/infra/clock.py";
+  "src/app/http/router.py" -> "src/app/http/user_controller.py" [color="#d03b3b", penwidth=2];
+  "src/app/http/user_controller.py" -> "src/app/domain/order.py";
+  "src/app/http/user_controller.py" -> "src/app/http/router.py" [color="#d03b3b", penwidth=2];
+  "src/app/http/user_controller.py" -> "src/app/infra/user_repository.py";
+  "src/app/infra/user_repository.py" -> "src/app/domain/user.py";
+  "src/app/infra/user_repository.py" -> "src/app/infra/clock.py";
+}

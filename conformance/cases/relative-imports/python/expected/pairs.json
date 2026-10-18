@@ -1,0 +1,127 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "nodes": [
+    {
+      "id": "manage.py",
+      "kind": "internal",
+      "module": "manage"
+    },
+    {
+      "id": "pkg/__init__.py",
+      "kind": "internal",
+      "module": "pkg"
+    },
+    {
+      "id": "pkg/a.py",
+      "kind": "internal",
+      "module": "pkg.a"
+    },
+    {
+      "id": "pkg/b.py",
+      "kind": "internal",
+      "module": "pkg.b"
+    },
+    {
+      "id": "pkg/sub/__init__.py",
+      "kind": "internal",
+      "module": "pkg.sub"
+    },
+    {
+      "id": "pkg/sub/c.py",
+      "kind": "internal",
+      "module": "pkg.sub.c"
+    },
+    {
+      "id": "unresolved:module:...outside",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:.settings",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:pkg.missing",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "manage.py",
+      "to": "unresolved:module:.settings",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    },
+    {
+      "from": "pkg/__init__.py",
+      "to": "pkg/a.py",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    },
+    {
+      "from": "pkg/a.py",
+      "to": "pkg/b.py",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    },
+    {
+      "from": "pkg/a.py",
+      "to": "pkg/sub/c.py",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    },
+    {
+      "from": "pkg/b.py",
+      "to": "unresolved:module:pkg.missing",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    },
+    {
+      "from": "pkg/sub/c.py",
+      "to": "pkg/a.py",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    },
+    {
+      "from": "pkg/sub/c.py",
+      "to": "pkg/b.py",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    },
+    {
+      "from": "pkg/sub/c.py",
+      "to": "unresolved:module:...outside",
+      "kinds": [
+        "from",
+        "relative"
+      ],
+      "count": 1
+    }
+  ]
+}

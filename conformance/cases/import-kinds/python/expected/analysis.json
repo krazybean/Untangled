@@ -1,0 +1,72 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-php",
+    "version": "0.1.0-dev"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 6,
+    "edges": 3,
+    "cycles": 0,
+    "largest_cycle": 0,
+    "units_in_cycles": 0,
+    "units_in_cycles_ratio": 0,
+    "mean_fan_out": 0.5,
+    "external_packages": 0,
+    "unresolved_references": 3
+  },
+  "units": [
+    {
+      "id": "app/__init__.py",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": null
+    },
+    {
+      "id": "app/main.py",
+      "fan_in": 0,
+      "fan_out": 3,
+      "external": 0,
+      "unresolved": 3,
+      "instability": 1
+    },
+    {
+      "id": "app/models.py",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "app/plugins/__init__.py",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": null
+    },
+    {
+      "id": "app/plugins/pdf.py",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "app/plugins/sheet.py",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    }
+  ],
+  "cycles": []
+}

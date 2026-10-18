@@ -1,0 +1,15 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "src/cart.py" [color="#d03b3b", penwidth=2];
+  "src/catalog.py";
+  "src/customer.py" [color="#d03b3b", penwidth=2];
+  "src/order.py" [color="#d03b3b", penwidth=2];
+
+  "src/cart.py" -> "src/order.py" [color="#d03b3b", penwidth=2];
+  "src/customer.py" -> "src/cart.py" [color="#d03b3b", penwidth=2];
+  "src/order.py" -> "src/cart.py" [color="#d03b3b", penwidth=2];
+  "src/order.py" -> "src/customer.py" [color="#d03b3b", penwidth=2];
+}

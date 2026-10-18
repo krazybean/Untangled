@@ -1,0 +1,18 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "manage.py";
+  "pkg/__init__.py";
+  "pkg/a.py" [color="#d03b3b", penwidth=2];
+  "pkg/b.py";
+  "pkg/sub/__init__.py";
+  "pkg/sub/c.py" [color="#d03b3b", penwidth=2];
+
+  "pkg/__init__.py" -> "pkg/a.py";
+  "pkg/a.py" -> "pkg/b.py";
+  "pkg/a.py" -> "pkg/sub/c.py" [color="#d03b3b", penwidth=2];
+  "pkg/sub/c.py" -> "pkg/a.py" [color="#d03b3b", penwidth=2];
+  "pkg/sub/c.py" -> "pkg/b.py";
+}
