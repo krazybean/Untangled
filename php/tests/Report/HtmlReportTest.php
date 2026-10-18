@@ -128,6 +128,13 @@ final class HtmlReportTest extends TestCase
         self::assertStringContainsString('as set by a rules file', HtmlReport::render(Report::build('x', $doc, Clustering::parseRules('a/ A'))));
     }
 
+    public function testPythonModulesAreGroupedByPackagePath(): void
+    {
+        $doc = new PairsDocument('python');
+        $doc->addNode('shop/cart.py', PairsDocument::INTERNAL, ['module' => 'shop.cart']);
+        self::assertStringContainsString('share the first 1 level of their package path', HtmlReport::render(Report::build('x', $doc, Clustering::fromString('namespace:1'))));
+    }
+
     public function testAnEmptyProjectStillRenders(): void
     {
         self::assertStringContainsString('nothing to report yet', HtmlReport::render(Report::build('Empty', new PairsDocument('php'))));

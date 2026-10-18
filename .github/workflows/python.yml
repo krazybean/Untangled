@@ -4,10 +4,10 @@ name: Python
 
 on:
   pull_request:
-    paths: ['python/**', 'conformance/**', 'spec/**', '.github/workflows/python.yml']
+    paths: ['python/**', 'conformance/**', 'spec/**', 'php/resources/report/**', '.github/workflows/python.yml']
   push:
     branches: [main]
-    paths: ['python/**', 'conformance/**', 'spec/**', '.github/workflows/python.yml']
+    paths: ['python/**', 'conformance/**', 'spec/**', 'php/resources/report/**', '.github/workflows/python.yml']
 
 defaults:
   run:

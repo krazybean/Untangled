@@ -61,9 +61,9 @@ that has a folder for its language.
    (add `--cluster=namespace:2` and so on for a clustered analysis).
    For Python, with the library installed (`pip install -e python`):
    `untangled scan conformance/cases/<case>/python/project --output=conformance/cases/<case>/python/expected/pairs.json`,
-   adding `--source=...` for each line of `python/sources`. Until the Python library has `analyze` and `report`, its
-   expected analyses and DOT graphs are made by the PHP library from that
-   pairs document (`php/bin/untangled analyze .../python/expected/pairs.json`),
-   which works because both read the same format.
+   adding `--source=...` for each line of `python/sources`, then `untangled analyze` and
+   `untangled report --format=dot` the same way.
+   When a case has more than one language folder, their analyses must have the same
+   summaries; `scripts/check-cross-language.py` checks that in CI.
 3. **Read the expected output line by line** and check it against the spec
    before committing. Generated output is only a starting point.
