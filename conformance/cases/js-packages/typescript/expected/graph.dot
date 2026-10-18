@@ -1,0 +1,15 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "src/app.ts";
+  "src/config.ts";
+  "src/utils/slug.ts";
+  "tools/src/cli.ts";
+  "tools/src/helpers.ts";
+
+  "src/app.ts" -> "src/config.ts";
+  "src/app.ts" -> "src/utils/slug.ts";
+  "tools/src/cli.ts" -> "tools/src/helpers.ts";
+}

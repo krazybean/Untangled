@@ -1,0 +1,62 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-typescript",
+    "version": "0.1.0-dev.0"
+  },
+  "nodes": [
+    {
+      "id": "src/cart.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/catalog.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/customer.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/order.ts",
+      "kind": "internal"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/cart.ts",
+      "to": "src/order.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/customer.ts",
+      "to": "src/cart.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/order.ts",
+      "to": "src/cart.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/order.ts",
+      "to": "src/customer.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}

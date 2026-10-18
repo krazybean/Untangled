@@ -1,0 +1,137 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-typescript",
+    "version": "0.1.0-dev.0"
+  },
+  "nodes": [
+    {
+      "id": "generated/api/client.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/app/shell.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/config/index.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/domain/models/order.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/domain/models/user.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/lib/logger/index.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/main.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/shadowed/first.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/theme.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/ui/panel.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "unresolved:module:@/nope",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/main.ts",
+      "to": "generated/api/client.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/app/shell.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/config/index.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/domain/models/order.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/domain/models/user.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/lib/logger/index.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/shadowed/first.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/theme.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/ui/panel.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "unresolved:module:@/nope",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}

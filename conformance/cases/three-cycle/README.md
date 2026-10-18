@@ -5,3 +5,7 @@
 
 The Python version has the same shape, with one module per file under
 `src/` (an import root), and the same analysis summary.
+
+The TypeScript version (`typescript/`) has the same shape, with `./x.js`
+specifiers that name the `.ts` files (the `NodeNext` convention) and one
+type-only import.

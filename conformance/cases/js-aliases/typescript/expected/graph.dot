@@ -1,0 +1,26 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "generated/api/client.ts";
+  "src/app/shell.ts";
+  "src/config/index.ts";
+  "src/domain/models/order.ts";
+  "src/domain/models/user.ts";
+  "src/lib/logger/index.ts";
+  "src/main.ts";
+  "src/shadowed/first.ts";
+  "src/theme.ts";
+  "src/ui/panel.ts";
+
+  "src/main.ts" -> "generated/api/client.ts";
+  "src/main.ts" -> "src/app/shell.ts";
+  "src/main.ts" -> "src/config/index.ts";
+  "src/main.ts" -> "src/domain/models/order.ts";
+  "src/main.ts" -> "src/domain/models/user.ts";
+  "src/main.ts" -> "src/lib/logger/index.ts";
+  "src/main.ts" -> "src/shadowed/first.ts";
+  "src/main.ts" -> "src/theme.ts";
+  "src/main.ts" -> "src/ui/panel.ts";
+}

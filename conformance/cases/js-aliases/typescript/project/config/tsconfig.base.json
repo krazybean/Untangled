@@ -1,0 +1,12 @@
+{
+  // No baseUrl: paths are relative to this file's folder.
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["../src/*"],
+      "@app/models/*": ["../src/domain/models/*"],
+      "@app/*": ["../src/app/*"],
+      "~/*": ["../generated/*", "../src/*"],
+      "logger": ["../src/lib/logger/index.ts"],
+    },
+  },
+}

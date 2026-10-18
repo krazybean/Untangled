@@ -1,0 +1,128 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 13,
+    "edges": 12,
+    "cycles": 0,
+    "largest_cycle": 0,
+    "units_in_cycles": 0,
+    "units_in_cycles_ratio": 0,
+    "mean_fan_out": 0.9231,
+    "external_packages": 0,
+    "unresolved_references": 3
+  },
+  "units": [
+    {
+      "id": "settings.json",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/both.js",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": null
+    },
+    {
+      "id": "src/both.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/components/button.tsx",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/index.js",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/legacy/common.cts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/legacy/esm.mts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/legacy/old.js",
+      "fan_in": 1,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.5
+    },
+    {
+      "id": "src/main.ts",
+      "fan_in": 0,
+      "fan_out": 9,
+      "external": 0,
+      "unresolved": 3,
+      "instability": 1
+    },
+    {
+      "id": "src/types/colors.d.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/types/shapes.d.ts",
+      "fan_in": 1,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.5
+    },
+    {
+      "id": "src/util/format.ts",
+      "fan_in": 2,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/util/index.ts",
+      "fan_in": 1,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0.5
+    }
+  ],
+  "cycles": []
+}

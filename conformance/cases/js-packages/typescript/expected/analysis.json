@@ -1,0 +1,64 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 5,
+    "edges": 3,
+    "cycles": 0,
+    "largest_cycle": 0,
+    "units_in_cycles": 0,
+    "units_in_cycles_ratio": 0,
+    "mean_fan_out": 0.6,
+    "external_packages": 10,
+    "unresolved_references": 7
+  },
+  "units": [
+    {
+      "id": "src/app.ts",
+      "fan_in": 0,
+      "fan_out": 2,
+      "external": 8,
+      "unresolved": 6,
+      "instability": 1
+    },
+    {
+      "id": "src/config.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/utils/slug.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "tools/src/cli.ts",
+      "fan_in": 0,
+      "fan_out": 1,
+      "external": 3,
+      "unresolved": 1,
+      "instability": 1
+    },
+    {
+      "id": "tools/src/helpers.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    }
+  ],
+  "cycles": []
+}

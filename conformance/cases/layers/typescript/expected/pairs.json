@@ -1,0 +1,144 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-typescript",
+    "version": "0.1.0-dev.0"
+  },
+  "nodes": [
+    {
+      "id": "bootstrap.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "builtin:perf_hooks",
+      "kind": "builtin"
+    },
+    {
+      "id": "src/domain/order.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/domain/user.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/http/router.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/http/user-controller.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/infra/clock.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/infra/user-repository.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "unresolved:module:src/cache/store.js",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "bootstrap.ts",
+      "to": "src/http/router.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/domain/order.ts",
+      "to": "src/domain/user.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/domain/user.ts",
+      "to": "src/infra/clock.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/http/router.ts",
+      "to": "src/http/user-controller.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/http/user-controller.ts",
+      "to": "src/domain/order.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/http/user-controller.ts",
+      "to": "src/http/router.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/http/user-controller.ts",
+      "to": "src/infra/user-repository.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/infra/clock.ts",
+      "to": "builtin:perf_hooks",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/infra/user-repository.ts",
+      "to": "src/domain/user.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/infra/user-repository.ts",
+      "to": "src/infra/clock.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/infra/user-repository.ts",
+      "to": "unresolved:module:src/cache/store.js",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,317 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-typescript",
+    "version": "0.1.0-dev.0"
+  },
+  "nodes": [
+    {
+      "id": "builtin:events",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:fs",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:path",
+      "kind": "builtin"
+    },
+    {
+      "id": "builtin:test",
+      "kind": "builtin"
+    },
+    {
+      "id": "npm:@scope/ui",
+      "kind": "external"
+    },
+    {
+      "id": "npm:buffer",
+      "kind": "external"
+    },
+    {
+      "id": "npm:chalk",
+      "kind": "external"
+    },
+    {
+      "id": "npm:commander",
+      "kind": "external"
+    },
+    {
+      "id": "npm:date-fns",
+      "kind": "external"
+    },
+    {
+      "id": "npm:fsevents",
+      "kind": "external"
+    },
+    {
+      "id": "npm:installed-only",
+      "kind": "external"
+    },
+    {
+      "id": "npm:lodash",
+      "kind": "external"
+    },
+    {
+      "id": "npm:react",
+      "kind": "external"
+    },
+    {
+      "id": "npm:vitest",
+      "kind": "external"
+    },
+    {
+      "id": "src/app.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/config.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/utils/slug.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "tools/src/cli.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "tools/src/helpers.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "unresolved:module:#config",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:#nothing",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:@nobody/pkg/deep",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:chalk",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:commander",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:left-pad",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:src/gone.ts",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/app.ts",
+      "to": "builtin:events",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "builtin:fs",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "builtin:path",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "builtin:test",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "npm:@scope/ui",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "npm:buffer",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "npm:date-fns",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "npm:fsevents",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "npm:installed-only",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "npm:lodash",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "npm:react",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "npm:vitest",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "src/config.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "src/utils/slug.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "unresolved:module:#nothing",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "unresolved:module:@nobody/pkg/deep",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "unresolved:module:chalk",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "unresolved:module:commander",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "unresolved:module:left-pad",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.ts",
+      "to": "unresolved:module:src/gone.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "tools/src/cli.ts",
+      "to": "npm:chalk",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "tools/src/cli.ts",
+      "to": "npm:commander",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "tools/src/cli.ts",
+      "to": "npm:react",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "tools/src/cli.ts",
+      "to": "tools/src/helpers.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "tools/src/cli.ts",
+      "to": "unresolved:module:#config",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "bootstrap.ts";
+  "src/domain/order.ts";
+  "src/domain/user.ts";
+  "src/http/router.ts" [color="#d03b3b", penwidth=2];
+  "src/http/user-controller.ts" [color="#d03b3b", penwidth=2];
+  "src/infra/clock.ts";
+  "src/infra/user-repository.ts";
+
+  "bootstrap.ts" -> "src/http/router.ts";
+  "src/domain/order.ts" -> "src/domain/user.ts";
+  "src/domain/user.ts" -> "src/infra/clock.ts";
+  "src/http/router.ts" -> "src/http/user-controller.ts" [color="#d03b3b", penwidth=2];
+  "src/http/user-controller.ts" -> "src/domain/order.ts";
+  "src/http/user-controller.ts" -> "src/http/router.ts" [color="#d03b3b", penwidth=2];
+  "src/http/user-controller.ts" -> "src/infra/user-repository.ts";
+  "src/infra/user-repository.ts" -> "src/domain/user.ts";
+  "src/infra/user-repository.ts" -> "src/infra/clock.ts";
+}

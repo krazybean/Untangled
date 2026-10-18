@@ -1,0 +1,17 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "build/generated/schema.js";
+  "dist/legacy.js";
+  "src/__mocks__/api.ts";
+  "src/app.tsx";
+  "src/http.ts";
+
+  "build/generated/schema.js" -> "src/http.ts";
+  "src/__mocks__/api.ts" -> "src/http.ts";
+  "src/app.tsx" -> "build/generated/schema.js";
+  "src/app.tsx" -> "dist/legacy.js";
+  "src/app.tsx" -> "src/__mocks__/api.ts";
+}

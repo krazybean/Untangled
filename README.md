@@ -53,7 +53,7 @@ analyzed on its own.
 | Language | Folder | Package | License | Status |
 | --- | --- | --- | --- | --- |
 | PHP | [`php/`](php/README.md) | `krazybean/untangled` (Composer) | MIT | v1 complete, not yet released |
-| JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | Planned |
+| JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | scan works; analyze and report next; not published yet |
 | Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | scan, analyze and report work; not published yet |
 
 ## Quick start (PHP)
@@ -76,7 +76,7 @@ Every command (`scan`, `analyze`, `report`) and option is documented in the
 | [`spec/`](spec/README.md) | The language-neutral contract: pairs format, clustering, metric definitions, per-language profiles |
 | [`conformance/`](conformance/README.md) | Fixture projects and the output every library must produce for them |
 | [`php/`](php/README.md) | The PHP library and CLI |
-| [`typescript/`](typescript/README.md) | The JavaScript/TypeScript library (planned) |
+| [`typescript/`](typescript/README.md) | The JavaScript/TypeScript library |
 | [`python/`](python/README.md) | The Python library |
 | [`docs/`](docs/README.md) | User documentation and design notes |
 
@@ -92,8 +92,9 @@ Graphviz DOT export.
 **Python:** scan, analyze and report, checked on Django, Flask, pandas and
 Home Assistant core.
 
-**Next:** JavaScript/TypeScript, with its own scanner built on a real parser.
-Importing dependency-cruiser output may come later as an `import` command.
+**JavaScript/TypeScript:** a scanner built on `@babel/parser` (done), then
+analyze and report, then a check on real projects. Importing
+dependency-cruiser output may come later as an `import` command.
 
 ## License
 

@@ -1,6 +1,6 @@
 {
   "name": "@krazybean/untangled",
-  "version": "0.0.0",
+  "version": "0.1.0-dev.0",
   "private": true,
   "description": "Dependency health your whole team can understand: cycles, coupling and trends for JavaScript and TypeScript.",
   "license": "MIT",
@@ -10,5 +10,30 @@
     "url": "git+https://github.com/krazybean/Untangled.git",
     "directory": "typescript"
   },
-  "bin": { "untangled": "bin/untangled.js", "utg": "bin/untangled.js" }
+  "type": "module",
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "bin": {
+    "untangled": "bin/untangled.js",
+    "utg": "bin/untangled.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@babel/parser": "^8.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
 }

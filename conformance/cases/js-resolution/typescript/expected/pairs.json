@@ -1,0 +1,199 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-typescript",
+    "version": "0.1.0-dev.0"
+  },
+  "nodes": [
+    {
+      "id": "settings.json",
+      "kind": "internal"
+    },
+    {
+      "id": "src/both.js",
+      "kind": "internal"
+    },
+    {
+      "id": "src/both.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/components/button.tsx",
+      "kind": "internal"
+    },
+    {
+      "id": "src/index.js",
+      "kind": "internal"
+    },
+    {
+      "id": "src/legacy/common.cts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/legacy/esm.mts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/legacy/old.js",
+      "kind": "internal"
+    },
+    {
+      "id": "src/main.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/types/colors.d.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/types/shapes.d.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/util/format.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/util/index.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "unresolved:module:../../outside.js",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:/abs/path.js",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:module:src/missing.js",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/legacy/old.js",
+      "to": "src/util/format.ts",
+      "kinds": [
+        "require"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "settings.json",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/both.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/components/button.tsx",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/legacy/common.cts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/legacy/esm.mts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/legacy/old.js",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/types/shapes.d.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/util/format.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/main.ts",
+      "to": "src/util/index.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "unresolved:module:../../outside.js",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "unresolved:module:/abs/path.js",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/main.ts",
+      "to": "unresolved:module:src/missing.js",
+      "kinds": [
+        "import"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/types/shapes.d.ts",
+      "to": "src/types/colors.d.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/util/index.ts",
+      "to": "src/index.js",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}

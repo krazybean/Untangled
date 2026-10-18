@@ -1,0 +1,5 @@
+{
+  "@components/*": ["src/ui/*"],
+  "config": "src/config/index.ts",
+  "@/*": ["src/shadowed/*"]
+}
