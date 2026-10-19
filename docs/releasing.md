@@ -103,3 +103,12 @@ keeps getting the latest stable version.
 Publishing from CI instead would use npm trusted publishing: add the workflow
 as a trusted publisher in the package's settings on npmjs.com (possible once
 the package exists), and the workflow publishes with provenance and no token.
+
+## GitHub Release
+
+After any of the releases above, publish a GitHub Release for the tag
+(Releases → Draft a new release → choose the tag), titled after the library
+and version, such as **PHP 1.0.0**, with that version's changelog entry as
+the notes. Leave **Set as the latest release** on for the newest one. The
+release is what watchers of the repository are notified about, and where
+readers look for what changed.

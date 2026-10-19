@@ -44,7 +44,8 @@ tool of its own:
 - Each language has its own CI workflow (`.github/workflows/<language>.yml`)
   that runs inside its folder, and its own Dependabot entry.
 - Root-level files are limited to repository concerns: the license map and
-  texts, README, CONTRIBUTING, and `scripts/check-licenses.sh`.
+  texts, README, CONTRIBUTING, SECURITY, `.github/`, and the repository
+  scripts in `scripts/`.
 
 ## Spec first
 
@@ -55,14 +56,43 @@ report number), change the spec first and add or update a
 
 ## Checks
 
-From the repository root:
+CI runs these on every pull request. From the repository root:
 
 ```sh
 scripts/check-licenses.sh
+scripts/sync-report-assets.sh --check   # report script and styles match php/resources/report
+scripts/check-cross-language.py         # libraries agree on the cases they share
+```
 
-# PHP 8.2+, from inside php/
+Then, for each language you changed, from inside its folder:
+
+```sh
+# PHP 8.2+
 cd php
 composer install
 composer validate --no-check-publish --strict
 composer test
+
+# Python 3.11+
+cd python
+python -m pip install -e . --group dev
+pytest
+ruff check . && ruff format --check .
+
+# JavaScript/TypeScript, Node.js 22.18+
+cd typescript
+npm ci
+npm run typecheck
+npm test
 ```
+
+## Issues and pull requests
+
+Bug reports are most useful with the library, its version
+(`untangled --version`), the command, and a public project or a few files
+that reproduce the problem; the issue form asks for these. Please report
+security problems privately, as [SECURITY.md](SECURITY.md) describes.
+
+A pull request that changes behavior should say which libraries it covers.
+A change to one library that the others will need is fine, as long as the
+pull request says so.

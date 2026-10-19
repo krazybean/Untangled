@@ -10,6 +10,8 @@ jobs:
   licenses:
     name: Licenses
     runs-on: ubuntu-latest
+    # The checks take seconds; fail fast if a runner hangs instead of waiting hours.
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
       - run: scripts/check-licenses.sh

@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: MIT
+name: Feature request
+description: Something Untangled should measure, show or support.
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: library
+    attributes:
+      label: Library
+      description: Most features should work the same in every language.
+      multiple: true
+      options:
+        - All
+        - PHP
+        - Python
+        - JavaScript / TypeScript
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you are trying to do
+      description: The question about your codebase you want answered, or the workflow that is missing.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like Untangled to do
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you use today instead
