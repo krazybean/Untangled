@@ -19,6 +19,15 @@ function edges(files: Record<string, string | Uint8Array>, options: ScanOptions 
   };
 }
 
+function acceptsLatin1Names(): boolean {
+  try {
+    writeFileSync(Buffer.from(join(project({}), "caf\xe9"), "latin1"), "");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function nodes(files: Record<string, string>, options: ScanOptions = {}): string[] {
   return scan(project(files), options)
     .pairs.nodes()
@@ -91,8 +100,14 @@ describe("input", () => {
     ]);
   });
 
-  test("Windows-1252 file contents and names", () => {
-    const root = project({ "a.ts": Buffer.from('// caf\xe9\nimport "./caf\xe9";', "latin1") });
+  test("Windows-1252 file contents", () => {
+    const root = project({ "a.ts": Buffer.from('// caf\xe9\nimport "./caf\xe9";', "latin1"), "café.ts": H });
+    expect(scan(root).pairs.edges()).toEqual([{ from: "a.ts", to: "café.ts", kinds: ["import"], count: 1 }]);
+  });
+
+  // macOS (APFS) refuses file names that are not valid UTF-8, so they cannot occur there.
+  test.runIf(acceptsLatin1Names())("Windows-1252 file names", () => {
+    const root = project({ "a.ts": 'import "./café";' });
     writeFileSync(Buffer.from(join(root, "caf\xe9.ts"), "latin1"), H);
     expect(scan(root).pairs.edges()).toEqual([{ from: "a.ts", to: "café.ts", kinds: ["import"], count: 1 }]);
   });
