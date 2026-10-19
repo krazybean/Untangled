@@ -116,8 +116,9 @@ Symfony, Laravel, PrestaShop, OpenMage and Monica (PHP), and Django, Flask,
 pandas and Home Assistant core (Python).
 
 **Next, JavaScript/TypeScript:** scan, analyze and report work (the scanner is
-built on a real parser and reads tsconfig paths and every `package.json`);
-a check on more real projects, then an npm release.
+built on a real parser and reads tsconfig paths and every `package.json`),
+checked on VS Code, typescript-eslint, Express and Next.js Commerce. Next is an
+npm release.
 
 **v2:** trends over git history.
 

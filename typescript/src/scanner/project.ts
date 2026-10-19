@@ -17,7 +17,10 @@ const TEST_FILE = /\.(test|spec)\.[^./]+$/;
 export class ProjectError extends Error {}
 
 export class Project {
-  /** Every file outside node_modules and hidden folders, by id: project-relative POSIX path. */
+  /**
+   * Every file outside node_modules and hidden folders, by id: project-relative POSIX path.
+   * Files in hidden folders are added by has() when an import names them.
+   */
   readonly files = new Map<string, Buffer>();
   /** Code files scanned by default, sorted. */
   readonly scanned: string[] = [];
@@ -86,6 +89,25 @@ export class Project {
         this.scanned.push(id);
       }
     }
+  }
+
+  /**
+   * Whether the project has this file. A file in a hidden folder is not listed up front, and
+   * is added once an import names it.
+   */
+  has(id: string): boolean {
+    if (this.files.has(id)) {
+      return true;
+    }
+    if (!id.split("/").slice(0, -1).some((part) => part.startsWith("."))) {
+      return false;
+    }
+    const path = Buffer.from(join(this.root, id));
+    if (!isFile(path)) {
+      return false;
+    }
+    this.files.set(id, path);
+    return true;
   }
 
   /** Whether a code file outside build output may be scanned when a scanned file imports it. */

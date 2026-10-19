@@ -16,7 +16,9 @@ reads them together. `language` in the document is `typescript`.
   `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts` or `.cts`, except:
   - declaration files (`.d.ts`, `.d.mts`, `.d.cts`), which are scanned only
     when a scanned file imports them;
-  - files in `node_modules/` and hidden folders (name starting with `.`);
+  - files in `node_modules/` and hidden folders (name starting with `.`).
+    A code file in a hidden folder that a scanned file imports by a relative
+    path (`./.eslint-plugin-local`) is scanned too;
   - files in **build output** folders: any folder named `dist`, `build` or
     `coverage`, and the `compilerOptions.outDir` of `tsconfig.json`. The scan
     warns with the number of files skipped this way and the folders holding
@@ -35,7 +37,8 @@ reads them together. `language` in the document is `typescript`.
 ## Edge kinds
 
 Each reference carries one kind for the statement, plus `type` when it only
-imports types. An edge's `kinds` is the union over its references.
+imports types. An edge's `kinds` is the union over its references, and ambient module declarations (`declare module "x"` in a
+declaration file the project includes).
 
 | kind | meaning |
 | --- | --- |
@@ -121,6 +124,10 @@ dropped from a relative specifier first.
    or any `package.json` above that one, up to the project root; or when
    `node_modules/<name>/package.json` exists in the importing file's folder or
    any folder above it, up to the project root, as Node.js looks for packages.
+   A package that ships no code and is known only by its types (`vscode`,
+   provided by the host at run time) counts too: when its DefinitelyTyped
+   package (`@types/<name>`, or `@types/<scope>__<name>` for `@scope/name`) is
+   declared or installed the same way, the target is still `npm:<name>`.
 6. Otherwise the target is `unresolved:module:<specifier>`.
 
 The scanner warns, without failing, when the project has no `node_modules/` folder and
@@ -138,8 +145,11 @@ The reference implementation uses `@babel/parser`, which reads JavaScript,
 JSX, TypeScript and TSX without depending on the TypeScript compiler the
 project uses. `.ts`, `.mts` and `.cts` files are read as TypeScript, `.tsx` as
 TypeScript with JSX, declaration files as TypeScript declarations, and
-JavaScript files as JavaScript with JSX (and, when that fails, with Flow
-types). `.cjs` files are scripts, `.mjs` files modules, and other files either,
+JavaScript files as JavaScript with JSX (and again with Flow types when that
+leaves syntax errors). TypeScript files are read with the legacy decorators proposal first,
+which allows parameter decorators (`constructor(@inject(A) a: A)`), and
+again with the current one when that leaves syntax errors; the parse with the
+fewest errors is kept, as it is for the two JavaScript readings. `.cjs` files are scripts, `.mjs` files modules, and other files either,
 by what they contain.
 
 The parser recovers from most syntax errors; the imports it still finds are
