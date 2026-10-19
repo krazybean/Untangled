@@ -122,8 +122,13 @@ final class HtmlReport
         }
         [$strategy, $depth] = explode(':', $clustering);
         $levels = self::count((int) $depth, 'level');
-        // Python has packages where PHP has namespaces.
-        $namespace = $language === 'python' ? 'package path' : 'namespace';
+        // Python has packages where PHP has namespaces; JavaScript has neither, so namespace:N
+        // groups by folder.
+        $namespace = match ($language) {
+            'python' => 'package path',
+            'typescript' => 'folder path',
+            default => 'namespace',
+        };
         return $strategy === 'namespace'
             ? "Each part is a group of files that share the first {$levels} of their {$namespace}."
             : "Each part is a group of files that share the first {$levels} of their folder path.";

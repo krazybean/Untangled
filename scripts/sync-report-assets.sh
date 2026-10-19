@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 source=php/resources/report
-copies=(python/src/untangled/report/assets)
+copies=(python/src/untangled/report/assets typescript/assets)
 status=0
 
 for target in "${copies[@]}"; do

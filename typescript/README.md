@@ -6,11 +6,9 @@ TypeScript project (or a mix of both) into the
 [pairs document](../spec/pairs-format.md) defined by the shared spec, following
 the [JavaScript and TypeScript profile](../spec/languages/typescript.md).
 
-> **Status:** `scan` works. `analyze` and `report` are not ported yet: save the
-> scan with `--output=pairs.json` and run `untangled analyze pairs.json` or
-> `untangled report pairs.json` with the [PHP](../php/README.md) or
-> [Python](../python/README.md) library, which read any library's pairs
-> document. The package is not on npm yet.
+> **Status:** `scan`, `analyze` and `report` work, and give the same analyses,
+> HTML reports and DOT graphs as the PHP and Python libraries for the same
+> pairs document. The package is not on npm yet.
 
 ## Install
 
@@ -30,7 +28,20 @@ node bin/untangled.js --version
 Untangled reads the project you point it at and never runs it, so it does not
 need to be installed into that project.
 
-## scan
+## Commands
+
+```
+untangled scan    [<path>]               [scan options] [--format=json|snakefood] [--output=<file>]
+untangled analyze [<path>|<pairs.json>]  [scan options] [filter options] [--output=<file>]
+untangled report  [<path>|<pairs.json>]  [scan options] [filter options]
+                                         [--format=html|dot] [--style=classic] [--title=<text>] [--output=<file>]
+```
+
+`analyze` scans first and `report` scans and analyzes first. Both also read a
+pairs document saved by `scan`, from this library or any other Untangled
+library. `untangled --help` prints the same summary.
+
+### scan
 
 Writes every file-to-file dependency of the project as a
 [pairs document](../spec/pairs-format.md).
@@ -63,6 +74,36 @@ Aliases are read from `package.json` `imports` (`#internal/x`) and from
 following `extends`. Imports of non-code files (`./style.css`, `./logo.svg`)
 give no edge; the scan says how many there were.
 
+### analyze
+
+Writes cycles and coupling metrics as JSON (the
+[analysis document](../spec/metrics.md#the-analysis-document)): a summary,
+fan-in, fan-out and instability per unit, and every dependency cycle with one
+example loop.
+
+```sh
+untangled analyze /path/to/project                          # per file
+untangled analyze /path/to/project --cluster=folder:2       # per folder, e.g. src/components
+untangled analyze /path/to/project --exclude='**/*.stories.tsx'
+untangled analyze pairs.json --cluster=folder:2             # from a saved scan
+```
+
+### report
+
+Writes one self-contained HTML page for people who do not read code: a
+summary in plain words, an interactive map, each cycle written out as a loop,
+the parts to look at first, and every metric explained. It opens offline.
+
+```sh
+untangled report /path/to/project --output=report.html
+untangled report /path/to/project --cluster=folder:2 --title="Web app" --output=report.html
+untangled report /path/to/project --format=dot | dot -Tsvg > graph.svg
+untangled report /path/to/project --format=dot --style=classic | dot -Tpng > graph.png
+```
+
+`--format=dot` writes a Graphviz graph instead, with cycles in red;
+`--style=classic` draws snakefood's black and white `sfood-graph` look.
+
 ### Options
 
 | Option | What it does |
@@ -70,15 +111,19 @@ give no edge; the scan says how many there were.
 | `--dev` | Also scan tests |
 | `--source=<path>` | Scan the code files in this folder or file (relative to the project) even when they are build output or tests. Repeatable |
 | `--aliases=<file.json>` | Read more aliases from a JSON file shaped like tsconfig's `paths`, with paths relative to the project root, for aliases set in webpack or Vite configuration: `{ "@/*": ["src/*"], "config": "src/config/index.ts" }`. Repeatable, and read before tsconfig |
-| `--format=json\|snakefood` | `json` (default) is the pairs document; `snakefood` is snakefood's `((root, from), (root, to))` lines, internal files only |
+| `--format=<format>` | `scan`: `json` (default, the pairs document) or `snakefood` (snakefood's `((root, from), (root, to))` lines, internal files only). `report`: `html` (default) or `dot` |
+| `--style=classic` | `report --format=dot` only: snakefood's black and white look |
+| `--title=<text>` | `report` only: the title. Defaults to the `name` in `package.json`, else the folder name |
+| `--cluster=<strategy>` | `analyze`, `report`: group files into units. `folder:N` keeps the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines, where the first matching path prefix wins. JavaScript has no namespaces, so `namespace:N` is the same as `folder:N`. See [clustering](../spec/clustering.md) |
+| `--include=<glob>`, `--exclude=<glob>` | `analyze`, `report`: keep or drop project files by path (repeatable, the last matching pattern wins). `*` stays within a folder, `**` crosses folders |
 | `--output=<file>` | Write to a file instead of standard output |
 
 Warnings (files that do not parse, skipped build output, imports of non-code
 files, packages that could not be found because `node_modules/` is missing) go
 to standard error and do not change the exit code.
 
-Exit codes: 0 on success, 1 when the project or an output cannot be read or
-written, 2 for a usage error.
+Exit codes: 0 on success, 1 when the project, a pairs document or a rules
+file cannot be read or an output cannot be written, 2 for a usage error.
 
 ### Not in this version
 
@@ -98,7 +143,10 @@ npm run build       # dist/, used by bin/untangled.js
 ```
 
 The tests run every [conformance case](../conformance/README.md) that has a
-`typescript/` folder.
+`typescript/` folder, and check the analyses and graphs of the PHP and Python
+cases from their pairs documents. The report's script and styles in `assets/`
+are copies of `php/resources/report/`: edit those and run
+`scripts/sync-report-assets.sh`.
 
 ## License
 

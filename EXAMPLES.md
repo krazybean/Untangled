@@ -94,6 +94,7 @@ resolved.
 
 [![spectra as a classic graph](docs/examples/js-spectra-classic.svg)](docs/examples/js-spectra-classic.svg)
 
-This report was made from the JS/TS scanner's output by the Python library,
-because the JS/TS library does not write reports yet. It will be regenerated
-with the JS/TS library once it does.
+```sh
+untangled report /path/to/spectra --output=report.html
+untangled report /path/to/spectra --format=dot --style=classic | dot -Tsvg > graph.svg
+```

@@ -73,9 +73,8 @@ that has a folder for its language.
    For TypeScript, after `npm ci && npm run build` in `typescript/`:
    `node typescript/bin/untangled.js scan conformance/cases/<case>/typescript/project --output=conformance/cases/<case>/typescript/expected/pairs.json`,
    adding `--source=...` for each line of `typescript/sources` and `--aliases=...` for each line
-   of `typescript/aliases` (relative to `typescript/`). The TypeScript library has no `analyze`
-   or `report` yet, so its expected analyses and graphs come from the Python library, run on
-   that `pairs.json`.
+   of `typescript/aliases` (relative to `typescript/`), then `analyze` and `report --format=dot`
+   on that `pairs.json`.
    When a case has more than one language folder, their analyses must have the same
    summaries; `scripts/check-cross-language.py` checks that in CI.
 3. **Read the expected output line by line** and check it against the spec

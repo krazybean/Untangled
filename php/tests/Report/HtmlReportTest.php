@@ -135,6 +135,13 @@ final class HtmlReportTest extends TestCase
         self::assertStringContainsString('share the first 1 level of their package path', HtmlReport::render(Report::build('x', $doc, Clustering::fromString('namespace:1'))));
     }
 
+    public function testJavaScriptFilesAreGroupedByFolderPath(): void
+    {
+        $doc = new PairsDocument('typescript');
+        $doc->addNode('src/cart.ts', PairsDocument::INTERNAL);
+        self::assertStringContainsString('share the first 1 level of their folder path', HtmlReport::render(Report::build('x', $doc, Clustering::fromString('namespace:1'))));
+    }
+
     public function testAnEmptyProjectStillRenders(): void
     {
         self::assertStringContainsString('nothing to report yet', HtmlReport::render(Report::build('Empty', new PairsDocument('php'))));

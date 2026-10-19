@@ -97,13 +97,14 @@ def describe_grouping(clustering: str | None, language: str = "php") -> str:
     strategy, depth = clustering.split(":")
     levels = count(int(depth), "level")
     if strategy == "namespace":
-        # Python has packages where PHP has namespaces.
+        # Python has packages where PHP has namespaces; JavaScript has neither, so namespace:N
+        # groups by folder.
         kind = _NAMESPACE.get(language, "namespace")
         return f"Each part is a group of files that share the first {levels} of their {kind}."
     return f"Each part is a group of files that share the first {levels} of their folder path."
 
 
-_NAMESPACE = {"python": "package path"}
+_NAMESPACE = {"python": "package path", "typescript": "folder path"}
 
 
 def escape(text: Any) -> str:

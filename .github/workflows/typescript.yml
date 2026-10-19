@@ -4,10 +4,10 @@ name: TypeScript
 
 on:
   pull_request:
-    paths: ['typescript/**', 'conformance/**', 'spec/**', '.github/workflows/typescript.yml']
+    paths: ['typescript/**', 'conformance/**', 'spec/**', 'php/resources/report/**', '.github/workflows/typescript.yml']
   push:
     branches: [main]
-    paths: ['typescript/**', 'conformance/**', 'spec/**', '.github/workflows/typescript.yml']
+    paths: ['typescript/**', 'conformance/**', 'spec/**', 'php/resources/report/**', '.github/workflows/typescript.yml']
 
 defaults:
   run:

@@ -74,12 +74,63 @@ describe("usage", () => {
     expect(run("scan", "--format=html")).toMatchObject({ code: 2, err: "Unknown format: html\n" });
   });
 
-  test("analyze and report are not here yet", () => {
-    for (const command of ["analyze", "report"]) {
-      const result = run(command, ".");
-      expect(result.code).toBe(2);
-      expect(result.err).toContain(`untangled ${command} is not in the TypeScript library yet`);
-    }
+  test("analyze and report options", () => {
+    expect(run("report", "--format=json")).toMatchObject({ code: 2, err: "Unknown format: json\n" });
+    expect(run("report", "--format=dot", "--style=fancy")).toMatchObject({ code: 2, err: "Unknown style: fancy\n" });
+    expect(run("report", "--style=classic")).toMatchObject({ code: 2, err: "--style only applies to --format=dot\n" });
+    expect(run("analyze", "--cluster=module:1")).toMatchObject({ code: 2, err: expect.stringMatching(/^error: unknown clustering/) });
+    expect(run("analyze", "--format=dot")).toMatchObject({ code: 2, err: "Unknown option for analyze: --format\n" });
+    expect(run("analyze", "--cluster=rules:/no/such/file")).toMatchObject({ code: 1, err: "error: cannot read rules file /no/such/file\n" });
+  });
+});
+
+describe("analyze", () => {
+  const files = { "package.json": '{ "name": "shop" }', "src/a.ts": 'import "./b"; import "../lib/c";', "src/b.ts": 'import "./a";', "lib/c.ts": 'import "fs";' };
+
+  test("scans a project and writes the analysis", () => {
+    const result = run("analyze", project(files));
+    expect(result.code).toBe(0);
+    const analysis = JSON.parse(result.out) as { summary: { units: number; cycles: number }; clustering: null };
+    expect(analysis.summary).toMatchObject({ units: 3, cycles: 1 });
+    expect(result.out.endsWith("\n")).toBe(true);
+  });
+
+  test("reads a saved pairs document, with clustering and filters", () => {
+    const root = project(files);
+    run("scan", root, `--output=${join(root, "pairs.json")}`);
+    const result = run("analyze", join(root, "pairs.json"), "--cluster=folder:1", "--exclude=lib/**");
+    const analysis = JSON.parse(result.out) as { clustering: string; units: { id: string }[] };
+    expect(analysis.clustering).toBe("folder:1");
+    expect(analysis.units.map((unit) => unit.id)).toEqual(["src"]);
+  });
+
+  test("rules files", () => {
+    const root = project({ ...files, "rules.txt": "src/ App\n" });
+    const analysis = JSON.parse(run("analyze", root, `--cluster=rules:${join(root, "rules.txt")}`).out) as { units: { id: string }[] };
+    expect(analysis.units.map((unit) => unit.id)).toEqual(["App", "lib/c.ts"]);
+  });
+
+  test("bad pairs documents fail with exit code 1", () => {
+    const root = project({ "bad.json": "{", "other.json": '{ "format": "x" }', "clustered.json": JSON.stringify({ format: "untangled-pairs", version: "0.1", language: "php", nodes: [{ id: "a", kind: "cluster" }], edges: [] }) });
+    expect(run("analyze", join(root, "bad.json"))).toMatchObject({ code: 1, err: expect.stringMatching(/^error: .*bad\.json is not valid JSON/) });
+    expect(run("analyze", join(root, "other.json"))).toMatchObject({ code: 1, err: expect.stringMatching(/^error: not an Untangled pairs document/) });
+    expect(run("analyze", join(root, "clustered.json"))).toMatchObject({ code: 1, err: expect.stringMatching(/^error: the pairs document is already clustered/) });
+  });
+});
+
+describe("report", () => {
+  test("HTML with the package.json name as title, or --title", () => {
+    const root = project({ "package.json": '{ "name": "shop" }', "a.ts": 'import "./b";', "b.ts": "" });
+    expect(run("report", root).out).toContain("<title>Dependencies: shop</title>");
+    expect(run("report", root, "--title=Mine").out).toContain("<title>Dependencies: Mine</title>");
+    const bare = project({ "a.ts": "" });
+    expect(run("report", bare).out).toContain(`<title>Dependencies: ${bare.split("/").at(-1)!}</title>`);
+  });
+
+  test("DOT, default and classic", () => {
+    const root = project({ "a.ts": 'import "./b"; import "react";', "b.ts": "", "package.json": '{ "dependencies": { "react": "1" } }' });
+    expect(run("report", root, "--format=dot").out).toContain('  "a.ts" -> "b.ts";\n');
+    expect(run("report", root, "--format=dot", "--style=classic").out).toContain('  "npm:react" [fillcolor=white];\n');
   });
 });
 

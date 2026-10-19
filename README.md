@@ -16,8 +16,8 @@ More reports and graphs, on real PHP, Python and JavaScript projects, are in
 
 > **Status:** PHP and Python 1.0.0 are out, on
 > [Packagist](https://packagist.org/packages/krazybean/untangled) and
-> [PyPI](https://pypi.org/project/untangled/). JavaScript/TypeScript scanning works; its analysis
-> and report are in progress. See [Roadmap](#roadmap).
+> [PyPI](https://pypi.org/project/untangled/). The JavaScript/TypeScript library works
+> from a clone and is not on npm yet. See [Roadmap](#roadmap).
 
 ## Credit: snakefood
 
@@ -60,7 +60,7 @@ analyzed on its own.
 | --- | --- | --- | --- | --- |
 | PHP | [`php/`](php/README.md) | `krazybean/untangled` (Packagist) | MIT | 1.0.0 |
 | Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | 1.0.0 |
-| JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | scan works; analyze and report in progress |
+| JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | scan, analyze and report work; not on npm yet |
 
 ## Quick start
 
@@ -82,10 +82,18 @@ pip install untangled
 untangled report /path/to/your/project --output=report.html
 ```
 
+**JavaScript/TypeScript**, Node.js 22.18+, from a clone until it is on npm:
+
+```sh
+git clone https://github.com/krazybean/Untangled.git && cd Untangled/typescript && npm ci
+node bin/untangled.js report /path/to/your/project --output=report.html
+```
+
 Then open `report.html` in any browser. `analyze` writes the same numbers as
 JSON, for CI, and `report --format=dot --style=classic` draws the classic
 snakefood graph. Every command and option is in the usage guide for
-[PHP](php/README.md) and [Python](python/README.md).
+[PHP](php/README.md), [Python](python/README.md) and
+[JavaScript/TypeScript](typescript/README.md).
 
 ## Repository layout
 
@@ -107,9 +115,9 @@ and Graphviz DOT export including snakefood's classic style. Checked on
 Symfony, Laravel, PrestaShop, OpenMage and Monica (PHP), and Django, Flask,
 pandas and Home Assistant core (Python).
 
-**Next, JavaScript/TypeScript:** the scanner works (built on a real parser,
-reading tsconfig paths and every `package.json`); analysis and report follow,
-then an npm release.
+**Next, JavaScript/TypeScript:** scan, analyze and report work (the scanner is
+built on a real parser and reads tsconfig paths and every `package.json`);
+a check on more real projects, then an npm release.
 
 **v2:** trends over git history.
 

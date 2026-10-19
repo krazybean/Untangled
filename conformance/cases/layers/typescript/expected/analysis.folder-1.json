@@ -3,8 +3,8 @@
   "version": "0.1",
   "language": "typescript",
   "generator": {
-    "name": "untangled-python",
-    "version": "0.1.0.dev0"
+    "name": "untangled-typescript",
+    "version": "0.1.0-dev.0"
   },
   "clustering": "folder:1",
   "summary": {

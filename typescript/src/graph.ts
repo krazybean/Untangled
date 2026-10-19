@@ -23,6 +23,9 @@ export interface Edge {
   count: number;
 }
 
+/** A pairs document that cannot be read. */
+export class DocumentError extends Error {}
+
 export class PairsDocument {
   private readonly nodeMap = new Map<string, Node>();
   private readonly edgeMap = new Map<string, { from: string; to: string; kinds: Set<string>; count: number }>();
@@ -34,6 +37,49 @@ export class PairsDocument {
     if (!this.nodeMap.has(id)) {
       this.nodeMap.set(id, { id, kind, ...extra });
     }
+  }
+
+  /**
+   * Reads a pairs document, such as one written by `untangled scan` or by another library.
+   * A different minor version is read with a warning; a different major version is an error.
+   */
+  static fromObject(data: unknown, warnings: string[] = []): PairsDocument {
+    const object = isObject(data) ? data : {};
+    if (object.format !== "untangled-pairs") {
+      throw new DocumentError('not an Untangled pairs document (expected "format": "untangled-pairs")');
+    }
+    const version = typeof object.version === "string" ? object.version : "";
+    const [major, minor = ""] = splitOnce(version);
+    const [knownMajor, knownMinor] = splitOnce(SPEC);
+    if (major !== knownMajor) {
+      throw new DocumentError(`unsupported pairs document version "${version}" (this library reads ${SPEC})`);
+    }
+    if (minor !== knownMinor) {
+      warnings.push(`pairs document version ${version} is newer or older than ${SPEC}; reading it anyway`);
+    }
+    if (typeof object.language !== "string" || !Array.isArray(object.nodes) || !Array.isArray(object.edges)) {
+      throw new DocumentError('pairs document needs "language", "nodes" and "edges"');
+    }
+    const document = new PairsDocument(object.language);
+    for (const node of object.nodes as unknown[]) {
+      if (!isObject(node) || typeof node.id !== "string" || typeof node.kind !== "string") {
+        throw new DocumentError('every node needs a string "id" and "kind"');
+      }
+      const { id, kind, ...extra } = node;
+      document.addNode(id, kind, extra);
+    }
+    for (const edge of object.edges as unknown[]) {
+      if (!isObject(edge) || typeof edge.from !== "string" || typeof edge.to !== "string") {
+        throw new DocumentError('every edge needs a string "from" and "to"');
+      }
+      if (!document.hasNode(edge.from) || !document.hasNode(edge.to)) {
+        throw new DocumentError(`edge ${edge.from} -> ${edge.to} names a node that is not in the document`);
+      }
+      const kinds = (Array.isArray(edge.kinds) ? edge.kinds : [edge.kinds]).filter((kind): kind is string => typeof kind === "string");
+      const count = Math.trunc(Number(edge.count ?? 1));
+      document.addEdge(edge.from, edge.to, kinds, Number.isFinite(count) ? Math.max(1, count) : 1);
+    }
+    return document;
   }
 
   hasNode(id: string): boolean {
@@ -115,4 +161,26 @@ export class PairsDocument {
 /** Writes a document the way the spec asks: two-space indentation and a trailing newline. */
 export function encode(document: unknown): string {
   return JSON.stringify(document, null, 2) + "\n";
+}
+
+/**
+ * Rounds a metric to 4 decimal places, half away from zero on its shortest decimal form (so
+ * 0.12345 is 0.1235, as in the other libraries). Metrics are never negative.
+ */
+export function number(value: number): number {
+  const text = String(value);
+  if (text.includes("e")) {
+    // Below 1e-6, or a whole number beyond 1e21.
+    return value < 1 ? 0 : value;
+  }
+  return Number(`${Math.round(Number(`${text}e4`))}e-4`);
+}
+
+function splitOnce(version: string): [string, string?] {
+  const dot = version.indexOf(".");
+  return dot === -1 ? [version] : [version.slice(0, dot), version.slice(dot + 1)];
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
