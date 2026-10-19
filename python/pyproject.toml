@@ -7,22 +7,34 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "untangled"
 dynamic = ["version"]
-description = "Dependency health your whole team can understand: cycles, coupling and trends for Python."
+description = "Dependency health your whole team can understand: cycles and coupling in Python projects, in a report anyone can read."
 readme = "README.md"
-license = "GPL-2.0-only"
-license-files = ["LICENSE"]
+# The report's script and styles are MIT-licensed copies of php/resources/report.
+license = "GPL-2.0-only AND MIT"
+license-files = ["LICENSE", "src/untangled/report/assets/LICENSE.MIT"]
 authors = [{ name = "Juan Castro" }]
 requires-python = ">=3.11"
 dependencies = []
+keywords = ["dependencies", "coupling", "cycles", "architecture", "static-analysis", "graph", "snakefood"]
 classifiers = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
+  "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Quality Assurance",
 ]
 
 [project.urls]
-Repository = "https://github.com/krazybean/Untangled"
+Homepage = "https://github.com/krazybean/Untangled"
+Documentation = "https://github.com/krazybean/Untangled/blob/main/python/README.md"
+Examples = "https://github.com/krazybean/Untangled/blob/main/EXAMPLES.md"
+Issues = "https://github.com/krazybean/Untangled/issues"
+Changelog = "https://github.com/krazybean/Untangled/blob/main/python/CHANGELOG.md"
 
 [project.scripts]
 untangled = "untangled.cli:main"
