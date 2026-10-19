@@ -1,0 +1,116 @@
+# SPDX-License-Identifier: MIT
+# Publishes the PHP library, the way krazybean/Conduit does: Packagist needs
+# composer.json at a repository root, so a php/vX.Y.Z tag exports php/ (see
+# scripts/export-php.sh) to krazybean/krazybean-untangled-php as one commit
+# and a vX.Y.Z tag, and Packagist picks the tag up from there. Run it by hand
+# once to bootstrap that repository's main branch before the first release.
+# Setup steps: docs/releasing.md.
+name: PHP distribution
+
+on:
+  push:
+    tags: ['php/v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DIST_REPO: krazybean/krazybean-untangled-php
+  BOOTSTRAP: ${{ github.event_name == 'workflow_dispatch' }}
+
+jobs:
+  export:
+    name: Test, export and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+          coverage: none
+
+      - name: Run the test suite
+        working-directory: php
+        run: |
+          composer install --no-interaction --no-progress
+          composer test
+
+      - name: Export the package
+        run: |
+          if [[ $BOOTSTRAP == true ]]; then
+            VERSION=bootstrap
+          else
+            VERSION=${GITHUB_REF_NAME#php/v}
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          scripts/export-php.sh "$VERSION" "$RUNNER_TEMP/export"
+          composer validate --strict --no-check-publish --working-dir "$RUNNER_TEMP/export"
+
+      # Install the export the way a user would, and run it.
+      - name: Smoke-test the exported package
+        run: |
+          app=$RUNNER_TEMP/app
+          mkdir "$app"
+          cat > "$app/composer.json" <<JSON
+          {
+            "repositories": [{"type": "path", "url": "$RUNNER_TEMP/export", "options": {"symlink": false, "versions": {"krazybean/untangled": "1.0.0"}}}],
+            "require": {"krazybean/untangled": "1.0.0"}
+          }
+          JSON
+          composer install --no-interaction --no-progress --working-dir "$app"
+          "$app/vendor/bin/untangled" --version
+          "$app/vendor/bin/untangled" report conformance/cases/layers/php/project --output="$RUNNER_TEMP/report.html"
+          "$app/vendor/bin/untangled" scan conformance/cases/class-aliases/php/project --aliases=laravel > /dev/null
+
+      - name: Publish the commit and tag
+        env:
+          DIST_TOKEN: ${{ secrets.UNTANGLED_PHP_DISTRIBUTION_TOKEN }}
+        run: |
+          if [[ -z $DIST_TOKEN ]]; then
+            echo "::error::UNTANGLED_PHP_DISTRIBUTION_TOKEN is not set. Create a fine-grained token with Contents: Read and write on $DIST_REPO only, and add it as an Actions secret (docs/releasing.md)."
+            exit 1
+          fi
+          remote="https://x-access-token:${DIST_TOKEN}@github.com/${DIST_REPO}.git"
+          dest=$RUNNER_TEMP/dist
+          tag=v$VERSION
+
+          if git ls-remote --exit-code "$remote" refs/heads/main > /dev/null 2>&1; then
+            git clone --quiet --branch main "$remote" "$dest"
+          else
+            git init -q -b main "$dest"
+            git -C "$dest" remote add origin "$remote"
+          fi
+          find "$dest" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R "$RUNNER_TEMP/export"/. "$dest"/
+          git -C "$dest" config user.name "github-actions[bot]"
+          git -C "$dest" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$dest" add -A
+
+          if git -C "$dest" diff --cached --quiet; then
+            echo "The export repository is already up to date."
+          else
+            if [[ $BOOTSTRAP == true ]]; then
+              git -C "$dest" commit -q -m "Bootstrap the Untangled PHP distribution from $GITHUB_SHA"
+            else
+              git -C "$dest" commit -q -m "Untangled PHP $VERSION, exported from $GITHUB_SHA"
+            fi
+            git -C "$dest" push origin main
+          fi
+
+          if [[ $BOOTSTRAP == true ]]; then
+            echo "Bootstrap done: pushed main, no tag."
+            exit 0
+          fi
+          if git ls-remote --exit-code "$remote" "refs/tags/$tag" > /dev/null 2>&1; then
+            git -C "$dest" fetch --quiet origin "refs/tags/$tag:refs/tags/$tag"
+            if [[ $(git -C "$dest" rev-list -n 1 "$tag") != $(git -C "$dest" rev-parse HEAD) ]]; then
+              echo "::error::$DIST_REPO already has $tag on a different commit."
+              exit 1
+            fi
+            echo "$tag is already published."
+          else
+            git -C "$dest" tag -a "$tag" -m "Untangled PHP $VERSION"
+            git -C "$dest" push origin "refs/tags/$tag"
+          fi

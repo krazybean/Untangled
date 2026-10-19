@@ -1,0 +1,33 @@
+digraph untangled {
+  graph [rankdir=LR];
+  node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname="Times-Roman", fontsize=7];
+  edge [color=black];
+
+  "cli.py";
+  "mailrecon/__init__.py";
+  "mailrecon/__main__.py";
+  "mailrecon/core.py";
+  "mailrecon/providers/__init__.py";
+  "mailrecon/providers/base.py";
+  "mailrecon/providers/gmail.py";
+  "mailrecon/providers/yahoo.py";
+  "mailrecon/types.py";
+  "pypi:requests" [fillcolor=white];
+  "unresolved:module:curl_cffi" [fillcolor=white];
+
+  "cli.py" -> "mailrecon/__main__.py";
+  "mailrecon/__init__.py" -> "mailrecon/core.py";
+  "mailrecon/__main__.py" -> "mailrecon/core.py";
+  "mailrecon/core.py" -> "mailrecon/providers/__init__.py";
+  "mailrecon/core.py" -> "mailrecon/types.py";
+  "mailrecon/providers/__init__.py" -> "mailrecon/providers/base.py";
+  "mailrecon/providers/__init__.py" -> "mailrecon/providers/gmail.py";
+  "mailrecon/providers/__init__.py" -> "mailrecon/providers/yahoo.py";
+  "mailrecon/providers/base.py" -> "mailrecon/types.py";
+  "mailrecon/providers/gmail.py" -> "mailrecon/providers/base.py";
+  "mailrecon/providers/gmail.py" -> "mailrecon/types.py";
+  "mailrecon/providers/yahoo.py" -> "mailrecon/providers/base.py";
+  "mailrecon/providers/yahoo.py" -> "mailrecon/types.py";
+  "mailrecon/providers/yahoo.py" -> "pypi:requests";
+  "mailrecon/providers/yahoo.py" -> "unresolved:module:curl_cffi";
+}
