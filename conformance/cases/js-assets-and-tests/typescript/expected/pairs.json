@@ -1,0 +1,73 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-typescript",
+    "version": "0.1.0-dev.0"
+  },
+  "nodes": [
+    {
+      "id": "build/generated/schema.js",
+      "kind": "internal"
+    },
+    {
+      "id": "dist/legacy.js",
+      "kind": "internal"
+    },
+    {
+      "id": "src/__mocks__/api.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/app.tsx",
+      "kind": "internal"
+    },
+    {
+      "id": "src/http.ts",
+      "kind": "internal"
+    }
+  ],
+  "edges": [
+    {
+      "from": "build/generated/schema.js",
+      "to": "src/http.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/__mocks__/api.ts",
+      "to": "src/http.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.tsx",
+      "to": "build/generated/schema.js",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.tsx",
+      "to": "dist/legacy.js",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/app.tsx",
+      "to": "src/__mocks__/api.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}

@@ -20,9 +20,9 @@ scan ──▶ pairs ──▶ filter / cluster ──▶ analyze ──▶ rend
 | [Reports](report.md) | The `report` command: what the HTML report shows, and the Graphviz DOT graph |
 | [PHP profile](languages/php.md) | What the PHP scanner reads and how it resolves references |
 | [Python profile](languages/python.md) | What the Python scanner reads and how it resolves imports |
+| [JavaScript and TypeScript profile](languages/typescript.md) | What the JavaScript/TypeScript scanner reads and how it resolves imports |
 
-Later: `languages/typescript.md`, and a trends document
-for v2 (metrics over git history).
+Later: a trends document for v2 (metrics over git history).
 
 ## Principles
 

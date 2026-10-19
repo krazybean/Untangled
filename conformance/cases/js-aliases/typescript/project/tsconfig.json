@@ -1,0 +1,8 @@
+// tsconfig files allow comments and trailing commas.
+{
+  "extends": ["@tsconfig/node22/tsconfig.json", "./config/tsconfig.base"],
+  "compilerOptions": {
+    "strict": true,
+    /* paths come from config/tsconfig.base.json */
+  },
+}

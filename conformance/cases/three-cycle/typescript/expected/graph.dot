@@ -1,0 +1,15 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "src/cart.ts" [color="#d03b3b", penwidth=2];
+  "src/catalog.ts";
+  "src/customer.ts" [color="#d03b3b", penwidth=2];
+  "src/order.ts" [color="#d03b3b", penwidth=2];
+
+  "src/cart.ts" -> "src/order.ts" [color="#d03b3b", penwidth=2];
+  "src/customer.ts" -> "src/cart.ts" [color="#d03b3b", penwidth=2];
+  "src/order.ts" -> "src/cart.ts" [color="#d03b3b", penwidth=2];
+  "src/order.ts" -> "src/customer.ts" [color="#d03b3b", penwidth=2];
+}

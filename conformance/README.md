@@ -53,6 +53,11 @@ that has a folder for its language.
 | [legacy-python](cases/legacy-python/README.md) | Python: a Python 2 file, Latin-1 and Windows-1252 files, test folders and a test module real code imports |
 | [extension-modules](cases/extension-modules/README.md) | Python: stubs, Cython sources and compiled extensions as import targets |
 | [newer-syntax](cases/newer-syntax/README.md) | Python: syntax from Python 3.12 to 3.14, read the same on older Pythons |
+| [js-resolution](cases/js-resolution/README.md) | JS/TS: relative specifiers, `NodeNext` `.js` names, extension order, index files, JSON, declaration files, missing files |
+| [js-import-kinds](cases/js-import-kinds/README.md) | JS/TS: import, export, require, dynamic and type-only references; JSX, Flow and CommonJS files; syntax errors |
+| [js-packages](cases/js-packages/README.md) | JS/TS: declared and installed packages, scoped names and subpaths, builtins with and without `node:`, `package.json` `imports` |
+| [js-aliases](cases/js-aliases/README.md) | JS/TS: `--aliases` files, tsconfig `paths` through `extends`, longest prefix, several targets |
+| [js-assets-and-tests](cases/js-assets-and-tests/README.md) | JS/TS: imports of non-code files, build output, `--source`, tests and a test helper real code imports |
 
 ## Adding a case
 
@@ -65,6 +70,12 @@ that has a folder for its language.
    `untangled scan conformance/cases/<case>/python/project --output=conformance/cases/<case>/python/expected/pairs.json`,
    adding `--source=...` for each line of `python/sources`, then `untangled analyze` and
    `untangled report --format=dot` the same way.
+   For TypeScript, after `npm ci && npm run build` in `typescript/`:
+   `node typescript/bin/untangled.js scan conformance/cases/<case>/typescript/project --output=conformance/cases/<case>/typescript/expected/pairs.json`,
+   adding `--source=...` for each line of `typescript/sources` and `--aliases=...` for each line
+   of `typescript/aliases` (relative to `typescript/`). The TypeScript library has no `analyze`
+   or `report` yet, so its expected analyses and graphs come from the Python library, run on
+   that `pairs.json`.
    When a case has more than one language folder, their analyses must have the same
    summaries; `scripts/check-cross-language.py` checks that in CI.
 3. **Read the expected output line by line** and check it against the spec

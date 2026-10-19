@@ -1,0 +1,168 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-python",
+    "version": "0.1.0.dev0"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 18,
+    "edges": 17,
+    "cycles": 0,
+    "largest_cycle": 0,
+    "units_in_cycles": 0,
+    "units_in_cycles_ratio": 0,
+    "mean_fan_out": 0.9444,
+    "external_packages": 0,
+    "unresolved_references": 2
+  },
+  "units": [
+    {
+      "id": "src/a.ts",
+      "fan_in": 3,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/b.ts",
+      "fan_in": 2,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/broken.ts",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": null
+    },
+    {
+      "id": "src/c.ts",
+      "fan_in": 2,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/d.ts",
+      "fan_in": 2,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/e.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/f.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/flow.js",
+      "fan_in": 0,
+      "fan_out": 2,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 1
+    },
+    {
+      "id": "src/g.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/h.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/i.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/j.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/k.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/kinds.ts",
+      "fan_in": 0,
+      "fan_out": 12,
+      "external": 0,
+      "unresolved": 2,
+      "instability": 1
+    },
+    {
+      "id": "src/plugins/en.ts",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    },
+    {
+      "id": "src/recovered.ts",
+      "fan_in": 0,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 1
+    },
+    {
+      "id": "src/script.cjs",
+      "fan_in": 0,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 1
+    },
+    {
+      "id": "src/view.jsx",
+      "fan_in": 0,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 1
+    }
+  ],
+  "cycles": []
+}

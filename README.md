@@ -94,7 +94,7 @@ snakefood graph. Every command and option is in the usage guide for
 | [`spec/`](spec/README.md) | The language-neutral contract: pairs format, clustering, metric definitions, per-language profiles |
 | [`conformance/`](conformance/README.md) | Fixture projects and the output every library must produce for them |
 | [`php/`](php/README.md) | The PHP library and CLI |
-| [`typescript/`](typescript/README.md) | The JavaScript/TypeScript library (planned) |
+| [`typescript/`](typescript/README.md) | The JavaScript/TypeScript library |
 | [`python/`](python/README.md) | The Python library |
 | [`docs/`](docs/README.md) | User documentation, and the [examples](EXAMPLES.md) in `docs/examples/` |
 

@@ -1,0 +1,6 @@
+{
+  "name": "tools",
+  "private": true,
+  "imports": { "#helpers": "./src/helpers.ts" },
+  "dependencies": { "commander": "^14.0.0" }
+}

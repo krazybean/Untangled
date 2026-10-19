@@ -1,0 +1,42 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "src/a.ts";
+  "src/b.ts";
+  "src/broken.ts";
+  "src/c.ts";
+  "src/d.ts";
+  "src/e.ts";
+  "src/f.ts";
+  "src/flow.js";
+  "src/g.ts";
+  "src/h.ts";
+  "src/i.ts";
+  "src/j.ts";
+  "src/k.ts";
+  "src/kinds.ts";
+  "src/plugins/en.ts";
+  "src/recovered.ts";
+  "src/script.cjs";
+  "src/view.jsx";
+
+  "src/flow.js" -> "src/b.ts";
+  "src/flow.js" -> "src/d.ts";
+  "src/kinds.ts" -> "src/a.ts";
+  "src/kinds.ts" -> "src/b.ts";
+  "src/kinds.ts" -> "src/c.ts";
+  "src/kinds.ts" -> "src/d.ts";
+  "src/kinds.ts" -> "src/e.ts";
+  "src/kinds.ts" -> "src/f.ts";
+  "src/kinds.ts" -> "src/g.ts";
+  "src/kinds.ts" -> "src/h.ts";
+  "src/kinds.ts" -> "src/i.ts";
+  "src/kinds.ts" -> "src/j.ts";
+  "src/kinds.ts" -> "src/k.ts";
+  "src/kinds.ts" -> "src/plugins/en.ts";
+  "src/recovered.ts" -> "src/a.ts";
+  "src/script.cjs" -> "src/c.ts";
+  "src/view.jsx" -> "src/a.ts";
+}

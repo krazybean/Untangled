@@ -1,0 +1,32 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "settings.json";
+  "src/both.js";
+  "src/both.ts";
+  "src/components/button.tsx";
+  "src/index.js";
+  "src/legacy/common.cts";
+  "src/legacy/esm.mts";
+  "src/legacy/old.js";
+  "src/main.ts";
+  "src/types/colors.d.ts";
+  "src/types/shapes.d.ts";
+  "src/util/format.ts";
+  "src/util/index.ts";
+
+  "src/legacy/old.js" -> "src/util/format.ts";
+  "src/main.ts" -> "settings.json";
+  "src/main.ts" -> "src/both.ts";
+  "src/main.ts" -> "src/components/button.tsx";
+  "src/main.ts" -> "src/legacy/common.cts";
+  "src/main.ts" -> "src/legacy/esm.mts";
+  "src/main.ts" -> "src/legacy/old.js";
+  "src/main.ts" -> "src/types/shapes.d.ts";
+  "src/main.ts" -> "src/util/format.ts";
+  "src/main.ts" -> "src/util/index.ts";
+  "src/types/shapes.d.ts" -> "src/types/colors.d.ts";
+  "src/util/index.ts" -> "src/index.js";
+}

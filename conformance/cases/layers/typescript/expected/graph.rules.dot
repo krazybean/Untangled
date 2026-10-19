@@ -1,0 +1,12 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "Core" [label="Core\n4 files"];
+  "Web" [label="Web\n2 files"];
+  "bootstrap.ts" [label="bootstrap.ts\n1 file"];
+
+  "Web" -> "Core";
+  "bootstrap.ts" -> "Web";
+}

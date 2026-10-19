@@ -1,0 +1,263 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-typescript",
+    "version": "0.1.0-dev.0"
+  },
+  "nodes": [
+    {
+      "id": "builtin:fs",
+      "kind": "builtin"
+    },
+    {
+      "id": "src/a.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/b.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/broken.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/c.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/d.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/e.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/f.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/flow.js",
+      "kind": "internal"
+    },
+    {
+      "id": "src/g.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/h.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/i.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/j.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/k.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/kinds.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/plugins/en.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/recovered.ts",
+      "kind": "internal"
+    },
+    {
+      "id": "src/script.cjs",
+      "kind": "internal"
+    },
+    {
+      "id": "src/view.jsx",
+      "kind": "internal"
+    },
+    {
+      "id": "unresolved:dynamic:`./plugins/${name}`",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:dynamic:name",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/flow.js",
+      "to": "src/b.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/flow.js",
+      "to": "src/d.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/a.ts",
+      "kinds": [
+        "dynamic",
+        "import"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/b.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/c.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/d.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/e.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/f.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/g.ts",
+      "kinds": [
+        "export"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/h.ts",
+      "kinds": [
+        "export"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/i.ts",
+      "kinds": [
+        "export",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/j.ts",
+      "kinds": [
+        "require"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/k.ts",
+      "kinds": [
+        "import",
+        "type"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "src/plugins/en.ts",
+      "kinds": [
+        "dynamic"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "unresolved:dynamic:`./plugins/${name}`",
+      "kinds": [
+        "dynamic"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/kinds.ts",
+      "to": "unresolved:dynamic:name",
+      "kinds": [
+        "require"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/recovered.ts",
+      "to": "src/a.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/script.cjs",
+      "to": "builtin:fs",
+      "kinds": [
+        "require"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/script.cjs",
+      "to": "src/c.ts",
+      "kinds": [
+        "require"
+      ],
+      "count": 1
+    },
+    {
+      "from": "src/view.jsx",
+      "to": "src/a.ts",
+      "kinds": [
+        "import"
+      ],
+      "count": 1
+    }
+  ]
+}
