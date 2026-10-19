@@ -1,15 +1,17 @@
 {
   "name": "krazybean/untangled",
-  "description": "Dependency health your whole team can understand: cycles, coupling and trends for PHP projects.",
+  "description": "Dependency health your whole team can understand: cycles and coupling in PHP projects, in a report anyone can read.",
   "type": "library",
   "license": "MIT",
+  "homepage": "https://github.com/krazybean/Untangled",
   "keywords": [
     "dependencies",
     "coupling",
     "cycles",
     "architecture",
     "static-analysis",
-    "graph"
+    "graph",
+    "snakefood"
   ],
   "authors": [
     {
@@ -38,7 +40,9 @@
     "bin/utg"
   ],
   "support": {
-    "issues": "https://github.com/krazybean/Untangled/issues"
+    "issues": "https://github.com/krazybean/Untangled/issues",
+    "source": "https://github.com/krazybean/Untangled/tree/main/php",
+    "docs": "https://github.com/krazybean/Untangled/blob/main/php/README.md"
   },
   "minimum-stability": "stable",
   "prefer-stable": true,

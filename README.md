@@ -9,9 +9,14 @@ parts everything leans on, and which parts lean on everything. The reports are
 written for engineers *and* for the people they report to, with plain-language
 explanations of why coupling matters.
 
-> **Status:** the PHP library (scanner, analyzer, HTML report, Graphviz
-> export) is feature-complete for v1 but not released yet. Other languages
-> follow; see [Roadmap](#roadmap).
+[![An Untangled report: the summary at the top of the page](docs/examples/php-untangled-report.png)](EXAMPLES.md)
+
+More reports and graphs, on real PHP, Python and JavaScript projects, are in
+[EXAMPLES.md](EXAMPLES.md).
+
+> **Status:** PHP and Python are complete for v1 and being released as 1.0.0
+> on Packagist and PyPI. JavaScript/TypeScript scanning works; its analysis
+> and report are in progress. See [Roadmap](#roadmap).
 
 ## Credit: snakefood
 
@@ -38,7 +43,7 @@ Thank you, Martin.
   but no maintained tool that visualizes dependencies and measures coupling.
 - **Reports for the whole team.** One self-contained HTML report with an
   interactive graph and short explanations a manager can follow.
-- **Change over time** (planned). Run against git history: "coupling in
+- **Change over time** (planned for v2). Run against git history: "coupling in
   `Billing/` doubled this year", "this pull request added a cycle".
 - **Comparable across languages.** Metric definitions live in one shared
   [specification](spec/README.md), and every language's library is tested
@@ -52,22 +57,34 @@ analyzed on its own.
 
 | Language | Folder | Package | License | Status |
 | --- | --- | --- | --- | --- |
-| PHP | [`php/`](php/README.md) | `krazybean/untangled` (Composer) | MIT | v1 complete, not yet released |
-| JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | Planned |
-| Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | scan, analyze and report work; not published yet |
+| PHP | [`php/`](php/README.md) | `krazybean/untangled` (Packagist) | MIT | v1 complete, 1.0.0 release pending |
+| Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | v1 complete, 1.0.0 release pending |
+| JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | scan works; analyze and report in progress |
 
-## Quick start (PHP)
+## Quick start
 
-The PHP library needs a project with a `composer.json`: it resolves classes
-through the project's Composer autoload rules.
+The command and its options are the same in every language. `utg` is a short
+alias for `untangled`.
+
+**PHP** 8.2+, for a project with a `composer.json` (classes are resolved
+through its Composer autoload rules):
 
 ```sh
-cd php && composer install --no-dev
-bin/untangled report /path/to/your/project --cluster=namespace:2 --output=report.html
+composer require --dev krazybean/untangled
+vendor/bin/untangled report --cluster=namespace:2 --output=report.html
 ```
 
-Every command (`scan`, `analyze`, `report`) and option is documented in the
-[PHP usage guide](php/README.md). `utg` is a short alias for `untangled`.
+**Python** 3.11+:
+
+```sh
+pip install untangled
+untangled report /path/to/your/project --output=report.html
+```
+
+Then open `report.html` in any browser. `analyze` writes the same numbers as
+JSON, for CI, and `report --format=dot --style=classic` draws the classic
+snakefood graph. Every command and option is in the usage guide for
+[PHP](php/README.md) and [Python](python/README.md).
 
 ## Repository layout
 
@@ -78,22 +95,22 @@ Every command (`scan`, `analyze`, `report`) and option is documented in the
 | [`php/`](php/README.md) | The PHP library and CLI |
 | [`typescript/`](typescript/README.md) | The JavaScript/TypeScript library (planned) |
 | [`python/`](python/README.md) | The Python library |
-| [`docs/`](docs/README.md) | User documentation and design notes |
+| [`docs/`](docs/README.md) | User documentation, and the [examples](EXAMPLES.md) in `docs/examples/` |
 
 ## Roadmap
 
-**v1 (PHP):** scanner (Composer autoload → pairs), cycle detection, clustering
-by namespace or folder, coupling metrics (fan-in, fan-out, instability
-`I = Ce / (Ca + Ce)`), one readable HTML report with an interactive graph and
-Graphviz DOT export.
+**v1, PHP and Python (done):** scanner, cycle detection, clustering by
+namespace or folder, coupling metrics (fan-in, fan-out, instability
+`I = Ce / (Ca + Ce)`), one readable HTML report with an interactive graph,
+and Graphviz DOT export including snakefood's classic style. Checked on
+Symfony, Laravel, PrestaShop, OpenMage and Monica (PHP), and Django, Flask,
+pandas and Home Assistant core (Python).
+
+**Next, JavaScript/TypeScript:** the scanner works (built on a real parser,
+reading tsconfig paths and every `package.json`); analysis and report follow,
+then an npm release.
 
 **v2:** trends over git history.
-
-**Python:** scan, analyze and report, checked on Django, Flask, pandas and
-Home Assistant core.
-
-**Next:** JavaScript/TypeScript, with its own scanner built on a real parser.
-Importing dependency-cruiser output may come later as an `import` command.
 
 ## License
 

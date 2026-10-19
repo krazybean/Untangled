@@ -1,28 +1,27 @@
 # Untangled for Python
 
-The Python library and CLI of [Untangled](../README.md), to be published on
-PyPI as `untangled`. It scans a Python project into the
-[pairs document](../spec/pairs-format.md) defined by the shared spec, following
-the [Python profile](../spec/languages/python.md).
+The Python library and CLI of [Untangled](https://github.com/krazybean/Untangled/blob/main/README.md),
+published on PyPI as `untangled`. It scans a Python project into the
+[pairs document](https://github.com/krazybean/Untangled/blob/main/spec/pairs-format.md) defined by the shared spec, following
+the [Python profile](https://github.com/krazybean/Untangled/blob/main/spec/languages/python.md).
 
 Untangled is a re-imagining of [snakefood](https://github.com/blais/snakefood)
 by Martin Blais, and this library is its most direct successor: it parses every
 file, collects its imports and resolves them against the project's import
 roots, without running any of its code. See
-[Credit](../README.md#credit-snakefood).
+[Credit](https://github.com/krazybean/Untangled/blob/main/README.md#credit-snakefood).
 
-> **Status:** `scan`, `analyze` and `report` work, and give the same analyses,
-> HTML reports and DOT graphs as the PHP library for the same pairs document.
-> The package is not on PyPI yet.
+It gives the same analyses, HTML reports and DOT graphs as the PHP library
+for the same pairs document. See what they look like in the
+[examples](https://github.com/krazybean/Untangled/blob/main/EXAMPLES.md).
 
 ## Install
 
 Requires Python 3.11+, and nothing else: the scanner uses Python's own `ast`
-module. The package is not on PyPI yet, so install it from a clone:
+module.
 
 ```sh
-git clone https://github.com/krazybean/Untangled.git
-pip install ./Untangled/python
+pip install untangled          # or: pipx install untangled
 untangled --version
 ```
 
@@ -52,7 +51,7 @@ the same summary.
 ### scan
 
 Writes every file-to-file dependency of the project as a
-[pairs document](../spec/pairs-format.md).
+[pairs document](https://github.com/krazybean/Untangled/blob/main/spec/pairs-format.md).
 
 ```sh
 untangled scan /path/to/project                          # pairs document (JSON) to stdout
@@ -64,7 +63,7 @@ untangled scan /path/to/project --format=snakefood       # snakefood's format, f
 ### analyze
 
 Writes cycles and coupling metrics as JSON (the
-[analysis document](../spec/metrics.md#the-analysis-document)): a summary,
+[analysis document](https://github.com/krazybean/Untangled/blob/main/spec/metrics.md#the-analysis-document)): a summary,
 per-unit fan-in, fan-out and instability, and every dependency cycle with one
 example loop.
 
@@ -75,7 +74,7 @@ untangled analyze /path/to/project --cluster=folder:2 --exclude='src/shop/legacy
 untangled analyze pairs.json --cluster=namespace:2          # from a saved scan
 ```
 
-What each number means, and why it matters, is in [metrics](../spec/metrics.md).
+What each number means, and why it matters, is in [metrics](https://github.com/krazybean/Untangled/blob/main/spec/metrics.md).
 
 ### report
 
@@ -105,7 +104,7 @@ red. `--style=classic` draws the black and white look of snakefood's
 | `--format=FORMAT` | `scan`: `json` (the pairs document, default) or `snakefood`. `report`: `html` (default) or `dot`. |
 | `--style=classic` | `report --format=dot` only: snakefood's black and white look. |
 | `--title=TEXT` | `report` only: the report's title. Defaults to the project name in `pyproject.toml`, else the folder name. |
-| `--cluster=STRATEGY` | `analyze`, `report`: group files into units. `namespace:N` keeps the first N segments of the module name (`shop.billing.invoice` → `shop.billing` with N=2), `folder:N` the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines from a file, the first matching path prefix wins. See [clustering](../spec/clustering.md). |
+| `--cluster=STRATEGY` | `analyze`, `report`: group files into units. `namespace:N` keeps the first N segments of the module name (`shop.billing.invoice` → `shop.billing` with N=2), `folder:N` the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines from a file, the first matching path prefix wins. See [clustering](https://github.com/krazybean/Untangled/blob/main/spec/clustering.md). |
 | `--include=GLOB`, `--exclude=GLOB` | `analyze`, `report`: keep or drop project files by path (repeatable, the last matching pattern wins). `*` stays within a folder, `**` crosses folders. |
 | `--output=FILE` | Write to a file instead of standard output. |
 
@@ -128,7 +127,7 @@ Every import ends up as a project file, a standard library module
 (`builtin:os`), a package (`pypi:requests`) or an unresolved reference
 (`unresolved:module:...`). The scanner never guesses: an import of a module
 that does not exist is unresolved, never an edge to its parent package. The
-[Python profile](../spec/languages/python.md) has the full rules.
+[Python profile](https://github.com/krazybean/Untangled/blob/main/spec/languages/python.md) has the full rules.
 
 ## Exit codes and warnings
 
@@ -148,11 +147,11 @@ pytest
 ruff check . && ruff format --check .
 ```
 
-The tests include the shared [conformance cases](../conformance/README.md)
+The tests include the shared [conformance cases](https://github.com/krazybean/Untangled/blob/main/conformance/README.md)
 that have a `python/` folder.
 
 ## License
 
-GPL-2.0-only, see [LICENSE](LICENSE). This folder may port code from
+GPL-2.0-only, see [LICENSE](https://github.com/krazybean/Untangled/blob/main/python/LICENSE). This folder may port code from
 snakefood, which is GPL, so code here must never be copied into the
 MIT-licensed folders.

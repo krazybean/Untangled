@@ -1,14 +1,14 @@
 # Untangled for PHP
 
-The PHP library and CLI of [Untangled](../README.md). It scans a Composer
-project into the [pairs document](../spec/pairs-format.md) defined by the
-shared spec, analyzes it for cycles and coupling ([metrics](../spec/metrics.md),
-[clustering](../spec/clustering.md)), and writes a [report](../spec/report.md)
+The PHP library and CLI of [Untangled](https://github.com/krazybean/Untangled/blob/main/README.md). It scans a Composer
+project into the [pairs document](https://github.com/krazybean/Untangled/blob/main/spec/pairs-format.md) defined by the
+shared spec, analyzes it for cycles and coupling ([metrics](https://github.com/krazybean/Untangled/blob/main/spec/metrics.md),
+[clustering](https://github.com/krazybean/Untangled/blob/main/spec/clustering.md)), and writes a [report](https://github.com/krazybean/Untangled/blob/main/spec/report.md)
 anyone on the team can read.
 
 Untangled is a re-imagining of [snakefood](https://github.com/blais/snakefood)
 by Martin Blais; the scan → pairs → cluster → render pipeline is his design.
-See [Credit](../README.md#credit-snakefood).
+See [Credit](https://github.com/krazybean/Untangled/blob/main/README.md#credit-snakefood).
 
 - [Install](#install)
 - [Quick start](#quick-start)
@@ -24,30 +24,32 @@ See [Credit](../README.md#credit-snakefood).
 Requires PHP 8.2+. The only runtime dependency is
 [nikic/PHP-Parser](https://github.com/nikic/PHP-Parser).
 
-The package is not on Packagist yet, so run it from a clone:
+Install it from Packagist, as a dev dependency of the project you want to
+look at, or globally:
 
 ```sh
-git clone https://github.com/krazybean/Untangled.git
-cd Untangled/php
-composer install --no-dev
-bin/untangled --version
+composer require --dev krazybean/untangled
+vendor/bin/untangled --version
+
+composer global require krazybean/untangled    # puts `untangled` on your PATH
 ```
 
-`bin/utg` is a short alias for `bin/untangled`; every example below works
-with either. Untangled reads the project you point it at and never runs its
+`utg` is a short alias for `untangled`; every example below works with
+either. The examples use `vendor/bin/untangled`; with a global install it is
+just `untangled`. Untangled reads the project you point it at and never runs its
 code, so it does not need to be installed inside that project.
 
 ## Quick start
 
 ```sh
 # A report to share: one HTML file, open it in any browser
-bin/untangled report /path/to/project --cluster=namespace:2 --output=report.html
+vendor/bin/untangled report /path/to/project --cluster=namespace:2 --output=report.html
 
 # The numbers behind it, as JSON
-bin/untangled analyze /path/to/project --cluster=namespace:2
+vendor/bin/untangled analyze /path/to/project --cluster=namespace:2
 
 # The raw dependency list
-bin/untangled scan /path/to/project --output=pairs.json
+vendor/bin/untangled scan /path/to/project --output=pairs.json
 ```
 
 The path is the folder that holds the project's `composer.json`. It defaults
@@ -73,13 +75,13 @@ Writes every file-to-file dependency of the project as a list of
 `(from, to)` pairs.
 
 ```sh
-bin/untangled scan /path/to/project                          # pairs document (JSON) to stdout
-bin/untangled scan /path/to/project --output=pairs.json      # ... to a file
-bin/untangled scan /path/to/project --dev                    # include autoload-dev (tests)
-bin/untangled scan /path/to/project --format=snakefood       # snakefood's format, for sfood-* tools
+vendor/bin/untangled scan /path/to/project                          # pairs document (JSON) to stdout
+vendor/bin/untangled scan /path/to/project --output=pairs.json      # ... to a file
+vendor/bin/untangled scan /path/to/project --dev                    # include autoload-dev (tests)
+vendor/bin/untangled scan /path/to/project --format=snakefood       # snakefood's format, for sfood-* tools
 ```
 
-The default output is the [pairs document](../spec/pairs-format.md): one node
+The default output is the [pairs document](https://github.com/krazybean/Untangled/blob/main/spec/pairs-format.md): one node
 per file (with its namespace and the classes it declares) and per package,
 builtin or unresolved name it uses, and one edge per dependency with how it
 was made (`use`, `extends`, `new`, `include` and so on) and how often. For
@@ -109,13 +111,13 @@ read them:
 ### analyze
 
 Writes cycles and coupling metrics as JSON (the
-[analysis document](../spec/metrics.md#the-analysis-document)).
+[analysis document](https://github.com/krazybean/Untangled/blob/main/spec/metrics.md#the-analysis-document)).
 
 ```sh
-bin/untangled analyze /path/to/project                         # per file
-bin/untangled analyze /path/to/project --cluster=namespace:2   # per namespace, e.g. App\Billing
-bin/untangled analyze /path/to/project --cluster=folder:2 --exclude='src/Legacy/**'
-bin/untangled analyze pairs.json --cluster=namespace:2         # from a saved scan
+vendor/bin/untangled analyze /path/to/project                         # per file
+vendor/bin/untangled analyze /path/to/project --cluster=namespace:2   # per namespace, e.g. App\Billing
+vendor/bin/untangled analyze /path/to/project --cluster=folder:2 --exclude='src/Legacy/**'
+vendor/bin/untangled analyze pairs.json --cluster=namespace:2         # from a saved scan
 ```
 
 It holds:
@@ -129,7 +131,7 @@ It holds:
 - **cycles**: every dependency cycle, its members and one example loop, such
   as `src/Cart.php → src/Order.php → src/Cart.php`.
 
-What each number means, and why it matters, is in [metrics](../spec/metrics.md).
+What each number means, and why it matters, is in [metrics](https://github.com/krazybean/Untangled/blob/main/spec/metrics.md).
 
 ### report
 
@@ -138,9 +140,9 @@ It needs no network access to open and can be emailed or attached to a
 ticket as is.
 
 ```sh
-bin/untangled report /path/to/project --output=report.html
-bin/untangled report /path/to/project --cluster=namespace:2 --title="Billing" --output=report.html
-bin/untangled report pairs.json --cluster=folder:2 --output=report.html
+vendor/bin/untangled report /path/to/project --output=report.html
+vendor/bin/untangled report /path/to/project --cluster=namespace:2 --title="Billing" --output=report.html
+vendor/bin/untangled report pairs.json --cluster=folder:2 --output=report.html
 ```
 
 The page has a summary in plain words, why coupling and cycles matter, an
@@ -156,8 +158,8 @@ or pasting into another tool. Units in a cycle are drawn in red.
 PHP builtins left out):
 
 ```sh
-bin/untangled report /path/to/project --format=dot | dot -Tsvg > graph.svg
-bin/untangled report /path/to/project --format=dot --style=classic --cluster=namespace:2 | dot -Tpng > graph.png
+vendor/bin/untangled report /path/to/project --format=dot | dot -Tsvg > graph.svg
+vendor/bin/untangled report /path/to/project --format=dot --style=classic --cluster=namespace:2 | dot -Tpng > graph.png
 ```
 
 ## Options
@@ -209,11 +211,11 @@ src/                  Core
 ```
 
 ```sh
-bin/untangled report /path/to/project --cluster=rules:clusters.rules --output=report.html
+vendor/bin/untangled report /path/to/project --cluster=rules:clusters.rules --output=report.html
 ```
 
 Packages, builtins and unresolved names are never clustered. The details are
-in [clustering](../spec/clustering.md).
+in [clustering](https://github.com/krazybean/Untangled/blob/main/spec/clustering.md).
 
 ### Include and exclude
 
@@ -248,8 +250,8 @@ that, so by default such names are reported as unresolved. Declare them with
 `--aliases`:
 
 ```sh
-bin/untangled scan /path/to/project --aliases=laravel
-bin/untangled scan /path/to/project --aliases=laravel --aliases=my-aliases.json
+vendor/bin/untangled scan /path/to/project --aliases=laravel
+vendor/bin/untangled scan /path/to/project --aliases=laravel --aliases=my-aliases.json
 ```
 
 The `laravel` preset holds Laravel's default facade aliases, plus the
@@ -273,9 +275,9 @@ Aliases nobody declared stay unresolved.
 **Scan once, analyze many ways.** Scanning is the slow step on a large project:
 
 ```sh
-bin/untangled scan /path/to/project --source=lib --output=pairs.json
-bin/untangled report pairs.json --cluster=namespace:2 --output=by-namespace.html
-bin/untangled report pairs.json --cluster=folder:1 --output=by-folder.html
+vendor/bin/untangled scan /path/to/project --source=lib --output=pairs.json
+vendor/bin/untangled report pairs.json --cluster=namespace:2 --output=by-namespace.html
+vendor/bin/untangled report pairs.json --cluster=folder:1 --output=by-folder.html
 ```
 
 Scan options (`--dev`, `--source`, `--aliases`) only apply when scanning, so
@@ -285,7 +287,7 @@ pass them to `scan` in this case.
 are aliases:
 
 ```sh
-bin/untangled report /path/to/app --source=routes --source=config --aliases=laravel \
+vendor/bin/untangled report /path/to/app --source=routes --source=config --aliases=laravel \
   --cluster=namespace:2 --output=report.html
 ```
 
@@ -294,25 +296,25 @@ bin/untangled report /path/to/app --source=routes --source=config --aliases=lara
 left out:
 
 ```sh
-bin/untangled report /path/to/app --source=lib --source=includes --cluster=folder:2 --output=report.html
+vendor/bin/untangled report /path/to/app --source=lib --source=includes --cluster=folder:2 --output=report.html
 ```
 
 **A picture for a slide.** Render the classic graph per namespace:
 
 ```sh
-bin/untangled report /path/to/project --format=dot --style=classic --cluster=namespace:2 \
+vendor/bin/untangled report /path/to/project --format=dot --style=classic --cluster=namespace:2 \
   | dot -Tsvg > dependencies.svg
 ```
 
 **Feed snakefood tools.**
 
 ```sh
-bin/untangled scan /path/to/project --format=snakefood | sfood-graph | dot -Tpng > graph.png
+vendor/bin/untangled scan /path/to/project --format=snakefood | sfood-graph | dot -Tpng > graph.png
 ```
 
 ## What it reads
 
-The full rules are in the [PHP profile](../spec/languages/php.md). In short:
+The full rules are in the [PHP profile](https://github.com/krazybean/Untangled/blob/main/spec/languages/php.md). In short:
 
 - The project must have a `composer.json`. Its `autoload` rules (`psr-4`,
   `psr-0`, `classmap`, `files`) decide which files are scanned; `vendor/` never is.
@@ -352,9 +354,9 @@ composer test
 `composer test` runs PHPUnit (a dev dependency in `composer.json`). The suite
 has one test file per class under `tests/`, mirroring `src/`, plus
 `tests/ConformanceTest.php`, which runs every shared case in
-[`../conformance/cases`](../conformance/README.md). Tests that need files on
+[`conformance/cases`](https://github.com/krazybean/Untangled/blob/main/conformance/README.md). Tests that need files on
 disk write a throwaway project with `tests/TempProject.php`.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](https://github.com/krazybean/Untangled/blob/main/php/LICENSE).
