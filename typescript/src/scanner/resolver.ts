@@ -106,6 +106,11 @@ export class Resolver {
     if (name !== undefined && (declared.has(name) || this.installed(folder, name))) {
       return { id: `npm:${name}` };
     }
+    // A package with types only (`vscode`, provided at run time): the node is still the package.
+    const types = name === undefined ? undefined : typesPackage(name);
+    if (types !== undefined && (declared.has(types) || this.installed(folder, types))) {
+      return { id: `npm:${name}` };
+    }
     this.unresolvedBare.add(name ?? specifier);
     return { id: `unresolved:module:${specifier}` };
   }
@@ -150,7 +155,7 @@ export class Resolver {
 
   /** Step 1: the file a project-relative path names, trying extensions and index files. */
   private path(path: string): Found | undefined {
-    const files = this.project.files;
+    const files = this.project;
     if (path !== "" && files.has(path)) {
       return isCode(path) || path.endsWith(".json") ? { file: path } : { asset: extension(path) };
     }
@@ -190,6 +195,14 @@ export function packageName(specifier: string): string | undefined {
     return parts.length >= 2 && parts[0]!.length > 1 && parts[1] ? `${parts[0]}/${parts[1]}` : undefined;
   }
   return parts[0] || undefined;
+}
+
+/** The DefinitelyTyped package of a package: `@types/node`, `@types/babel__core` for `@babel/core`. */
+export function typesPackage(name: string): string | undefined {
+  if (name.startsWith("@types/")) {
+    return undefined;
+  }
+  return `@types/${name.startsWith("@") ? name.slice(1).replace("/", "__") : name}`;
 }
 
 /** A file's extension for the asset warning: `.css`, or the whole name when it has none. */

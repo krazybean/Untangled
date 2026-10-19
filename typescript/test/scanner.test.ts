@@ -141,6 +141,16 @@ describe("relative imports", () => {
     ]);
   });
 
+  test("the project folder and its index file, from below", () => {
+    expect(edges({ "index.js": H, "lib/a.js": 'require("../"); require("..");' }).edges).toEqual(["lib/a.js -> index.js"]);
+  });
+
+  test("a file in a hidden folder is scanned when a scanned file imports it", () => {
+    expect(
+      edges({ "a.ts": 'import "./.config/rules";', ".config/rules/index.ts": 'import "./b";', ".config/rules/b.ts": H, ".config/c.ts": H }).edges,
+    ).toEqual([".config/rules/index.ts -> .config/rules/b.ts", "a.ts -> .config/rules/index.ts"]);
+  });
+
   test("build output imported by source is a node that is not scanned", () => {
     expect(edges({ "src/a.ts": 'import "../dist/b.js";', "dist/b.js": 'import "./c.js";', "dist/c.js": H }).edges).toEqual([
       "src/a.ts -> dist/b.js",
@@ -189,6 +199,15 @@ describe("packages and builtins", () => {
       "no node_modules folder, so imports of @a/b, x could only be matched against declared dependencies by name, and show as unresolved; install the project's dependencies first for a complete picture",
     ]);
     expect(edges({ "a.ts": 'import "x";', "node_modules/.bin/x": "" }).warnings).toEqual([]);
+  });
+
+  test("a package with types only is the package", () => {
+    const files = {
+      "package.json": '{ "devDependencies": { "@types/vscode": "1", "@types/babel__core": "1" } }',
+      "node_modules/@types/mdast/package.json": "{}",
+      "a.ts": 'import "vscode"; import "@babel/core"; import "mdast"; import "electron";',
+    };
+    expect(edges(files).edges).toEqual(["a.ts -> npm:@babel/core", "a.ts -> npm:mdast", "a.ts -> npm:vscode", "a.ts -> unresolved:module:electron"]);
   });
 
   test("a package.json in a subfolder adds to the ones above it", () => {

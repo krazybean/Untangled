@@ -44,23 +44,31 @@ const SKIPPED_KEYS = new Set([
 ]);
 
 export function collect(source: string, id: string): FileImports {
-  let parsed;
+  // The parse with the fewest recovered errors wins; one with none ends the search.
+  let parsed: { program: unknown; errors: Error[] } | undefined;
   let lastError: unknown;
   for (const options of parserOptions(id)) {
+    let attempt;
     try {
-      parsed = parse(source, options);
-      break;
+      attempt = parse(source, options) as unknown as { program: unknown; errors?: Error[] };
     } catch (error) {
       lastError = error;
+      continue;
+    }
+    const errors = attempt.errors ?? [];
+    if (parsed === undefined || errors.length < parsed.errors.length) {
+      parsed = { program: attempt.program, errors };
+    }
+    if (!errors.length) {
+      break;
     }
   }
   if (parsed === undefined) {
     return { references: [], error: `cannot parse: ${(lastError as Error).message}` };
   }
-  const result: FileImports = { references: new Collector(source).run(parsed.program as unknown as AstNode) };
-  const errors = (parsed as unknown as { errors?: Error[] }).errors ?? [];
-  if (errors.length) {
-    result.recovered = errors[0]!.message;
+  const result: FileImports = { references: new Collector(source).run(parsed.program as AstNode) };
+  if (parsed.errors.length) {
+    result.recovered = parsed.errors[0]!.message;
   }
   return result;
 }
@@ -76,19 +84,24 @@ function parserOptions(id: string): ParserOptions[] {
     allowSuperOutsideMethod: true,
     allowUndeclaredExports: true,
   };
-  const withPlugins = (plugins: ParserPlugin[], extra: Partial<ParserOptions> = {}): ParserOptions => ({
+  const withPlugins = (plugins: ParserPlugin[], decorators: ParserPlugin = "decorators"): ParserOptions => ({
     ...base,
-    ...extra,
-    plugins: [...plugins, "decorators"],
+    plugins: [...plugins, decorators],
   });
+  // TypeScript code often uses parameter decorators (`constructor(@inject(x) y)`), which only
+  // the legacy proposal allows; `export @dec class` needs the current one.
+  const typescript = (plugins: ParserPlugin[]): ParserOptions[] => [
+    withPlugins(plugins, "decorators-legacy"),
+    withPlugins(plugins),
+  ];
   if (/\.d\.[mc]?ts$/.test(id)) {
     return [withPlugins([["typescript", { dts: true }]])];
   }
   if (/\.[mc]?ts$/.test(id)) {
-    return [withPlugins(["typescript"])];
+    return typescript(["typescript"]);
   }
   if (id.endsWith(".tsx")) {
-    return [withPlugins(["typescript", "jsx"])];
+    return typescript(["typescript", "jsx"]);
   }
   return [withPlugins(["jsx"]), withPlugins(["jsx", "flow"])];
 }

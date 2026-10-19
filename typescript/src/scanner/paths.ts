@@ -12,7 +12,8 @@ export function joinPath(folder: string, path: string): string | undefined {
   if (joined === ".." || joined.startsWith("../") || posix.isAbsolute(joined)) {
     return undefined;
   }
-  return joined === "." ? "" : joined.replace(/\/$/, "");
+  const trimmed = joined.replace(/\/$/, "");
+  return trimmed === "." ? "" : trimmed;
 }
 
 export function folderOf(id: string): string {

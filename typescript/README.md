@@ -57,14 +57,15 @@ What it scans: every `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts` and
 `.cts` file, except `node_modules/`, hidden folders, build output (`dist/`,
 `build/`, `coverage/` and the tsconfig `outDir`) and tests (`*.test.*`,
 `*.spec.*`, `__tests__/`, `__mocks__/`, `test/`, `tests/`). Declaration files
-(`.d.ts`) and tests are scanned when a scanned file imports them.
+(`.d.ts`), tests and files in hidden folders are scanned when a scanned file
+imports them.
 
 Each import becomes an edge to:
 
 - another project file (`./util` finds `util.ts`, `util/index.js` and so on,
   and `./util.js` finds `util.ts`, the `NodeNext` convention);
 - `npm:<package>` for a package declared in `package.json` or installed in
-  `node_modules/`;
+  `node_modules/`, or known only by its types (`vscode` with `@types/vscode`);
 - `builtin:<module>` for a Node.js builtin (`fs`, `node:fs/promises`);
 - `unresolved:module:<specifier>` when none of these is found, or
   `unresolved:dynamic:<source>` for `import(name)` and `require(name)`.

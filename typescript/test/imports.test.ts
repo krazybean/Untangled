@@ -81,6 +81,13 @@ describe("kinds", () => {
   test("decorators", () => {
     expect(refs('import { dec } from "a";\n@dec class A {}\nexport @dec class B {}')).toHaveLength(1);
   });
+
+  test("parameter decorators in TypeScript", () => {
+    const source = 'import { inject } from "a";\nclass A { constructor(@inject("x") private x: X) {} }';
+    for (const id of ["a.ts", "a.tsx"]) {
+      expect(collect(source, id)).toEqual({ references: [{ kind: "import", type: false, specifier: "a" }] });
+    }
+  });
 });
 
 describe("parsing", () => {
