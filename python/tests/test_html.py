@@ -141,6 +141,9 @@ def test_php_namespaces_and_python_package_paths() -> None:
     assert html.describe_grouping("namespace:3", "php") == (
         "Each part is a group of files that share the first 3 levels of their namespace."
     )
+    assert html.describe_grouping("namespace:2", "typescript") == (
+        "Each part is a group of files that share the first 2 levels of their folder path."
+    )
 
 
 def test_python_modules_are_grouped_by_package_path() -> None:

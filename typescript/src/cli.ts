@@ -2,20 +2,33 @@
 // `untangled <command> [options]`. The command and option names are shared by every Untangled
 // library: `scan`, `analyze` and `report`.
 
-import { writeFileSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
 
+import { AnalysisError, analyze } from "./analysis/analyzer.js";
+import { Clustering } from "./analysis/clustering.js";
+import { Filter } from "./analysis/filter.js";
+import { DocumentError, encode, PairsDocument } from "./graph.js";
+import { renderDot, STYLES } from "./report/dot.js";
+import { renderHtml } from "./report/html.js";
+import { Report } from "./report/report.js";
 import { ProjectError } from "./scanner/project.js";
-import { scan } from "./scanner/scanner.js";
+import { scan, type ScanOptions } from "./scanner/scanner.js";
+import { decode } from "./text.js";
 import { NAME, VERSION } from "./version.js";
 
 export const USAGE = `\
 Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--aliases=<file.json>]...
                       [--format=json|snakefood] [--output=<file>]
+       untangled analyze [<path>|<pairs.json>] [scan options] [--cluster=<strategy>]
+                         [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
+       untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
+                         [--title=<text>] [analyze options]
 
 Commands:
   scan       Write the dependency pairs of a JavaScript/TypeScript project (default path: .)
-  analyze    Not in the TypeScript library yet: use the PHP or Python library on a pairs document
-  report     Not in the TypeScript library yet: use the PHP or Python library on a pairs document
+  analyze    Write cycles and coupling metrics for a project or a pairs document
+  report     Write a readable HTML report (or a Graphviz DOT graph) of the analysis
 
 Options:
   --dev              Also scan tests (*.test.*, *.spec.*, and __tests__, __mocks__, test and
@@ -25,16 +38,26 @@ Options:
   --aliases=FILE     Read import aliases from FILE, a JSON object shaped like tsconfig's paths
                      with paths relative to the project, for aliases set in bundler configuration
                      (repeatable)
-  --format=FORMAT    json (default, the Untangled pairs document) or snakefood
+  --format=FORMAT    scan: json (default, the Untangled pairs document) or snakefood
+                     report: html (default) or dot
+  --style=STYLE      report --format=dot only: default, or classic for snakefood's
+                     black and white sfood-graph look
+  --title=TEXT       report only: the report's title (default: the name in package.json)
+  --cluster=STRATEGY analyze, report: namespace:N, folder:N or rules:<file>
+                     (JavaScript has no namespaces, so namespace:N groups by folder)
+  --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
+  --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
   --output=FILE      Write to FILE instead of standard output
   -h, --help         Show this help
   -V, --version      Show the version
 `;
 
+const SCAN = ["dev", "source", "aliases"];
 const COMMANDS: Record<string, Set<string>> = {
-  scan: new Set(["dev", "source", "aliases", "format", "output"]),
+  scan: new Set([...SCAN, "format", "output"]),
+  analyze: new Set([...SCAN, "cluster", "include", "exclude", "output"]),
+  report: new Set([...SCAN, "cluster", "include", "exclude", "output", "format", "style", "title"]),
 };
-const LATER = new Set(["analyze", "report"]);
 const REPEATABLE = new Set(["source", "aliases"]);
 
 export interface Writer {
@@ -64,6 +87,8 @@ function run(args: string[], out: Writer, err: Writer): number {
   const positional: string[] = [];
   const options = new Map<string, string | true>();
   const repeated: Record<string, string[]> = { source: [], aliases: [] };
+  // Order matters for these, so they are kept as a list rather than by name.
+  const patterns: ["include" | "exclude", string][] = [];
   for (const arg of args) {
     if (arg === "-h" || arg === "--help") {
       out.write(USAGE);
@@ -80,6 +105,8 @@ function run(args: string[], out: Writer, err: Writer): number {
       options.set(name, value);
       if (typeof value === "string" && REPEATABLE.has(name)) {
         repeated[name]!.push(value);
+      } else if (typeof value === "string" && (name === "include" || name === "exclude")) {
+        patterns.push([name, value]);
       }
       continue;
     }
@@ -87,12 +114,6 @@ function run(args: string[], out: Writer, err: Writer): number {
   }
 
   const command = positional.shift();
-  if (command !== undefined && LATER.has(command)) {
-    throw new Usage(
-      `untangled ${command} is not in the TypeScript library yet; run \`untangled scan --output=pairs.json\` here,` +
-        ` then \`untangled ${command} pairs.json\` with the PHP or Python library`,
-    );
-  }
   const allowed = command === undefined ? undefined : COMMANDS[command];
   if (allowed === undefined) {
     throw new Usage(command === undefined ? USAGE.trimEnd() : `Unknown command: ${command}\n\n${USAGE.trimEnd()}`);
@@ -109,33 +130,143 @@ function run(args: string[], out: Writer, err: Writer): number {
     }
   }
 
-  const format = options.get("format") ?? "json";
-  if (format !== "json" && format !== "snakefood") {
+  const path = positional[0] ?? ".";
+  const scanOptions: ScanOptions = { dev: options.has("dev"), sources: repeated.source!, aliases: repeated.aliases! };
+  const output = options.get("output");
+  const write = (text: string): number => {
+    if (typeof output !== "string") {
+      out.write(text);
+      return 0;
+    }
+    try {
+      writeFileSync(output, text, "utf8");
+    } catch {
+      throw new Failure(`cannot write ${output}`);
+    }
+    return 0;
+  };
+
+  if (command === "scan") {
+    const format = options.get("format") ?? "json";
+    if (format !== "json" && format !== "snakefood") {
+      throw new Usage(`Unknown format: ${String(format)}`);
+    }
+    const pairs = scanProject(path, scanOptions, err);
+    return write(format === "json" ? pairs.toJson() : pairs.toSnakefood(path));
+  }
+
+  const format = options.get("format") ?? "html";
+  if (command === "report" && format !== "html" && format !== "dot") {
     throw new Usage(`Unknown format: ${String(format)}`);
   }
-  const path = positional[0] ?? ".";
+  const style = options.get("style") ?? "default";
+  if (typeof style !== "string" || !STYLES.includes(style)) {
+    throw new Usage(`Unknown style: ${String(style)}`);
+  }
+  if (options.has("style") && format !== "dot") {
+    throw new Usage("--style only applies to --format=dot");
+  }
+  const clustering = parseClustering(options.get("cluster"));
+
+  let pairs: PairsDocument;
+  if (isFile(path)) {
+    const warnings: string[] = [];
+    let data: unknown;
+    try {
+      data = JSON.parse(decode(readFileSync(path)));
+    } catch (error) {
+      throw new Failure(error instanceof SyntaxError ? `${path} is not valid JSON: ${error.message}` : `cannot read ${path}`);
+    }
+    try {
+      pairs = PairsDocument.fromObject(data, warnings);
+    } catch (error) {
+      throw error instanceof DocumentError ? new Failure(error.message) : error;
+    }
+    for (const warning of warnings) {
+      err.write(`warning: ${warning}\n`);
+    }
+  } else {
+    pairs = scanProject(path, scanOptions, err);
+  }
+
+  const filter = new Filter();
+  for (const [kind, glob] of patterns) {
+    if (kind === "include") {
+      filter.include(glob);
+    } else {
+      filter.exclude(glob);
+    }
+  }
+  try {
+    if (command === "analyze") {
+      return write(encode(analyze(filter.apply(pairs), clustering)));
+    }
+    const title = options.get("title");
+    const report = Report.build(typeof title === "string" ? title : defaultTitle(path), filter.apply(pairs), clustering);
+    return write(format === "dot" ? renderDot(report, style) : renderHtml(report));
+  } catch (error) {
+    throw error instanceof AnalysisError ? new Failure(error.message) : error;
+  }
+}
+
+function scanProject(path: string, options: ScanOptions, err: Writer): PairsDocument {
   let result;
   try {
-    result = scan(path, { dev: options.has("dev"), sources: repeated.source!, aliases: repeated.aliases! });
+    result = scan(path, options);
   } catch (error) {
-    if (error instanceof ProjectError) {
-      throw new Failure(error.message);
-    }
-    throw error;
+    throw error instanceof ProjectError ? new Failure(error.message) : error;
   }
   for (const warning of result.warnings) {
     err.write(`warning: ${warning}\n`);
   }
-  const text = format === "json" ? result.pairs.toJson() : result.pairs.toSnakefood(path);
-  const output = options.get("output");
-  if (typeof output !== "string") {
-    out.write(text);
-    return 0;
+  return result.pairs;
+}
+
+function parseClustering(strategy: string | true | undefined): Clustering | undefined {
+  if (typeof strategy !== "string") {
+    return undefined;
+  }
+  if (strategy.startsWith("rules:")) {
+    const file = strategy.slice("rules:".length);
+    let text: string;
+    try {
+      text = decode(readFileSync(file));
+    } catch {
+      throw new Failure(`cannot read rules file ${file}`);
+    }
+    try {
+      return Clustering.parseRules(text);
+    } catch (error) {
+      throw new Usage(`error: ${(error as Error).message}`);
+    }
   }
   try {
-    writeFileSync(output, text, "utf8");
-  } catch {
-    throw new Failure(`cannot write ${output}`);
+    return Clustering.fromString(strategy);
+  } catch (error) {
+    throw new Usage(`error: ${(error as Error).message}`);
   }
-  return 0;
+}
+
+/** The default report title: the name in package.json, else the folder or file name. */
+function defaultTitle(path: string): string {
+  if (isFile(path)) {
+    return basename(path);
+  }
+  try {
+    const name = (JSON.parse(readFileSync(join(path, "package.json"), "utf8")) as { name?: unknown }).name;
+    if (typeof name === "string" && name !== "") {
+      return name;
+    }
+  } catch {
+    // No package.json, or not a readable one: use the folder name.
+  }
+  return basename(resolve(path));
+}
+
+function isFile(path: string): boolean {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
 }
