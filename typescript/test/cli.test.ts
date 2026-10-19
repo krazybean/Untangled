@@ -65,6 +65,11 @@ describe("usage", () => {
     expect(run("-V").out).toMatch(/^untangled-typescript \d+\.\d+\.\d+/);
   });
 
+  test("the version is the one in package.json", () => {
+    const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
+    expect(run("-V").out).toBe(`untangled-typescript ${manifest.version}\n`);
+  });
+
   test("errors exit with 2", () => {
     expect(run().code).toBe(2);
     expect(run("nope")).toMatchObject({ code: 2, err: expect.stringMatching(/^Unknown command: nope/) });

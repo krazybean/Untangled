@@ -33,3 +33,14 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: node bin/untangled.js scan ../conformance/cases/three-cycle/typescript/project
+      # Install the packed tarball the way users will, so a file missing from
+      # the package fails here rather than for them.
+      - name: Test the packed package
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          mkdir "$RUNNER_TEMP/install" && cd "$RUNNER_TEMP/install"
+          npm init -y > /dev/null
+          npm install "$RUNNER_TEMP"/krazybean-untangled-*.tgz
+          npx untangled --version
+          npx utg report "$GITHUB_WORKSPACE/conformance/cases/three-cycle/typescript/project" --output=report.html
+          grep -q '<svg\|<html' report.html

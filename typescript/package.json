@@ -1,10 +1,20 @@
 {
   "name": "@krazybean/untangled",
-  "version": "0.1.0-dev.0",
-  "private": true,
+  "version": "1.0.0",
   "description": "Dependency health your whole team can understand: cycles, coupling and trends for JavaScript and TypeScript.",
   "license": "MIT",
   "author": "Juan Castro",
+  "keywords": [
+    "dependencies",
+    "dependency-graph",
+    "cycles",
+    "coupling",
+    "architecture",
+    "snakefood",
+    "typescript"
+  ],
+  "homepage": "https://github.com/krazybean/Untangled/blob/main/typescript/README.md",
+  "bugs": "https://github.com/krazybean/Untangled/issues",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/krazybean/Untangled.git",
@@ -21,13 +31,18 @@
   "files": [
     "assets",
     "bin",
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run typecheck && npm test"
   },
   "dependencies": {
     "@babel/parser": "^8.0.7"

@@ -97,7 +97,9 @@ describe.each(TYPESCRIPT_CASES)("%s", (name) => {
   for (const [file, suffix] of expectedFiles(name, /^analysis(.*)\.json$/)) {
     test(file, () => {
       const analysis = analyze(new Filter().apply(scanCase(name).pairs), clustering(name, suffix));
-      expect(encode(analysis)).toBe(readFileSync(join(expected, file), "utf8"));
+      // The generator names this library's version, which the expected files do not pin.
+      const generator = /\n {2}"generator": \{[^}]*\},/;
+      expect(encode(analysis).replace(generator, "")).toBe(readFileSync(join(expected, file), "utf8").replace(generator, ""));
     });
   }
 

@@ -2,7 +2,7 @@
 
 Each language is versioned and released on its own, from a tag in this
 repository with the language as a prefix: `php/v1.0.0`, `python/v1.0.0`,
-later `typescript/v1.0.0`. Versions follow semantic versioning; the pairs
+`typescript/v1.0.0`. Versions follow semantic versioning; the pairs
 document, the analysis document and the command-line options are the public
 interface, so a breaking change to any of them is a major version.
 
@@ -75,6 +75,31 @@ next to the conformance cases they read.
 
 ## JavaScript / TypeScript (npm: `@krazybean/untangled`)
 
-Not released yet: it waits for analyze and report. The release will follow
-the same shape, with npm trusted publishing and provenance from a
-`typescript/v*` tag.
+Published from the maintainer's machine with `npm publish`, the same way as
+other `@krazybean` packages: the account has two-factor authentication for
+publishing, so npm asks for the security key, and no token is stored in this
+repository. `publishConfig` in `typescript/package.json` makes the scoped
+package public.
+
+**Each release:**
+
+1. Set the version in `typescript/package.json` and `typescript/src/version.ts`
+   (a test checks they match) and add its entry to `typescript/CHANGELOG.md`,
+   in a PR. CI packs the package and runs the packed CLI, so a file missing
+   from the package fails there.
+2. After it merges, publish from a clean checkout of `main` and tag it:
+
+   ```sh
+   git switch main && git pull
+   cd typescript && npm ci
+   npm publish                  # runs typecheck and tests first; asks for 2FA
+   git tag typescript/v1.0.0 && git push origin typescript/v1.0.0
+   ```
+
+`npm publish --dry-run` shows the files that would go up. A pre-release
+(`1.1.0-rc.1`) is published with `npm publish --tag next`, so `npm install`
+keeps getting the latest stable version.
+
+Publishing from CI instead would use npm trusted publishing: add the workflow
+as a trusted publisher in the package's settings on npmjs.com (possible once
+the package exists), and the workflow publishes with provenance and no token.

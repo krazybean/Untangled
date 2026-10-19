@@ -14,10 +14,10 @@ explanations of why coupling matters.
 More reports and graphs, on real PHP, Python and JavaScript projects, are in
 [EXAMPLES.md](EXAMPLES.md).
 
-> **Status:** PHP and Python 1.0.0 are out, on
-> [Packagist](https://packagist.org/packages/krazybean/untangled) and
-> [PyPI](https://pypi.org/project/untangled/). The JavaScript/TypeScript library works
-> from a clone and is not on npm yet. See [Roadmap](#roadmap).
+> **Status:** 1.0.0 is out for all three languages, on
+> [Packagist](https://packagist.org/packages/krazybean/untangled),
+> [PyPI](https://pypi.org/project/untangled/) and
+> [npm](https://www.npmjs.com/package/@krazybean/untangled). See [Roadmap](#roadmap).
 
 ## Credit: snakefood
 
@@ -60,7 +60,7 @@ analyzed on its own.
 | --- | --- | --- | --- | --- |
 | PHP | [`php/`](php/README.md) | `krazybean/untangled` (Packagist) | MIT | 1.0.0 |
 | Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | 1.0.0 |
-| JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | scan, analyze and report work; not on npm yet |
+| JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | 1.0.0 |
 
 ## Quick start
 
@@ -82,11 +82,11 @@ pip install untangled
 untangled report /path/to/your/project --output=report.html
 ```
 
-**JavaScript/TypeScript**, Node.js 22.18+, from a clone until it is on npm:
+**JavaScript/TypeScript**, Node.js 22.18+:
 
 ```sh
-git clone https://github.com/krazybean/Untangled.git && cd Untangled/typescript && npm ci
-node bin/untangled.js report /path/to/your/project --output=report.html
+npm install -g @krazybean/untangled
+untangled report /path/to/your/project --output=report.html
 ```
 
 Then open `report.html` in any browser. `analyze` writes the same numbers as
@@ -108,17 +108,13 @@ snakefood graph. Every command and option is in the usage guide for
 
 ## Roadmap
 
-**v1, PHP and Python (done):** scanner, cycle detection, clustering by
+**v1 (done), in PHP, Python and JavaScript/TypeScript:** scanner, cycle detection, clustering by
 namespace or folder, coupling metrics (fan-in, fan-out, instability
 `I = Ce / (Ca + Ce)`), one readable HTML report with an interactive graph,
 and Graphviz DOT export including snakefood's classic style. Checked on
 Symfony, Laravel, PrestaShop, OpenMage and Monica (PHP), and Django, Flask,
-pandas and Home Assistant core (Python).
-
-**Next, JavaScript/TypeScript:** scan, analyze and report work (the scanner is
-built on a real parser and reads tsconfig paths and every `package.json`),
-checked on VS Code, typescript-eslint, Express and Next.js Commerce. Next is an
-npm release.
+pandas and Home Assistant core (Python), and VS Code, typescript-eslint,
+Express and Next.js Commerce (JavaScript/TypeScript).
 
 **v2:** trends over git history.
 
