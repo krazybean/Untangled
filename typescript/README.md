@@ -1,30 +1,28 @@
 # Untangled for JavaScript / TypeScript
 
-The JavaScript/TypeScript library and CLI of [Untangled](../README.md), to be
-published on npm as `@krazybean/untangled`. It scans a JavaScript or
+The JavaScript/TypeScript library and CLI of [Untangled](https://github.com/krazybean/Untangled/blob/main/README.md), published
+on npm as `@krazybean/untangled`. It scans a JavaScript or
 TypeScript project (or a mix of both) into the
-[pairs document](../spec/pairs-format.md) defined by the shared spec, following
-the [JavaScript and TypeScript profile](../spec/languages/typescript.md).
+[pairs document](https://github.com/krazybean/Untangled/blob/main/spec/pairs-format.md) defined by the shared spec, following
+the [JavaScript and TypeScript profile](https://github.com/krazybean/Untangled/blob/main/spec/languages/typescript.md).
 
-> **Status:** `scan`, `analyze` and `report` work, and give the same analyses,
-> HTML reports and DOT graphs as the PHP and Python libraries for the same
-> pairs document. The package is not on npm yet.
+It gives the same analyses, HTML reports and DOT graphs as the PHP and Python
+libraries for the same pairs document. See what they look like in the
+[examples](https://github.com/krazybean/Untangled/blob/main/EXAMPLES.md).
 
 ## Install
 
 Requires Node.js 22.18+ or 24.11+. The only runtime dependency is
 [`@babel/parser`](https://babeljs.io/docs/babel-parser), which reads
 JavaScript, JSX, TypeScript and Flow without needing the project's own
-TypeScript compiler. The package is not on npm yet, so install it from a clone:
+TypeScript compiler.
 
 ```sh
-git clone https://github.com/krazybean/Untangled.git
-cd Untangled/typescript
-npm ci          # also builds dist/
-node bin/untangled.js --version
+npm install -g @krazybean/untangled     # or: npx @krazybean/untangled --help
+untangled --version
 ```
 
-`npm link` puts `untangled` (and its short alias `utg`) on your `PATH`.
+`utg` is a short alias for `untangled`.
 Untangled reads the project you point it at and never runs it, so it does not
 need to be installed into that project.
 
@@ -44,7 +42,7 @@ library. `untangled --help` prints the same summary.
 ### scan
 
 Writes every file-to-file dependency of the project as a
-[pairs document](../spec/pairs-format.md).
+[pairs document](https://github.com/krazybean/Untangled/blob/main/spec/pairs-format.md).
 
 ```sh
 untangled scan /path/to/project                          # pairs document (JSON) to stdout
@@ -78,7 +76,7 @@ give no edge; the scan says how many there were.
 ### analyze
 
 Writes cycles and coupling metrics as JSON (the
-[analysis document](../spec/metrics.md#the-analysis-document)): a summary,
+[analysis document](https://github.com/krazybean/Untangled/blob/main/spec/metrics.md#the-analysis-document)): a summary,
 fan-in, fan-out and instability per unit, and every dependency cycle with one
 example loop.
 
@@ -115,7 +113,7 @@ untangled report /path/to/project --format=dot --style=classic | dot -Tpng > gra
 | `--format=<format>` | `scan`: `json` (default, the pairs document) or `snakefood` (snakefood's `((root, from), (root, to))` lines, internal files only). `report`: `html` (default) or `dot` |
 | `--style=classic` | `report --format=dot` only: snakefood's black and white look |
 | `--title=<text>` | `report` only: the title. Defaults to the `name` in `package.json`, else the folder name |
-| `--cluster=<strategy>` | `analyze`, `report`: group files into units. `folder:N` keeps the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines, where the first matching path prefix wins. JavaScript has no namespaces, so `namespace:N` is the same as `folder:N`. See [clustering](../spec/clustering.md) |
+| `--cluster=<strategy>` | `analyze`, `report`: group files into units. `folder:N` keeps the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines, where the first matching path prefix wins. JavaScript has no namespaces, so `namespace:N` is the same as `folder:N`. See [clustering](https://github.com/krazybean/Untangled/blob/main/spec/clustering.md) |
 | `--include=<glob>`, `--exclude=<glob>` | `analyze`, `report`: keep or drop project files by path (repeatable, the last matching pattern wins). `*` stays within a folder, `**` crosses folders |
 | `--output=<file>` | Write to a file instead of standard output |
 
@@ -132,7 +130,7 @@ Workspaces (a package importing another package of the same repository by
 name resolves only through `node_modules/`), `exports` and `main` of packages,
 project references, triple-slash `/// <reference>` directives, bundler globs
 (`import.meta.glob`, `require.context`) and imports inside Vue, Svelte or Astro
-files. See the [profile](../spec/languages/typescript.md) for the details.
+files. See the [profile](https://github.com/krazybean/Untangled/blob/main/spec/languages/typescript.md) for the details.
 
 ## Development
 
@@ -143,7 +141,7 @@ npm test            # unit tests and the shared conformance cases
 npm run build       # dist/, used by bin/untangled.js
 ```
 
-The tests run every [conformance case](../conformance/README.md) that has a
+The tests run every [conformance case](https://github.com/krazybean/Untangled/blob/main/conformance/README.md) that has a
 `typescript/` folder, and check the analyses and graphs of the PHP and Python
 cases from their pairs documents. The report's script and styles in `assets/`
 are copies of `php/resources/report/`: edit those and run
@@ -151,4 +149,4 @@ are copies of `php/resources/report/`: edit those and run
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](https://github.com/krazybean/Untangled/blob/main/typescript/LICENSE).
