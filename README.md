@@ -14,8 +14,9 @@ explanations of why coupling matters.
 More reports and graphs, on real PHP, Python and JavaScript projects, are in
 [EXAMPLES.md](EXAMPLES.md).
 
-> **Status:** PHP and Python are complete for v1 and being released as 1.0.0
-> on Packagist and PyPI. JavaScript/TypeScript scanning works; its analysis
+> **Status:** PHP and Python 1.0.0 are out, on
+> [Packagist](https://packagist.org/packages/krazybean/untangled) and
+> [PyPI](https://pypi.org/project/untangled/). JavaScript/TypeScript scanning works; its analysis
 > and report are in progress. See [Roadmap](#roadmap).
 
 ## Credit: snakefood
@@ -57,8 +58,8 @@ analyzed on its own.
 
 | Language | Folder | Package | License | Status |
 | --- | --- | --- | --- | --- |
-| PHP | [`php/`](php/README.md) | `krazybean/untangled` (Packagist) | MIT | v1 complete, 1.0.0 release pending |
-| Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | v1 complete, 1.0.0 release pending |
+| PHP | [`php/`](php/README.md) | `krazybean/untangled` (Packagist) | MIT | 1.0.0 |
+| Python | [`python/`](python/README.md) | `untangled` (PyPI) | GPL-2.0-only | 1.0.0 |
 | JavaScript / TypeScript | [`typescript/`](typescript/README.md) | `@krazybean/untangled` (npm) | MIT | scan works; analyze and report in progress |
 
 ## Quick start
