@@ -1,5 +1,12 @@
 # Untangled
 
+[![PHP](https://github.com/krazybean/Untangled/actions/workflows/php.yml/badge.svg)](https://github.com/krazybean/Untangled/actions/workflows/php.yml)
+[![Python](https://github.com/krazybean/Untangled/actions/workflows/python.yml/badge.svg)](https://github.com/krazybean/Untangled/actions/workflows/python.yml)
+[![TypeScript](https://github.com/krazybean/Untangled/actions/workflows/typescript.yml/badge.svg)](https://github.com/krazybean/Untangled/actions/workflows/typescript.yml)
+[![Packagist](https://img.shields.io/packagist/v/krazybean/untangled?label=packagist)](https://packagist.org/packages/krazybean/untangled)
+[![PyPI](https://img.shields.io/pypi/v/untangled?label=pypi)](https://pypi.org/project/untangled/)
+[![npm](https://img.shields.io/npm/v/@krazybean/untangled?label=npm)](https://www.npmjs.com/package/@krazybean/untangled)
+
 **Dependency health your whole team can understand.** Cycles, coupling and
 trends over time, in the same terms for PHP, JavaScript/TypeScript and Python.
 

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/krazybean/Untangled/security/advisories/new
+    about: Please report vulnerabilities privately, not in a public issue.
+  - name: Usage guides
+    url: https://github.com/krazybean/Untangled/blob/main/docs/README.md
+    about: Every command and option, for PHP, Python and JavaScript/TypeScript.
