@@ -44,6 +44,18 @@ final class HtmlReportTest extends TestCase
         self::assertSame(2, substr_count($html, '</script>'));
     }
 
+    public function testEscapesNamesInTheEmbeddedData(): void
+    {
+        // A file name can hold "</script>" (a folder named "<" and a file named "script>..."),
+        // and file names are what the page's script draws from.
+        $name = '</script><img src=x onerror=alert(1)>.php';
+        $html = HtmlReport::render(Report::build('x', PairsBuilder::build(["{$name} -> a.php"])));
+        self::assertStringNotContainsString('<img', $html);
+        self::assertStringContainsString('\\u003C/script\\u003E', $html);
+        self::assertSame(2, substr_count($html, '</script>'));
+        self::assertContains($name, array_column(self::data($html)['units'], 'id'));
+    }
+
     public function testSectionsComeInTheSpecifiedOrder(): void
     {
         $html = HtmlReport::render(self::grouped());

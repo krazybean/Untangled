@@ -60,6 +60,17 @@ def test_escapes_names_in_markup_and_data() -> None:
     assert data(page)["units"][2]["id"] == "c.py"
 
 
+def test_escapes_names_in_the_embedded_data() -> None:
+    # A file name can hold "</script>" (a folder named "<" and a file named "script>..."),
+    # and file names are what the page's script draws from.
+    name = "</script><img src=x onerror=alert(1)>.py"
+    page = html.render(Report.build("x", build([f"{name} -> a.py"])))
+    assert "<img" not in page
+    assert "\\u003C/script\\u003E" in page
+    assert page.count("</script>") == 2
+    assert name in [unit["id"] for unit in data(page)["units"]]
+
+
 def test_escape() -> None:
     assert html.escape("<a href=\"x\">'&'</a>") == "&lt;a href=&quot;x&quot;&gt;&#039;&amp;&#039;&lt;/a&gt;"
 
