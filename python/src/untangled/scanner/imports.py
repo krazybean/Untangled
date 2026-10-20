@@ -43,6 +43,8 @@ class FileImports:
     imports: list[Import] = field(default_factory=list)
     error: str | None = None
     """Why the file has no imports: it could not be read or parsed at all."""
+    unread: str | None = None
+    """With `error`, the pairs document's `error` for the file: "parse" or "read"."""
     partial: str | None = None
     """Why the file was read statement by statement (see read_statements): its parse error."""
 
@@ -65,9 +67,11 @@ def collect(raw: bytes) -> FileImports:
         where = f" (line {error.lineno})" if error.lineno else ""
         message = f"cannot parse as Python 3: {error.msg}{where}"
         found = read_statements(source) if "\0" not in source else None
-        return FileImports(error=message) if found is None else FileImports(imports=found, partial=message)
+        if found is None:
+            return FileImports(error=message, unread="parse")
+        return FileImports(imports=found, partial=message)
     except (ValueError, RecursionError, MemoryError) as error:
-        return FileImports(error=f"cannot parse as Python 3: {error}")
+        return FileImports(error=f"cannot parse as Python 3: {error}", unread="parse")
     return FileImports(imports=_Collector(source).run(tree))
 
 

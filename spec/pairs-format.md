@@ -26,6 +26,14 @@ Rules:
   (snakefood writes these as `(file, None)`).
 - An internal node MAY carry `module` (its namespace or package, used by
   clustering) and `symbols` (the names it declares, sorted).
+- An internal node MUST carry `error` when the scanner could not take any
+  references from the file: `"parse"` when it does not parse, `"read"` when it
+  cannot be read at all. Such a file's dependencies are unknown, not absent,
+  so [reports](report.md) MUST say which files could not be read. A file read
+  only in part (the language profile says when) has no `error`. The value is
+  one of these words, never the parser's message, so documents stay the same
+  whatever parser version produced them. `error` comes after the node's other
+  fields.
 - External nodes are per package, not per class or file inside the package.
 - `<what>` in unresolved ids is defined by the language profile (for PHP:
   `class`, `function`, `include`; for Python: `module`, `dynamic`).
@@ -64,6 +72,7 @@ Rules:
       "module": "App\\Billing", "symbols": ["App\\Billing\\Invoice"] },
     { "id": "src/Billing/Tax.php", "kind": "internal",
       "module": "App\\Billing", "symbols": ["App\\Billing\\Tax"] },
+    { "id": "src/legacy/broken.php", "kind": "internal", "error": "parse" },
     { "id": "unresolved:include:$base . '/legacy.php'", "kind": "unresolved" }
   ],
   "edges": [

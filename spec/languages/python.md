@@ -191,8 +191,9 @@ requires for names, so legacy files still contribute their imports. File names
 that are not valid UTF-8 are read the same way.
 
 A file that does not parse as Python 3, such as Python 2 code
-(`print "hello"`), is still a node; the scanner warns with the error and
-records no edges for it. A file that does not parse but is not Python 2 is read
+(`print "hello"`), is still a node, with `"error": "parse"`; the scanner warns
+with the error and records no edges for it. A file that cannot be read gets
+`"error": "read"`. A file that does not parse but is not Python 2 is read
 statement by statement instead (see [Parser](#parser)).
 
 ## Parser

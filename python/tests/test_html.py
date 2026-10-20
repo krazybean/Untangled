@@ -71,6 +71,27 @@ def test_escapes_names_in_the_embedded_data() -> None:
     assert name in [unit["id"] for unit in data(page)["units"]]
 
 
+def test_lists_the_files_that_could_not_be_read() -> None:
+    files = build(["a.py -> b.py"], isolated=["broken.py", "locked.py"])
+    files.node("broken.py")["error"] = "parse"
+    files.node("locked.py")["error"] = "read"
+    page = html.render(Report.build("x", files))
+    assert '<div class="value">2</div><div class="label">files we could not read</div>' in page
+    assert '<li><span class="mono">broken.py</span><span class="count">does not parse</span></li>' in page
+    assert '<li><span class="mono">locked.py</span><span class="count">cannot be read</span></li>' in page
+    assert html.UNREAD_LINE in page
+    assert "could not read" not in demo_page()
+
+
+def test_folds_away_a_long_list_of_files_that_could_not_be_read() -> None:
+    names = [f"f{index:02}.py" for index in range(html.LIST_LIMIT + 2)]
+    files = build([], isolated=names)
+    for name in names:
+        files.node(name)["error"] = "parse"
+    page = html.render(Report.build("x", files, Clustering.from_string("folder:1")))
+    assert "<summary>2 more files</summary>" in page
+
+
 def test_escape() -> None:
     assert html.escape("<a href=\"x\">'&'</a>") == "&lt;a href=&quot;x&quot;&gt;&#039;&amp;&#039;&lt;/a&gt;"
 

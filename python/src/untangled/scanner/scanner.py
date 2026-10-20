@@ -56,7 +56,7 @@ class Scanner:
                 with open(project.path(file), "rb") as handle:
                     result = imports.collect(handle.read())
             except OSError as error:
-                result = imports.FileImports(error=f"cannot read it: {error.strerror}")
+                result = imports.FileImports(error=f"cannot read it: {error.strerror}", unread="read")
             results[file] = result
             if result.error is not None:
                 warnings.append(f"{file}: {result.error}")
@@ -75,7 +75,10 @@ class Scanner:
         pairs = PairsDocument("python")
         for file in sorted(results):
             name = project.module_name(file)
-            pairs.add_node(file, INTERNAL, **({"module": name} if name is not None else {}))
+            extra = {"module": name} if name is not None else {}
+            if results[file].unread is not None:
+                extra["error"] = results[file].unread
+            pairs.add_node(file, INTERNAL, **extra)
         for file in sorted(results):
             for target, kinds in targets[file]:
                 if not pairs.has_node(target) and ":" not in target:

@@ -28,6 +28,11 @@ PLAIN = {
 }
 """The plain-language lines of spec/metrics.md, which reports must use verbatim."""
 
+UNREAD = {"parse": "does not parse", "read": "cannot be read"}
+"""What a file's `error` (spec/pairs-format.md) says, in the report."""
+
+UNREAD_LINE = "Any dependencies these files have are missing from every number in this report."
+
 TOP = 5
 """How many units the hotspot lists show."""
 
@@ -258,7 +263,30 @@ class _Page:
         if s["unresolved_references"] > 0:
             references = "reference" if s["unresolved_references"] == 1 else "references"
             out.append(tile(number(s["unresolved_references"]), f"{references} we could not trace"))
-        out += ["  </div>", "</section>", ""]
+        unread = list(self.report.unread.items())
+        if unread:
+            out.append(tile(number(len(unread)), f"{'file' if len(unread) == 1 else 'files'} we could not read", True))
+        out.append("  </div>")
+        if unread:
+
+            def item(node_id: str, error: str) -> str:
+                return f'<li><span class="mono">{e(node_id)}</span><span class="count">{e(UNREAD[error])}</span></li>'
+
+            out += [
+                '  <div class="card" style="margin-top: 16px">',
+                "    <h3>Files we could not read</h3>",
+                f'    <p class="muted small">{e(UNREAD_LINE)}</p>',
+                '    <ul class="rank">' + "".join(item(i, k) for i, k in unread[:LIST_LIMIT]) + "</ul>",
+            ]
+            if len(unread) > LIST_LIMIT:
+                out += [
+                    "    <details>",
+                    f"      <summary>{e(count(len(unread) - LIST_LIMIT, 'more file'))}</summary>",
+                    '      <ul class="rank">' + "".join(item(i, k) for i, k in unread[LIST_LIMIT:]) + "</ul>",
+                    "    </details>",
+                ]
+            out.append("  </div>")
+        out += ["</section>", ""]
         return "\n".join(out)
 
     def why(self) -> str:

@@ -154,8 +154,10 @@ by what they contain.
 
 The parser recovers from most syntax errors; the imports it still finds are
 kept, and the scan warns once, naming the first few such files. A file that
-does not parse at all is still a node; the scanner warns with the error and
-records no edges for it.
+does not parse at all is still a node, with `"error": "parse"`; the scanner
+warns with the error and records no edges for it. A file that cannot be read
+gets `"error": "read"`. A file the parser recovered from is read in part and
+has no `error`.
 
 Files are decoded as UTF-8 (a BOM is dropped); a file that is not valid UTF-8
 is read as Windows-1252, as [pairs-format](../pairs-format.md) requires for
