@@ -5,6 +5,18 @@ All notable changes to the PHP library. The format follows
 [Semantic Versioning](https://semver.org/): the pairs document, the analysis
 document and the command-line options are the public interface.
 
+## Unreleased
+
+- `scan` marks a file that does not parse, or cannot be read, with
+  `"error": "parse"` or `"error": "read"` in the pairs document, and the
+  HTML report counts and lists those files under "Files we could not read".
+  Before, such a file looked like one with no dependencies.
+- `scan` warns when it finds no files to scan, instead of writing an empty
+  document silently.
+- `scan` warns when `composer.lock` or `vendor/composer/installed.json` is
+  not valid JSON. Before, every third-party class silently showed as
+  unresolved.
+
 ## 1.0.0
 
 First release.
