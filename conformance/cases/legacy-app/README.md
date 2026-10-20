@@ -14,5 +14,7 @@ scan passes `--source=lib` (see `php/sources`):
   the builtin wins, so it is `builtin:Stringable`.
 - `vendor/autoload.php` is not recorded, and `Composer\InstalledVersions` is
   `composer:composer-runtime-api`.
+- `lib/Legacy/Broken.php` does not parse, so it is a node with
+  `"error": "parse"` and no edges.
 - `scripts/cron.php` is neither autoloaded nor a `--source`, so it is not
   scanned (the scanner warns about it).

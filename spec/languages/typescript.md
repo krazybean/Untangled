@@ -37,8 +37,7 @@ reads them together. `language` in the document is `typescript`.
 ## Edge kinds
 
 Each reference carries one kind for the statement, plus `type` when it only
-imports types. An edge's `kinds` is the union over its references, and ambient module declarations (`declare module "x"` in a
-declaration file the project includes).
+imports types. An edge's `kinds` is the union over its references.
 
 | kind | meaning |
 | --- | --- |
@@ -134,10 +133,14 @@ The scanner warns, without failing, when the project has no `node_modules/` fold
 bare specifiers went unresolved (naming the first few), since they may be
 packages that are installed but not declared.
 
+Ambient module declarations (`declare module "x"` in a declaration file) are
+not followed: an import of `"x"` that no other step resolves is
+`unresolved:module:x`, even when the project declares it that way.
+
 Not in v0.1: workspaces (a package importing another package of the same
 repository by name resolves only through `node_modules/`), a package importing
-itself by its own name, `exports` and `main` of packages, and project
-references.
+itself by its own name, `exports` and `main` of packages, project
+references, and ambient module declarations.
 
 ## Parsing
 
@@ -154,8 +157,10 @@ by what they contain.
 
 The parser recovers from most syntax errors; the imports it still finds are
 kept, and the scan warns once, naming the first few such files. A file that
-does not parse at all is still a node; the scanner warns with the error and
-records no edges for it.
+does not parse at all is still a node, with `"error": "parse"`; the scanner
+warns with the error and records no edges for it. A file that cannot be read
+gets `"error": "read"`. A file the parser recovered from is read in part and
+has no `error`.
 
 Files are decoded as UTF-8 (a BOM is dropped); a file that is not valid UTF-8
 is read as Windows-1252, as [pairs-format](../pairs-format.md) requires for

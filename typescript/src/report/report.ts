@@ -4,7 +4,7 @@
 
 import { analyze, type Analysis } from "../analysis/analyzer.js";
 import type { Clustering } from "../analysis/clustering.js";
-import type { PairsDocument } from "../graph.js";
+import { INTERNAL, type PairsDocument } from "../graph.js";
 import { compareText, sortText } from "../text.js";
 
 export interface UnitEdge {
@@ -23,13 +23,21 @@ export class Report {
     readonly graph: PairsDocument,
     /** Per cluster, how many file edges fell inside it. */
     readonly dropped: Map<string, number>,
+    /** The files the scanner could not read, sorted, each with its `error` ("parse" or "read"). */
+    readonly unread: Map<string, string>,
   ) {}
 
   /** `files` is a filtered file-level pairs document. */
   static build(title: string, files: PairsDocument, clustering?: Clustering): Report {
     const analysis = analyze(files, clustering);
     const clustered = clustering?.apply(files);
-    return new Report(title, analysis, clustered?.document ?? files, clustered?.dropped ?? new Map());
+    const unread = new Map<string, string>();
+    for (const node of files.nodes()) {
+      if (node.kind === INTERNAL && typeof node.error === "string") {
+        unread.set(node.id, node.error);
+      }
+    }
+    return new Report(title, analysis, clustered?.document ?? files, clustered?.dropped ?? new Map(), unread);
   }
 
   isClustered(): boolean {

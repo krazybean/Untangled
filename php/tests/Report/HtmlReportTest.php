@@ -44,6 +44,18 @@ final class HtmlReportTest extends TestCase
         self::assertSame(2, substr_count($html, '</script>'));
     }
 
+    public function testEscapesNamesInTheEmbeddedData(): void
+    {
+        // A file name can hold "</script>" (a folder named "<" and a file named "script>..."),
+        // and file names are what the page's script draws from.
+        $name = '</script><img src=x onerror=alert(1)>.php';
+        $html = HtmlReport::render(Report::build('x', PairsBuilder::build(["{$name} -> a.php"])));
+        self::assertStringNotContainsString('<img', $html);
+        self::assertStringContainsString('\\u003C/script\\u003E', $html);
+        self::assertSame(2, substr_count($html, '</script>'));
+        self::assertContains($name, array_column(self::data($html)['units'], 'id'));
+    }
+
     public function testSectionsComeInTheSpecifiedOrder(): void
     {
         $html = HtmlReport::render(self::grouped());
@@ -140,6 +152,25 @@ final class HtmlReportTest extends TestCase
         $doc = new PairsDocument('typescript');
         $doc->addNode('src/cart.ts', PairsDocument::INTERNAL);
         self::assertStringContainsString('share the first 1 level of their folder path', HtmlReport::render(Report::build('x', $doc, Clustering::fromString('namespace:1'))));
+    }
+
+    public function testListsTheFilesThatCouldNotBeRead(): void
+    {
+        $files = PairsBuilder::build(['a.php -> b.php']);
+        $files->addNode('broken.php', PairsDocument::INTERNAL, ['error' => 'parse']);
+        $files->addNode('locked.php', PairsDocument::INTERNAL, ['error' => 'read']);
+        $html = HtmlReport::render(Report::build('x', $files));
+        self::assertStringContainsString('<div class="value">2</div><div class="label">files we could not read</div>', $html);
+        self::assertStringContainsString('<li><span class="mono">broken.php</span><span class="count">does not parse</span></li>', $html);
+        self::assertStringContainsString('<li><span class="mono">locked.php</span><span class="count">cannot be read</span></li>', $html);
+        self::assertStringContainsString(HtmlReport::UNREAD_LINE, $html);
+        self::assertStringNotContainsString('could not read', self::demo());
+
+        $many = new PairsDocument('php');
+        for ($index = 0; $index < HtmlReport::LIST_LIMIT + 2; $index++) {
+            $many->addNode(sprintf('f%02d.php', $index), PairsDocument::INTERNAL, ['error' => 'parse']);
+        }
+        self::assertStringContainsString('<summary>2 more files</summary>', HtmlReport::render(Report::build('x', $many, Clustering::fromString('folder:1'))));
     }
 
     public function testAnEmptyProjectStillRenders(): void

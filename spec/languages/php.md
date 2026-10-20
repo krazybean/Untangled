@@ -169,5 +169,6 @@ not unresolved).
 
 The reference implementation uses
 [nikic/PHP-Parser](https://github.com/nikic/PHP-Parser) and its `NameResolver`.
-A file that fails to parse is still a node; the scanner reports the error and
-records no edges for it.
+A file that fails to parse is still a node, with `"error": "parse"`; the
+scanner reports the error and records no edges for it. A file that cannot be
+read gets `"error": "read"`.

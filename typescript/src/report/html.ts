@@ -26,6 +26,11 @@ export const PLAIN = {
   cycle: "These parts all depend on each other, so none of them can be changed, tested or reused alone.",
 };
 
+/** What a file's `error` (spec/pairs-format.md) says, in the report. */
+export const UNREAD: Record<string, string> = { parse: "does not parse", read: "cannot be read" };
+
+export const UNREAD_LINE = "Any dependencies these files have are missing from every number in this report.";
+
 /** How many units the hotspot lists show. */
 const TOP = 5;
 
@@ -96,6 +101,9 @@ ${list.map((unit) => `          <li>${unitButton(unit.id)}<span class="count">${
   };
   const packageItem = (id: string, users: string[]): string =>
     `<li><span class="mono">${e(id.replace(/^[a-z]+:/, ""))}</span><span class="count">used by ${e(count(users.length, "part"))}</span></li>`;
+  const unread = [...report.unread].map(([id, error]): [string, string[]] => [id, [error]]);
+  const unreadItem = (id: string, [error]: string[]): string =>
+    `<li><span class="mono">${e(id)}</span><span class="count">${e(UNREAD[error!] ?? error!)}</span></li>`;
   const referenceItem = (id: string, users: string[]): string =>
     `<li><span class="mono">${e(unresolvedName(id))}</span><span class="count">in ${e(count(users.length, "part"))}</span></li>`;
 
@@ -249,8 +257,21 @@ ${asset("report.css")}
         ? `
       <div class="card tile"><div class="value">${e(formatNumber(s.unresolved_references))}</div><div class="label">${s.unresolved_references === 1 ? "reference" : "references"} we could not trace</div></div>`
         : ""
+    }${
+      unread.length > 0
+        ? `
+      <div class="card tile alert"><div class="value">${e(formatNumber(unread.length))}</div><div class="label">${unread.length === 1 ? "file" : "files"} we could not read</div></div>`
+        : ""
     }
-  </div>
+  </div>${
+    unread.length > 0
+      ? `
+  <div class="card" style="margin-top: 16px">
+    <h3>Files we could not read</h3>
+    <p class="muted small">${e(UNREAD_LINE)}</p>${folding(unread, unreadItem, "more file")}
+  </div>`
+      : ""
+  }
 </section>
 
 <section id="why" aria-labelledby="why-title">

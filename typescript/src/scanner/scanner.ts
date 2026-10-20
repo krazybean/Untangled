@@ -22,6 +22,10 @@ export interface ScanResult {
   warnings: string[];
 }
 
+export const NOTHING_SCANNED =
+  "no JavaScript or TypeScript files were found to scan (test files are left out without --dev), so there is" +
+  " nothing to analyze; check the path, or add folders with --source=<path>";
+
 const KINDS: Record<string, string> = { builtin: BUILTIN, npm: EXTERNAL, unresolved: UNRESOLVED };
 
 export function scan(root: string, options: ScanOptions = {}): ScanResult {
@@ -45,7 +49,7 @@ export function scan(root: string, options: ScanOptions = {}): ScanResult {
     try {
       result = collect(decode(readFileSync(project.files.get(file)!)), file);
     } catch (error) {
-      result = { references: [], error: `cannot read it: ${(error as Error).message}` };
+      result = { references: [], error: `cannot read it: ${(error as Error).message}`, unread: "read" };
     }
     results.set(file, result);
     if (result.error !== undefined) {
@@ -78,9 +82,12 @@ export function scan(root: string, options: ScanOptions = {}): ScanResult {
     }
   }
 
+  if (results.size === 0) {
+    warnings.push(NOTHING_SCANNED);
+  }
   const pairs = new PairsDocument("typescript");
-  for (const file of results.keys()) {
-    pairs.addNode(file, INTERNAL);
+  for (const [file, result] of results) {
+    pairs.addNode(file, INTERNAL, result.unread === undefined ? {} : { error: result.unread });
   }
   for (const [file, list] of targets) {
     for (const [target, kinds] of list) {
@@ -116,8 +123,8 @@ export function scan(root: string, options: ScanOptions = {}): ScanResult {
   if (project.nodeModules.size === 0 && resolver.unresolvedBare.size) {
     warnings.push(
       `no node_modules folder, so imports of ${few(sortText(resolver.unresolvedBare), ", ", 5)} could only be` +
-        " matched against declared dependencies by name, and show as unresolved; install the project's" +
-        " dependencies first for a complete picture",
+        " matched against declared dependencies by name, and show as unresolved; if they are packages, install" +
+        " the project's dependencies first for a complete picture",
     );
   }
   return { pairs, warnings };

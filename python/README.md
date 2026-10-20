@@ -135,7 +135,9 @@ that does not exist is unresolved, never an edge to its parent package. The
 or rules file cannot be read, or the output cannot be written, `2` for a usage
 error. Warnings go to standard error and
 do not change the exit code: a file that does not parse (such as Python 2
-code), files read statement by statement, a `--source` or `--venv` that does not exist, and unresolved imports
+code; it stays in the pairs document marked `"error": "parse"`, and the report
+lists it under "Files we could not read"), files read statement by statement,
+finding no files to scan, a `--source` or `--venv` that does not exist, and unresolved imports
 of modules outside the project when no virtualenv was found.
 
 ## Development

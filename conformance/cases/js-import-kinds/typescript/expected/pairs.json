@@ -21,7 +21,8 @@
     },
     {
       "id": "src/broken.ts",
-      "kind": "internal"
+      "kind": "internal",
+      "error": "parse"
     },
     {
       "id": "src/c.ts",

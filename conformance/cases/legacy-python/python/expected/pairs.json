@@ -35,7 +35,8 @@
     {
       "id": "legacy/old.py",
       "kind": "internal",
-      "module": "legacy.old"
+      "module": "legacy.old",
+      "error": "parse"
     },
     {
       "id": "legacy/test/client.py",

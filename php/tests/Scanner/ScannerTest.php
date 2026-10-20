@@ -91,6 +91,8 @@ final class ScannerTest extends TestCase
         self::assertSame(['src/Broken.php', 'src/Ok.php'], self::ids($result));
         self::assertCount(1, $result->warnings);
         self::assertStringStartsWith('src/Broken.php: parse error', $result->warnings[0]);
+        self::assertSame('parse', $result->pairs->node('src/Broken.php')['error']);
+        self::assertArrayNotHasKey('error', $result->pairs->node('src/Ok.php'));
     }
 
     public function testUnresolvedClassesBecomeUnresolvedNodes(): void
@@ -481,6 +483,14 @@ final class ScannerTest extends TestCase
         self::assertSame([], $result->warnings);
     }
 
+    public function testWarnsWhenThePackageListIsCorrupt(): void
+    {
+        $result = $this->scanWith(['src/A.php' => '<?php namespace App;', 'composer.lock' => '{nope'], ['require' => ['acme/x' => '^1.0'], 'autoload' => ['psr-4' => ['App\\' => 'src/']]]);
+        self::assertCount(1, $result->warnings);
+        self::assertStringStartsWith('composer.lock: not valid JSON (', $result->warnings[0]);
+        self::assertStringContainsString('show as unresolved', $result->warnings[0]);
+    }
+
     public function testLatin1NamesAreWrittenAsUtf8(): void
     {
         $result = $this->scan([
@@ -492,12 +502,12 @@ final class ScannerTest extends TestCase
         self::assertJson($result->pairs->toJson());
     }
 
-    public function testAnEmptyAutoloadGivesAnEmptyDocument(): void
+    public function testAnEmptyAutoloadGivesAnEmptyDocumentAndAWarning(): void
     {
         $this->project = new TempProject(['composer.json' => ['name' => 'x/y']]);
         $result = (new Scanner())->scan($this->project->root);
         self::assertSame([], $result->pairs->nodes());
-        self::assertSame([], $result->warnings);
+        self::assertSame([Scanner::NOTHING_SCANNED], $result->warnings);
     }
 
     /**

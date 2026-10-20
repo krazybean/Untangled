@@ -4,8 +4,9 @@ import { describe, expect, test } from "vitest";
 
 import { Clustering } from "../src/analysis/clustering.js";
 import { Filter } from "../src/analysis/filter.js";
+import { PairsDocument } from "../src/graph.js";
 import { renderDot, quote } from "../src/report/dot.js";
-import { count, e, formatFixed, formatInstability, LIST_LIMIT, MAP_LIMIT, PLAIN, renderHtml, unresolvedName } from "../src/report/html.js";
+import { count, e, formatFixed, formatInstability, LIST_LIMIT, MAP_LIMIT, PLAIN, renderHtml, UNREAD_LINE, unresolvedName } from "../src/report/html.js";
 import { Report } from "../src/report/report.js";
 import { build } from "./helpers.js";
 
@@ -146,6 +147,24 @@ describe("html", () => {
     expect(page).toContain("<title>Dependencies: &lt;b&gt;</title>");
     expect(page).toContain("\\u003Cx\\u003E.ts");
     expect(page).not.toContain("<x>");
+  });
+
+  test("lists the files that could not be read", () => {
+    const files = build(["a.ts -> b.ts"]);
+    files.addNode("broken.ts", "internal", { error: "parse" });
+    files.addNode("locked.ts", "internal", { error: "read" });
+    const page = renderHtml(Report.build("x", files));
+    expect(page).toContain('<div class="value">2</div><div class="label">files we could not read</div>');
+    expect(page).toContain('<li><span class="mono">broken.ts</span><span class="count">does not parse</span></li>');
+    expect(page).toContain('<li><span class="mono">locked.ts</span><span class="count">cannot be read</span></li>');
+    expect(page).toContain(UNREAD_LINE);
+    expect(renderHtml(Report.build("x", build(["a.ts -> b.ts"])))).not.toContain("could not read");
+
+    const many = new PairsDocument("typescript");
+    for (let index = 0; index < LIST_LIMIT + 2; index++) {
+      many.addNode(`f${String(index).padStart(2, "0")}.ts`, "internal", { error: "parse" });
+    }
+    expect(renderHtml(Report.build("x", many, Clustering.fromString("folder:1")))).toContain("<summary>2 more files</summary>");
   });
 
   test("lists packages and untraced references", () => {

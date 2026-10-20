@@ -123,4 +123,22 @@ final class ComposerProjectTest extends TestCase
         $this->project = new TempProject(['composer.json' => [], 'composer.lock' => '{nope']);
         self::assertSame([], ComposerProject::load($this->project->root)->packages());
     }
+
+    public function testSaysWhyThePackageListCannotBeRead(): void
+    {
+        $this->project = new TempProject(['composer.json' => [], 'composer.lock' => '{nope']);
+        self::assertStringStartsWith('composer.lock: not valid JSON (', (string) ComposerProject::load($this->project->root)->packageListError());
+
+        $this->project->remove();
+        $this->project = new TempProject(['composer.json' => [], 'composer.lock' => ['packages' => []], 'vendor/composer/installed.json' => '"text"']);
+        self::assertSame('vendor/composer/installed.json: not a JSON object', ComposerProject::load($this->project->root)->packageListError());
+
+        $this->project->remove();
+        $this->project = new TempProject(['composer.json' => [], 'composer.lock' => ['packages' => []]]);
+        self::assertNull(ComposerProject::load($this->project->root)->packageListError());
+
+        $this->project->remove();
+        $this->project = new TempProject(['composer.json' => []]);
+        self::assertNull(ComposerProject::load($this->project->root)->packageListError());
+    }
 }

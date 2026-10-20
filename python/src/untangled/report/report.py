@@ -7,7 +7,7 @@ from typing import Any
 
 from untangled.analysis.analyzer import analyze
 from untangled.analysis.clustering import Clustering
-from untangled.graph import PairsDocument
+from untangled.graph import INTERNAL, PairsDocument
 
 
 @dataclass
@@ -18,15 +18,22 @@ class Report:
     """The unit graph: the filtered file graph, or its clustered form."""
     dropped: dict[str, int] = field(default_factory=dict)
     """Per cluster, how many file edges fell inside it."""
+    unread: dict[str, str] = field(default_factory=dict)
+    """The files the scanner could not read, sorted, each with its `error` ("parse" or "read")."""
 
     @classmethod
     def build(cls, title: str, files: PairsDocument, clustering: Clustering | None = None) -> "Report":
         """`files` is a filtered file-level pairs document. Raises ValueError when it is already clustered."""
         analysis = analyze(files, clustering)
+        unread = {
+            node["id"]: node["error"]
+            for node in files.nodes()
+            if node["kind"] == INTERNAL and isinstance(node.get("error"), str)
+        }
         if clustering is None:
-            return cls(title, analysis, files)
+            return cls(title, analysis, files, unread=unread)
         clustered = clustering.apply(files)
-        return cls(title, analysis, clustered.document, clustered.dropped)
+        return cls(title, analysis, clustered.document, clustered.dropped, unread)
 
     def is_clustered(self) -> bool:
         return self.analysis["clustering"] is not None

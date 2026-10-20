@@ -16,6 +16,11 @@
       "kind": "external"
     },
     {
+      "id": "lib/Legacy/Broken.php",
+      "kind": "internal",
+      "error": "parse"
+    },
+    {
       "id": "lib/Legacy/Cafe.php",
       "kind": "internal",
       "symbols": [

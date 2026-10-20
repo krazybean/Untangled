@@ -8,17 +8,25 @@
   },
   "clustering": null,
   "summary": {
-    "units": 4,
+    "units": 5,
     "edges": 5,
     "cycles": 0,
     "largest_cycle": 0,
     "units_in_cycles": 0,
     "units_in_cycles_ratio": 0,
-    "mean_fan_out": 1.25,
+    "mean_fan_out": 1,
     "external_packages": 1,
     "unresolved_references": 1
   },
   "units": [
+    {
+      "id": "lib/Legacy/Broken.php",
+      "fan_in": 0,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": null
+    },
     {
       "id": "lib/Legacy/Cafe.php",
       "fan_in": 1,

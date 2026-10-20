@@ -3,6 +3,7 @@ digraph untangled {
   node [shape=box, style=rounded, fontname="Helvetica"];
   edge [color="#898781"];
 
+  "lib/Legacy/Broken.php";
   "lib/Legacy/Cafe.php";
   "lib/Legacy/Order.php";
   "lib/Legacy/helpers.php";

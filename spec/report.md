@@ -28,7 +28,12 @@ It MUST contain, in this order:
 2. **At a glance**: one sentence saying whether there are cycles, and how many
    parts they involve, followed by the project summary of
    [metrics](metrics.md#project-summary) in words ("parts of the code",
-   "dependencies between them", ...).
+   "dependencies between them", ...). When any file of the filtered file graph
+   has an [`error`](pairs-format.md#nodes), it also shows how many ("files we
+   could not read", marked like a cycle count) and lists them, each with "does
+   not parse" or "cannot be read", folding away all but the first 15, under the
+   line "Any dependencies these files have are missing from every number in
+   this report."
 3. **Why this matters**: a short explanation of coupling and of cycles for a
    non-engineer, including the cycle's plain-language line.
 4. **Map**: the unit graph, drawn with arrows from a unit to what it depends

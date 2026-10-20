@@ -26,6 +26,12 @@ class ScanResult:
     warnings: list[str] = field(default_factory=list)
 
 
+NOTHING_SCANNED = (
+    "no Python files were found to scan (test files are left out without --dev), so there is nothing to analyze;"
+    " check the path, or add folders with --source=<path>"
+)
+
+
 class Scanner:
     def __init__(self, dev: bool = False, sources: list[str] | None = None, venvs: list[str] | None = None) -> None:
         self.dev = dev
@@ -56,7 +62,7 @@ class Scanner:
                 with open(project.path(file), "rb") as handle:
                     result = imports.collect(handle.read())
             except OSError as error:
-                result = imports.FileImports(error=f"cannot read it: {error.strerror}")
+                result = imports.FileImports(error=f"cannot read it: {error.strerror}", unread="read")
             results[file] = result
             if result.error is not None:
                 warnings.append(f"{file}: {result.error}")
@@ -72,10 +78,15 @@ class Scanner:
                     if project.has_file(target) and target not in results:
                         queue.append(target)
 
+        if not results:
+            warnings.append(NOTHING_SCANNED)
         pairs = PairsDocument("python")
         for file in sorted(results):
             name = project.module_name(file)
-            pairs.add_node(file, INTERNAL, **({"module": name} if name is not None else {}))
+            extra = {"module": name} if name is not None else {}
+            if results[file].unread is not None:
+                extra["error"] = results[file].unread
+            pairs.add_node(file, INTERNAL, **extra)
         for file in sorted(results):
             for target, kinds in targets[file]:
                 if not pairs.has_node(target) and ":" not in target:
