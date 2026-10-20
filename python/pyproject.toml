@@ -15,7 +15,7 @@ license-files = ["LICENSE", "src/untangled/report/assets/LICENSE.MIT"]
 authors = [{ name = "Juan Castro" }]
 requires-python = ">=3.11"
 dependencies = []
-keywords = ["dependencies", "coupling", "cycles", "architecture", "static-analysis", "graph", "snakefood"]
+keywords = ["dependency-graph", "code-dependencies", "circular-dependencies", "import-graph", "module-dependencies", "coupling", "architecture", "static-analysis", "code-visualization", "dependency-health", "python"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",

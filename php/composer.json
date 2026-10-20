@@ -5,13 +5,17 @@
   "license": "MIT",
   "homepage": "https://github.com/krazybean/Untangled",
   "keywords": [
-    "dependencies",
+    "dependency-graph",
+    "code-dependencies",
+    "circular-dependencies",
+    "import-graph",
+    "module-dependencies",
     "coupling",
-    "cycles",
     "architecture",
     "static-analysis",
-    "graph",
-    "snakefood"
+    "code-visualization",
+    "dependency-health",
+    "php"
   ],
   "authors": [
     {
