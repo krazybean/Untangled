@@ -38,6 +38,11 @@ final class HtmlReport
     /** How many packages and untraced references are listed before the rest fold away. */
     public const LIST_LIMIT = 15;
 
+    /** What a file's `error` (spec/pairs-format.md) says, in the report. */
+    public const UNREAD = ['parse' => 'does not parse', 'read' => 'cannot be read'];
+
+    public const UNREAD_LINE = 'Any dependencies these files have are missing from every number in this report.';
+
     public static function render(Report $report, ?\DateTimeInterface $generatedAt = null): string
     {
         $analysis = $report->analysis;
@@ -70,6 +75,7 @@ final class HtmlReport
             'leaning' => self::top($units, 'fan_out'),
             'packages' => $report->targets(PairsDocument::EXTERNAL),
             'unresolved' => $report->targets(PairsDocument::UNRESOLVED),
+            'unread' => $report->unread,
             'dropped' => $report->dropped,
             'plain' => self::PLAIN,
             'css' => self::resource('report.css'),

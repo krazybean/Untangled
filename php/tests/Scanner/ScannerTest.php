@@ -91,6 +91,8 @@ final class ScannerTest extends TestCase
         self::assertSame(['src/Broken.php', 'src/Ok.php'], self::ids($result));
         self::assertCount(1, $result->warnings);
         self::assertStringStartsWith('src/Broken.php: parse error', $result->warnings[0]);
+        self::assertSame('parse', $result->pairs->node('src/Broken.php')['error']);
+        self::assertArrayNotHasKey('error', $result->pairs->node('src/Ok.php'));
     }
 
     public function testUnresolvedClassesBecomeUnresolvedNodes(): void

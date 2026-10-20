@@ -42,7 +42,7 @@ that has a folder for its language.
 | [includes](cases/includes/README.md) | `classmap` / `files` autoload, followed and unresolved includes, functions and constants |
 | [composer-packages](cases/composer-packages/README.md) | Packages from `composer.lock`, psr-0 prefixes, imports of namespaces |
 | [vendor-installed](cases/vendor-installed/README.md) | Packages from `vendor/`, classmap packages, includes into `vendor/` |
-| [legacy-app](cases/legacy-app/README.md) | Code outside autoload added with `--source`, includes found through `--source` folders, a Latin-1 class name, a polyfill that a builtin wins over, Composer's autoloader and runtime classes |
+| [legacy-app](cases/legacy-app/README.md) | Code outside autoload added with `--source`, includes found through `--source` folders, a Latin-1 class name, a polyfill that a builtin wins over, Composer's autoloader and runtime classes, a file that does not parse |
 | [class-aliases](cases/class-aliases/README.md) | Global class aliases from `--aliases`: a preset, aliases packages declare, a file that overrides the preset, and names nobody declares |
 | [layers](cases/layers/README.md) | Clustering by namespace, folder and rules; Ca / Ce; a cycle between clusters that no file cycle shows, and a file cycle that disappears inside a cluster |
 | [python-packages](cases/python-packages/README.md) | Python: submodules versus names in `from` imports, namespace packages, a package shadowing a module, a missing module in a project package |

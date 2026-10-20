@@ -131,6 +131,9 @@ final class Scanner
             if ($symbols !== []) {
                 $extra['symbols'] = $symbols;
             }
+            if ($result->unread !== null) {
+                $extra['error'] = $result->unread;
+            }
             $pairs->addNode($file, PairsDocument::INTERNAL, $extra);
         }
 
