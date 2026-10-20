@@ -17,6 +17,9 @@ use Untangled\Path;
  */
 final class Scanner
 {
+    public const NOTHING_SCANNED = 'no PHP files were found to scan: composer.json autoloads none and no --source folder'
+        . ' holds any, so there is nothing to analyze';
+
     private readonly FileScanner $fileScanner;
 
     /** Classes Composer writes into vendor/composer/ itself, provided by its composer-runtime-api. */
@@ -79,6 +82,9 @@ final class Scanner
             }
         }
         ksort($results, SORT_STRING);
+        if ($results === []) {
+            $warnings[] = self::NOTHING_SCANNED;
+        }
 
         $packageListError = $project->packageListError();
         if ($packageListError !== null) {

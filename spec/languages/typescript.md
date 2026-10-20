@@ -37,8 +37,7 @@ reads them together. `language` in the document is `typescript`.
 ## Edge kinds
 
 Each reference carries one kind for the statement, plus `type` when it only
-imports types. An edge's `kinds` is the union over its references, and ambient module declarations (`declare module "x"` in a
-declaration file the project includes).
+imports types. An edge's `kinds` is the union over its references.
 
 | kind | meaning |
 | --- | --- |
@@ -134,10 +133,14 @@ The scanner warns, without failing, when the project has no `node_modules/` fold
 bare specifiers went unresolved (naming the first few), since they may be
 packages that are installed but not declared.
 
+Ambient module declarations (`declare module "x"` in a declaration file) are
+not followed: an import of `"x"` that no other step resolves is
+`unresolved:module:x`, even when the project declares it that way.
+
 Not in v0.1: workspaces (a package importing another package of the same
 repository by name resolves only through `node_modules/`), a package importing
-itself by its own name, `exports` and `main` of packages, and project
-references.
+itself by its own name, `exports` and `main` of packages, project
+references, and ambient module declarations.
 
 ## Parsing
 

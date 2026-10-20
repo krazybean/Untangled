@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from untangled.scanner.scanner import Scanner
+from untangled.scanner.scanner import NOTHING_SCANNED, Scanner
 
 
 def scan(root: str, **options: Any) -> tuple[dict[str, Any], list[str]]:
@@ -274,6 +274,13 @@ def test_an_unreadable_file_is_a_node_and_a_warning(project, tmp_path) -> None:
     document, warnings = scan(root)
     assert [n["id"] for n in document["nodes"]] == ["a.py", "b.py"]
     assert warnings == ["a.py: cannot read it: Permission denied"]
+    assert document["nodes"][0]["error"] == "read"
+
+
+def test_finding_nothing_to_scan_is_a_warning(project) -> None:
+    document, warnings = scan(project({"README.md": "", "tests/test_a.py": ""}))
+    assert document["nodes"] == []
+    assert warnings == [NOTHING_SCANNED]
 
 
 def test_a_pyproject_with_unexpected_types_is_ignored(project) -> None:

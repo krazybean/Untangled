@@ -502,12 +502,12 @@ final class ScannerTest extends TestCase
         self::assertJson($result->pairs->toJson());
     }
 
-    public function testAnEmptyAutoloadGivesAnEmptyDocument(): void
+    public function testAnEmptyAutoloadGivesAnEmptyDocumentAndAWarning(): void
     {
         $this->project = new TempProject(['composer.json' => ['name' => 'x/y']]);
         $result = (new Scanner())->scan($this->project->root);
         self::assertSame([], $result->pairs->nodes());
-        self::assertSame([], $result->warnings);
+        self::assertSame([Scanner::NOTHING_SCANNED], $result->warnings);
     }
 
     /**

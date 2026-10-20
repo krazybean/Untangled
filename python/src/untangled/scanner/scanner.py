@@ -26,6 +26,12 @@ class ScanResult:
     warnings: list[str] = field(default_factory=list)
 
 
+NOTHING_SCANNED = (
+    "no Python files were found to scan (test files are left out without --dev), so there is nothing to analyze;"
+    " check the path, or add folders with --source=<path>"
+)
+
+
 class Scanner:
     def __init__(self, dev: bool = False, sources: list[str] | None = None, venvs: list[str] | None = None) -> None:
         self.dev = dev
@@ -72,6 +78,8 @@ class Scanner:
                     if project.has_file(target) and target not in results:
                         queue.append(target)
 
+        if not results:
+            warnings.append(NOTHING_SCANNED)
         pairs = PairsDocument("python")
         for file in sorted(results):
             name = project.module_name(file)

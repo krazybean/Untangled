@@ -4,7 +4,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
-import { scan, type ScanOptions } from "../src/scanner/scanner.js";
+import { NOTHING_SCANNED, scan, type ScanOptions } from "../src/scanner/scanner.js";
 import { ProjectError } from "../src/scanner/project.js";
 import { project } from "./helpers.js";
 
@@ -91,6 +91,10 @@ describe("input", () => {
       "skipped 4 files in build output (coverage, dist, lib, and 1 more); add a folder back with --source=<path> if it holds source code",
     ]);
     expect(nodes(files, { sources: ["dist", "lib/c.js"] })).toEqual(["internal dist/a.js", "internal lib/c.js", "internal src/a.ts"]);
+  });
+
+  test("finding nothing to scan is a warning", () => {
+    expect(edges({ "README.md": "", "test/a.test.ts": H })).toEqual({ edges: [], warnings: [NOTHING_SCANNED] });
   });
 
   test("--source paths that do not exist or leave the project are warnings", () => {
@@ -211,7 +215,7 @@ describe("packages and builtins", () => {
 
   test("without node_modules, unresolved bare specifiers are a warning", () => {
     expect(edges({ "a.ts": 'import "x/y"; import "@a/b/c"; import "react";', "package.json": '{ "dependencies": { "react": "1" } }' }).warnings).toEqual([
-      "no node_modules folder, so imports of @a/b, x could only be matched against declared dependencies by name, and show as unresolved; install the project's dependencies first for a complete picture",
+      "no node_modules folder, so imports of @a/b, x could only be matched against declared dependencies by name, and show as unresolved; if they are packages, install the project's dependencies first for a complete picture",
     ]);
     expect(edges({ "a.ts": 'import "x";', "node_modules/.bin/x": "" }).warnings).toEqual([]);
   });

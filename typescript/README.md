@@ -118,8 +118,10 @@ untangled report /path/to/project --format=dot --style=classic | dot -Tpng > gra
 | `--output=<file>` | Write to a file instead of standard output |
 
 Warnings (files that do not parse, skipped build output, imports of non-code
-files, packages that could not be found because `node_modules/` is missing) go
-to standard error and do not change the exit code.
+files, packages that could not be found because `node_modules/` is missing,
+finding no files to scan) go to standard error and do not change the exit
+code. A file that does not parse is still in the pairs document, marked
+`"error": "parse"`, and the report lists it under "Files we could not read".
 
 Exit codes: 0 on success, 1 when the project, a pairs document or a rules
 file cannot be read or an output cannot be written, 2 for a usage error.
@@ -128,9 +130,12 @@ file cannot be read or an output cannot be written, 2 for a usage error.
 
 Workspaces (a package importing another package of the same repository by
 name resolves only through `node_modules/`), `exports` and `main` of packages,
-project references, triple-slash `/// <reference>` directives, bundler globs
-(`import.meta.glob`, `require.context`) and imports inside Vue, Svelte or Astro
-files. See the [profile](https://github.com/krazybean/Untangled/blob/main/spec/languages/typescript.md) for the details.
+project references, triple-slash `/// <reference>` directives, ambient module
+declarations (an import of a module declared with `declare module "x"` is
+unresolved), bundler globs (`import.meta.glob`, `require.context`) and imports
+inside Vue, Svelte or Astro files. `@babel/parser` cannot read a few files
+that TypeScript accepts (four of VS Code's, for example); those are listed as
+files that do not parse. See the [profile](https://github.com/krazybean/Untangled/blob/main/spec/languages/typescript.md) for the details.
 
 ## Development
 
