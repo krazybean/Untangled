@@ -7,6 +7,8 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+## 1.0.1
+
 - `scan` marks a file that does not parse, or cannot be read, with
   `"error": "parse"` or `"error": "read"` in the pairs document, and the
   HTML report counts and lists those files under "Files we could not read".
@@ -16,6 +18,9 @@ document and the command-line options are the public interface.
 - The warning about a missing `node_modules/` no longer suggests that
   installing will resolve every name it lists. Ambient module declarations
   (`declare module "x"`) are documented as not followed.
+- Package metadata: registry keywords now name code dependencies directly
+  (code dependencies, circular dependencies, import graph, module
+  dependencies), so the package is findable by what it analyzes.
 
 ## 1.0.0
 

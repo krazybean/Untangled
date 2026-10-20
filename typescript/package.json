@@ -1,6 +1,6 @@
 {
   "name": "@krazybean/untangled",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Dependency health your whole team can understand: cycles, coupling and trends for JavaScript and TypeScript.",
   "license": "MIT",
   "author": "Juan Castro",
@@ -11,7 +11,15 @@
     "coupling",
     "architecture",
     "snakefood",
-    "typescript"
+    "typescript",
+    "code-dependencies",
+    "circular-dependencies",
+    "import-graph",
+    "module-dependencies",
+    "static-analysis",
+    "code-visualization",
+    "dependency-health",
+    "javascript"
   ],
   "homepage": "https://github.com/krazybean/Untangled/blob/main/typescript/README.md",
   "bugs": "https://github.com/krazybean/Untangled/issues",

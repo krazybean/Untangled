@@ -7,12 +7,17 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+## 1.0.1
+
 - `scan` marks a file that does not parse, or cannot be read, with
   `"error": "parse"` or `"error": "read"` in the pairs document, and the
   HTML report counts and lists those files under "Files we could not read".
   Before, such a file looked like one with no dependencies.
 - `scan` warns when it finds no files to scan, instead of writing an empty
   document silently.
+- Package metadata: registry keywords now name code dependencies directly
+  (code dependencies, circular dependencies, import graph, module
+  dependencies), so the package is findable by what it analyzes.
 
 ## 1.0.0
 
