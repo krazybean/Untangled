@@ -270,7 +270,8 @@ class _Page:
         if unread:
 
             def item(node_id: str, error: str) -> str:
-                return f'<li><span class="mono">{e(node_id)}</span><span class="count">{e(UNREAD[error])}</span></li>'
+                said = UNREAD.get(error, error)
+                return f'<li><span class="mono">{e(node_id)}</span><span class="count">{e(said)}</span></li>'
 
             out += [
                 '  <div class="card" style="margin-top: 16px">',
