@@ -80,7 +80,11 @@ final class Scanner
         }
         ksort($results, SORT_STRING);
 
-        if (!$project->hasPackageList() && $project->requiresPackages()) {
+        $packageListError = $project->packageListError();
+        if ($packageListError !== null) {
+            $warnings[] = "{$packageListError}, so classes from third-party packages cannot be traced and show as"
+                . ' unresolved; run `composer install` again for a complete picture';
+        } elseif (!$project->hasPackageList() && $project->requiresPackages()) {
             $warnings[] = 'no vendor/composer/installed.json or composer.lock, so classes from third-party packages'
                 . ' cannot be traced and show as unresolved; run `composer install` first for a complete picture';
         }

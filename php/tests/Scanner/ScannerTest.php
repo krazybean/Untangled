@@ -481,6 +481,14 @@ final class ScannerTest extends TestCase
         self::assertSame([], $result->warnings);
     }
 
+    public function testWarnsWhenThePackageListIsCorrupt(): void
+    {
+        $result = $this->scanWith(['src/A.php' => '<?php namespace App;', 'composer.lock' => '{nope'], ['require' => ['acme/x' => '^1.0'], 'autoload' => ['psr-4' => ['App\\' => 'src/']]]);
+        self::assertCount(1, $result->warnings);
+        self::assertStringStartsWith('composer.lock: not valid JSON (', $result->warnings[0]);
+        self::assertStringContainsString('show as unresolved', $result->warnings[0]);
+    }
+
     public function testLatin1NamesAreWrittenAsUtf8(): void
     {
         $result = $this->scan([

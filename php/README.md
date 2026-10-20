@@ -342,7 +342,7 @@ Warnings go to standard error and do not change the exit code, so output
 piped to a file stays clean. The scanner warns when `.php` files were left
 out (naming the folders that hold them, so you can decide what to pass to
 `--source`) and when there is no `vendor/` or `composer.lock` to trace
-packages with.
+packages with, or the one it finds is not valid JSON.
 
 ## Development
 
