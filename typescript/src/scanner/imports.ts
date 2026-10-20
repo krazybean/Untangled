@@ -27,6 +27,8 @@ export interface FileImports {
   references: Reference[];
   /** Why the file has no references: it could not be parsed at all. */
   error?: string;
+  /** With `error`, the pairs document's `error` for the file. */
+  unread?: "parse" | "read";
   /** The first syntax error the parser recovered from, if any. */
   recovered?: string;
 }
@@ -64,7 +66,7 @@ export function collect(source: string, id: string): FileImports {
     }
   }
   if (parsed === undefined) {
-    return { references: [], error: `cannot parse: ${(lastError as Error).message}` };
+    return { references: [], error: `cannot parse: ${(lastError as Error).message}`, unread: "parse" };
   }
   const result: FileImports = { references: new Collector(source).run(parsed.program as AstNode) };
   if (parsed.errors.length) {

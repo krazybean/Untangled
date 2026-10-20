@@ -45,7 +45,7 @@ export function scan(root: string, options: ScanOptions = {}): ScanResult {
     try {
       result = collect(decode(readFileSync(project.files.get(file)!)), file);
     } catch (error) {
-      result = { references: [], error: `cannot read it: ${(error as Error).message}` };
+      result = { references: [], error: `cannot read it: ${(error as Error).message}`, unread: "read" };
     }
     results.set(file, result);
     if (result.error !== undefined) {
@@ -79,8 +79,8 @@ export function scan(root: string, options: ScanOptions = {}): ScanResult {
   }
 
   const pairs = new PairsDocument("typescript");
-  for (const file of results.keys()) {
-    pairs.addNode(file, INTERNAL);
+  for (const [file, result] of results) {
+    pairs.addNode(file, INTERNAL, result.unread === undefined ? {} : { error: result.unread });
   }
   for (const [file, list] of targets) {
     for (const [target, kinds] of list) {
