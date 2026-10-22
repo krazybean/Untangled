@@ -162,6 +162,11 @@ vendor/bin/untangled report /path/to/project --format=dot | dot -Tsvg > graph.sv
 vendor/bin/untangled report /path/to/project --format=dot --style=classic --cluster=namespace:2 | dot -Tpng > graph.png
 ```
 
+The file asks for Graphviz's `dot` layout itself, so other Graphviz programs
+and viewers lay it out the same way. On a large project, render a clustered
+graph (`--cluster=namespace:2`, or `folder:2`) rather than one node per file:
+thousands of files take `dot` minutes and come out too small to read.
+
 ## Options
 
 Options are written `--name=value`; a value with spaces needs quotes

@@ -12,14 +12,14 @@ from untangled.report.report import Report
 
 HEADER = (
     "digraph untangled {\n"
-    '  graph [rankdir=LR, fontname="Helvetica"];\n'
+    '  graph [layout=dot, rankdir=LR, fontname="Helvetica"];\n'
     '  node [shape=box, style=rounded, fontname="Helvetica"];\n'
     '  edge [color="#898781"];\n'
 )
 
 CLASSIC_HEADER = (
     "digraph untangled {\n"
-    "  graph [rankdir=LR];\n"
+    "  graph [layout=dot, rankdir=LR];\n"
     '  node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname="Times-Roman", fontsize=7];\n'
     "  edge [color=black];\n"
 )

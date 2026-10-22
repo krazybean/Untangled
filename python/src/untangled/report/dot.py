@@ -20,7 +20,7 @@ def render(report: Report, style: str = "default") -> str:
     cycle_of = report.cycle_of()
     lines = [
         "digraph untangled {",
-        '  graph [rankdir=LR, fontname="Helvetica"];',
+        '  graph [layout=dot, rankdir=LR, fontname="Helvetica"];',
         '  node [shape=box, style=rounded, fontname="Helvetica"];',
         '  edge [color="#898781"];',
     ]
@@ -51,7 +51,7 @@ def _classic(report: Report) -> str:
     clustered = report.is_clustered()
     lines = [
         "digraph untangled {",
-        "  graph [rankdir=LR];",
+        "  graph [layout=dot, rankdir=LR];",
         '  node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname="Times-Roman", fontsize=7];',
         "  edge [color=black];",
     ]

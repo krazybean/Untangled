@@ -20,7 +20,7 @@ export function renderDot(report: Report, style = "default"): string {
   const cycleOf = report.cycleOf();
   const lines = [
     "digraph untangled {",
-    '  graph [rankdir=LR, fontname="Helvetica"];',
+    '  graph [layout=dot, rankdir=LR, fontname="Helvetica"];',
     '  node [shape=box, style=rounded, fontname="Helvetica"];',
     '  edge [color="#898781"];',
   ];
@@ -57,7 +57,7 @@ function classic(report: Report): string {
   const clustered = report.isClustered();
   const lines = [
     "digraph untangled {",
-    "  graph [rankdir=LR];",
+    "  graph [layout=dot, rankdir=LR];",
     '  node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname="Times-Roman", fontsize=7];',
     "  edge [color=black];",
   ];
