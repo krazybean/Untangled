@@ -1,5 +1,5 @@
 digraph untangled {
-  graph [rankdir=LR];
+  graph [layout=dot, rankdir=LR];
   node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname="Times-Roman", fontsize=7];
   edge [color=black];
 

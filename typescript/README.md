@@ -103,6 +103,11 @@ untangled report /path/to/project --format=dot --style=classic | dot -Tpng > gra
 `--format=dot` writes a Graphviz graph instead, with cycles in red;
 `--style=classic` draws snakefood's black and white `sfood-graph` look.
 
+The file asks for Graphviz's `dot` layout itself, so other Graphviz programs
+and viewers lay it out the same way. On a large project, render a clustered
+graph (`--cluster=folder:2`) rather than one node per file:
+thousands of files take `dot` minutes and come out too small to read.
+
 ### Options
 
 | Option | What it does |

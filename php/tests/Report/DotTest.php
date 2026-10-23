@@ -17,7 +17,7 @@ use Untangled\Tests\Graph\PairsBuilder;
 /** The DOT format of spec/report.md, byte for byte. */
 final class DotTest extends TestCase
 {
-    private const HEADER = "digraph untangled {\n  graph [rankdir=LR, fontname=\"Helvetica\"];\n  node [shape=box, style=rounded, fontname=\"Helvetica\"];\n  edge [color=\"#898781\"];\n";
+    private const HEADER = "digraph untangled {\n  graph [layout=dot, rankdir=LR, fontname=\"Helvetica\"];\n  node [shape=box, style=rounded, fontname=\"Helvetica\"];\n  edge [color=\"#898781\"];\n";
 
     /** @return iterable<string, array{string, string}> */
     public static function quoted(): iterable
@@ -92,7 +92,7 @@ final class DotTest extends TestCase
         self::assertStringContainsString('  "App\\\\Http" -> "App\\\\Domain";', $dot);
     }
 
-    private const CLASSIC_HEADER = "digraph untangled {\n  graph [rankdir=LR];\n  node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname=\"Times-Roman\", fontsize=7];\n  edge [color=black];\n";
+    private const CLASSIC_HEADER = "digraph untangled {\n  graph [layout=dot, rankdir=LR];\n  node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname=\"Times-Roman\", fontsize=7];\n  edge [color=black];\n";
 
     public function testClassicDrawsUnitsGreyAndWhatTheyUseWhiteWithNoCycleColour(): void
     {

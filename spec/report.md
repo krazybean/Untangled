@@ -74,7 +74,7 @@ out, as they are from metrics. The output is deterministic:
 
 ```dot
 digraph untangled {
-  graph [rankdir=LR, fontname="Helvetica"];
+  graph [layout=dot, rankdir=LR, fontname="Helvetica"];
   node [shape=box, style=rounded, fontname="Helvetica"];
   edge [color="#898781"];
 
@@ -89,6 +89,11 @@ digraph untangled {
 ```
 
 - The four header lines are written exactly as above.
+- `layout=dot` names the layered `dot` engine inside the file, so the graph
+  is laid out the same way whichever Graphviz program or viewer opens it.
+  Without it, `neato`, `fdp` and viewers that default to a force-directed
+  engine draw the nodes on top of each other. `-K` on the command line still
+  overrides it.
 - One statement per unit, in the order of the analysis `units` list, then one
   per unit-to-unit edge, in the order of the pairs document's edges. A blank
   line precedes each of the two blocks when it is not empty.
@@ -110,7 +115,7 @@ is a usage error.
 
 ```dot
 digraph untangled {
-  graph [rankdir=LR];
+  graph [layout=dot, rankdir=LR];
   node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname="Times-Roman", fontsize=7];
   edge [color=black];
 
