@@ -151,19 +151,26 @@ first candidate that exists wins.
 | `extends` | `class A extends B`, `interface A extends B` |
 | `implements` | `class A implements B` |
 | `trait` | `use SomeTrait;` inside a class |
-| `new` | `new Foo()` |
-| `static` | `Foo::method()`, `Foo::CONST`, `Foo::$prop`, `Foo::class` |
+| `new` | `new Foo()`, `new $class()` |
+| `static` | `Foo::method()`, `Foo::CONST`, `Foo::$prop`, `Foo::class`, `$class::method()` |
 | `type` | parameter, return and property types, including union/intersection/nullable |
-| `instanceof` | `$x instanceof Foo` |
+| `instanceof` | `$x instanceof Foo`, `$x instanceof $class` |
 | `catch` | `catch (Foo $e)` |
 | `attribute` | `#[Foo]` |
 | `call` | call to a project-declared function |
 | `const` | use of a project-declared constant |
 | `include` | `include` / `require` family |
 
+A class named by an expression instead of a name (`new $class()`,
+`new ($factory())(1)`, `$class::method()`, `$class::CONST`, `$class::$prop`,
+`$x instanceof $class`) has no name to resolve. It is recorded as
+`unresolved:dynamic:<source text>`, the expression as written with runs of
+whitespace collapsed to one space, with the edge kind of the construct (`new`,
+`static`, `instanceof`). `$object::class` loads nothing and adds no edge.
+
 Not in v0.1: docblock types (`@param Foo`), string class names
-(`'App\Foo'`), and `new $var` / `$var::method()` (no name to resolve; skipped,
-not unresolved).
+(`'App\Foo'`), and functions that take a class name (`class_exists($class)`,
+`app()->make($class)`).
 
 ## Parser
 

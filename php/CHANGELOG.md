@@ -7,6 +7,12 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- `scan` records a class named by an expression (`new $class()`,
+  `$class::method()`, `$class::CONST`, `$x instanceof $class`) as
+  `unresolved:dynamic:<source text>`, with the edge kind of the construct, as
+  the Python library does. Before, these were skipped, so a class only ever
+  created from a runtime name could show no dependents.
+
 ## 1.0.1
 
 - `scan` marks a file that does not parse, or cannot be read, with

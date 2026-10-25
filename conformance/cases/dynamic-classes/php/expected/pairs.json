@@ -1,0 +1,64 @@
+{
+  "format": "untangled-pairs",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "1.0.1"
+  },
+  "nodes": [
+    {
+      "id": "src/Loader.php",
+      "kind": "internal",
+      "module": "App",
+      "symbols": [
+        "App\\Loader"
+      ]
+    },
+    {
+      "id": "src/Plugin.php",
+      "kind": "internal",
+      "module": "App",
+      "symbols": [
+        "App\\Plugin"
+      ]
+    },
+    {
+      "id": "unresolved:dynamic:$class",
+      "kind": "unresolved"
+    },
+    {
+      "id": "unresolved:dynamic:$factory()",
+      "kind": "unresolved"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/Loader.php",
+      "to": "src/Plugin.php",
+      "kinds": [
+        "static",
+        "type"
+      ],
+      "count": 2
+    },
+    {
+      "from": "src/Loader.php",
+      "to": "unresolved:dynamic:$class",
+      "kinds": [
+        "instanceof",
+        "new",
+        "static"
+      ],
+      "count": 4
+    },
+    {
+      "from": "src/Loader.php",
+      "to": "unresolved:dynamic:$factory()",
+      "kinds": [
+        "new"
+      ],
+      "count": 1
+    }
+  ]
+}

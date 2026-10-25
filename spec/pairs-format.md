@@ -36,7 +36,7 @@ Rules:
   fields.
 - External nodes are per package, not per class or file inside the package.
 - `<what>` in unresolved ids is defined by the language profile (for PHP:
-  `class`, `function`, `include`; for Python: `module`, `dynamic`).
+  `class`, `dynamic`, `function`, `include`; for Python: `module`, `dynamic`).
 
 ## Edges
 

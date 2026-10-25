@@ -149,6 +149,7 @@ final class Scanner
             foreach ($result->references as $reference) {
                 $target = match ($reference['symbol']) {
                     FileResult::CLASS_SYMBOL => $resolved[$reference['candidates'][0]] ??= $this->resolveAlias($reference['candidates'][0], $classes, $vendor, $aliases),
+                    FileResult::DYNAMIC_SYMBOL => 'unresolved:dynamic:' . $reference['candidates'][0],
                     FileResult::FUNCTION_SYMBOL => self::firstMatch($reference['candidates'], $functions, true),
                     default => self::firstMatch($reference['candidates'], $constants, false),
                 };

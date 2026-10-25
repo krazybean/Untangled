@@ -1,0 +1,10 @@
+digraph untangled {
+  graph [rankdir=LR, fontname="Helvetica"];
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  edge [color="#898781"];
+
+  "src/Loader.php";
+  "src/Plugin.php";
+
+  "src/Loader.php" -> "src/Plugin.php";
+}
