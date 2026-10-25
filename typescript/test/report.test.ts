@@ -47,7 +47,7 @@ describe("report", () => {
 describe("dot", () => {
   test("default style highlights cycles", () => {
     expect(renderDot(cyclic())).toBe(`digraph untangled {
-  graph [rankdir=LR, fontname="Helvetica"];
+  graph [layout=dot, rankdir=LR, fontname="Helvetica"];
   node [shape=box, style=rounded, fontname="Helvetica"];
   edge [color="#898781"];
 
@@ -65,7 +65,7 @@ describe("dot", () => {
 
   test("classic style draws packages and unresolved references in white, not builtins", () => {
     expect(renderDot(cyclic(), "classic")).toBe(`digraph untangled {
-  graph [rankdir=LR];
+  graph [layout=dot, rankdir=LR];
   node [shape=ellipse, style=filled, fillcolor=lightgrey, fontname="Times-Roman", fontsize=7];
   edge [color=black];
 
@@ -93,7 +93,7 @@ describe("dot", () => {
 
   test("an empty graph", () => {
     expect(renderDot(Report.build("x", build([])))).toBe(
-      'digraph untangled {\n  graph [rankdir=LR, fontname="Helvetica"];\n  node [shape=box, style=rounded, fontname="Helvetica"];\n  edge [color="#898781"];\n}\n',
+      'digraph untangled {\n  graph [layout=dot, rankdir=LR, fontname="Helvetica"];\n  node [shape=box, style=rounded, fontname="Helvetica"];\n  edge [color="#898781"];\n}\n',
     );
   });
 

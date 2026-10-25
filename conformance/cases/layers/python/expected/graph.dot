@@ -1,5 +1,5 @@
 digraph untangled {
-  graph [rankdir=LR, fontname="Helvetica"];
+  graph [layout=dot, rankdir=LR, fontname="Helvetica"];
   node [shape=box, style=rounded, fontname="Helvetica"];
   edge [color="#898781"];
 
