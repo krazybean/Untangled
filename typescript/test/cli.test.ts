@@ -89,6 +89,54 @@ describe("usage", () => {
   });
 });
 
+describe("dependents", () => {
+  const files = { "src/a.ts": 'import "./b";', "src/b.ts": 'import "../lib/c";', "lib/c.ts": "" };
+
+  test("lists the dependents of a file in a pairs document", () => {
+    const root = project(files);
+    run("scan", root, `--output=${join(root, "pairs.json")}`);
+    expect(run("dependents", join(root, "pairs.json"), "lib/c.ts")).toEqual({ code: 0, out: "1 dependent of lib/c.ts\n\nsrc/\n  b.ts\n", err: "" });
+    expect(run("dependents", join(root, "pairs.json"), "lib/c.ts", "--transitive").out).toBe(
+      "2 dependents of lib/c.ts\n\nsrc/\n  a.ts  (depth 2)\n  b.ts  (depth 1)\n",
+    );
+  });
+
+  test("scans a project, and writes JSON to a file", () => {
+    const root = project(files);
+    const output = join(root, "out.json");
+    expect(run("dependents", root, "lib/c.ts", "--transitive", "--format=json", `--output=${output}`)).toEqual({ code: 0, out: "", err: "" });
+    const document = JSON.parse(readFileSync(output, "utf8")) as { format: string; dependents: { id: string }[] };
+    expect(document.format).toBe("untangled-dependents");
+    expect(document.dependents.map((item) => item.id)).toEqual(["src/b.ts", "src/a.ts"]);
+  });
+
+  test("takes the current folder when the first argument is a target", () => {
+    const root = project(files);
+    const previous = process.cwd();
+    process.chdir(root);
+    try {
+      expect(JSON.parse(run("dependents", "lib/c.ts", "--format=json").out)).toMatchObject({ dependents: [{ id: "src/b.ts", depth: 1 }] });
+    } finally {
+      process.chdir(previous);
+    }
+  });
+
+  test("fails on an unknown target and on a clustered document", () => {
+    const root = project({ ...files, "clustered.json": JSON.stringify({ format: "untangled-pairs", version: "0.1", language: "typescript", nodes: [{ id: "a", kind: "cluster" }], edges: [] }) });
+    expect(run("dependents", root, "src/nope.ts")).toEqual({ code: 1, out: "", err: 'error: no node or symbol "src/nope.ts" in the pairs document\n' });
+    expect(run("dependents", join(root, "clustered.json"), "a")).toMatchObject({ code: 1, err: expect.stringMatching(/already clustered/) });
+  });
+
+  test("usage errors exit with 2", () => {
+    const root = project(files);
+    expect(run("dependents", root)).toMatchObject({ code: 2, err: "dependents needs at least one file or symbol to look up\n" });
+    expect(run("dependents", root, "lib/c.ts", "--format=html")).toMatchObject({ code: 2, err: "Unknown format: html\n" });
+    expect(run("dependents", root, "lib/c.ts", "--transitive=yes")).toMatchObject({ code: 2, err: "Option --transitive takes no value\n" });
+    expect(run("dependents", root, "lib/c.ts", "--cluster=folder:1")).toMatchObject({ code: 2, err: "Unknown option for dependents: --cluster\n" });
+    expect(run("analyze", root, "--transitive")).toMatchObject({ code: 2, err: "Unknown option for analyze: --transitive\n" });
+  });
+});
+
 describe("analyze", () => {
   const files = { "package.json": '{ "name": "shop" }', "src/a.ts": 'import "./b"; import "../lib/c";', "src/b.ts": 'import "./a";', "lib/c.ts": 'import "fs";' };
 

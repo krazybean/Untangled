@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 """`untangled <command> [options]`. The command and option names are shared by every
-Untangled library: `scan`, `analyze` and `report`."""
+Untangled library: `scan`, `analyze`, `report` and `dependents`."""
 
 import json
 import os
@@ -9,6 +9,7 @@ import tomllib
 from typing import TextIO
 
 from untangled import version
+from untangled.analysis import dependents
 from untangled.analysis.analyzer import analyze
 from untangled.analysis.clustering import Clustering
 from untangled.analysis.filtering import Filter
@@ -25,11 +26,14 @@ Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--venv=<path>]...
                          [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
        untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                          [--title=<text>] [analyze options]
+       untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [--transitive]
+                            [--format=text|json] [analyze options]
 
 Commands:
   scan       Write the dependency pairs of a Python project (default path: .)
   analyze    Write cycles and coupling metrics for a project or a pairs document
   report     Write a readable HTML report (or a Graphviz DOT graph) of the analysis
+  dependents List the files that depend on files or declared symbols
 
 Options:
   --dev              Also scan tests (test/ and tests/ folders, test_*.py, *_test.py, conftest.py)
@@ -39,6 +43,8 @@ Options:
                      project (repeatable)
   --format=FORMAT    scan: json (default, the Untangled pairs document) or snakefood
                      report: html (default) or dot
+                     dependents: text (default) or json
+  --transitive       dependents: also the files that depend on a dependent, with their depth
   --style=STYLE      report --format=dot only: default, or classic for snakefood's
                      black and white sfood-graph look
   --title=TEXT       report only: the report's title (default: the project name in pyproject.toml)
@@ -57,6 +63,7 @@ _COMMANDS = {
     "scan": _SCAN | {"format", "output"},
     "analyze": _SCAN | {"cluster", "strict", "include", "exclude", "output"},
     "report": _SCAN | {"cluster", "strict", "include", "exclude", "output", "format", "style", "title"},
+    "dependents": _SCAN | {"transitive", "include", "exclude", "output", "format"},
 }
 _REPEATABLE = {"source", "venv"}
 
@@ -112,12 +119,14 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
     if unknown:
         raise _Usage(f"Unknown option for {command}: --{unknown[0]}")
     for name, value in options.items():
-        if name not in ("dev", "strict") and not isinstance(value, str):
+        if name not in ("dev", "strict", "transitive") and not isinstance(value, str):
             raise _Usage(f"Option --{name} needs a value, as in --{name}=...")
     if "dev" in options and options["dev"] is not True:
         raise _Usage("Option --dev takes no value")
     if "strict" in options and options["strict"] is not True:
         raise _Usage("Option --strict takes no value")
+    if "transitive" in options and options["transitive"] is not True:
+        raise _Usage("Option --transitive takes no value")
 
     path = positional[0] if positional else "."
     scanner = Scanner(dev="dev" in options, sources=repeated["source"], venvs=repeated["venv"] or None)
@@ -130,6 +139,9 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
             raise _Usage(f"Unknown format: {output_format}")
         pairs = _scan(scanner, path, err)
         return _write(pairs.to_json() if output_format == "json" else pairs.to_snakefood(path), output, out)
+
+    if command == "dependents":
+        return _dependents(positional, options, patterns, scanner, output, out, err)
 
     output_format = options.get("format", "html")
     if command == "report" and output_format not in ("html", "dot"):
@@ -144,22 +156,7 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
         raise _Usage("--strict only applies to --cluster=rules:<file>")
     clustering = _clustering(strategy)
 
-    if os.path.isfile(path):
-        warnings: list[str] = []
-        try:
-            with open(path, encoding="utf-8") as handle:
-                data = json.load(handle)
-            pairs = PairsDocument.from_dict(data, warnings)
-        except OSError as error:
-            raise _Failure(f"cannot read {path}") from error
-        except (json.JSONDecodeError, UnicodeDecodeError) as error:
-            raise _Failure(f"{path} is not valid JSON: {error}") from error
-        except DocumentError as error:
-            raise _Failure(str(error)) from error
-        for warning in warnings:
-            err.write(f"warning: {warning}\n")
-    else:
-        pairs = _scan(scanner, path, err)
+    pairs = _load(path, scanner, err)
 
     selection = Filter()
     for kind, glob in patterns:
@@ -179,6 +176,58 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
     except ValueError as error:
         raise _Failure(str(error)) from error
     return _write(dot.render(report, str(style)) if output_format == "dot" else html.render(report), output, out)
+
+
+def _dependents(
+    positional: list[str],
+    options: dict[str, str | bool],
+    patterns: list[tuple[str, str]],
+    scanner: Scanner,
+    output: str | None,
+    out: TextIO,
+    err: TextIO,
+) -> int:
+    """The source is the first argument when it is a folder or a .json file, else the current folder;
+    the rest are the targets."""
+    output_format = options.get("format", "text")
+    if output_format not in ("text", "json"):
+        raise _Usage(f"Unknown format: {output_format}")
+    first = positional[0] if positional else None
+    has_source = first is not None and (
+        os.path.isdir(first) or (os.path.isfile(first) and first.lower().endswith(".json"))
+    )
+    targets = positional[1:] if has_source else positional
+    if not targets:
+        raise _Usage("dependents needs at least one file or symbol to look up")
+    pairs = _load(first if has_source and first is not None else ".", scanner, err)
+    selection = Filter()
+    for kind, glob in patterns:
+        selection.include(glob) if kind == "include" else selection.exclude(glob)
+    try:
+        document = dependents.find(pairs, targets, "transitive" in options, selection)
+    except ValueError as error:
+        raise _Failure(str(error)) from error
+    return _write(encode(document) if output_format == "json" else dependents.render_text(document), output, out)
+
+
+def _load(path: str, scanner: Scanner, err: TextIO) -> PairsDocument:
+    """Reads a pairs document, or scans a project, and writes the warnings to standard error."""
+    if not os.path.isfile(path):
+        return _scan(scanner, path, err)
+    warnings: list[str] = []
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+        pairs = PairsDocument.from_dict(data, warnings)
+    except OSError as error:
+        raise _Failure(f"cannot read {path}") from error
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        raise _Failure(f"{path} is not valid JSON: {error}") from error
+    except DocumentError as error:
+        raise _Failure(str(error)) from error
+    for warning in warnings:
+        err.write(f"warning: {warning}\n")
+    return pairs
 
 
 def _scan(scanner: Scanner, path: str, err: TextIO) -> PairsDocument:

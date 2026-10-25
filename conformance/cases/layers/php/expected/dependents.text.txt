@@ -1,0 +1,14 @@
+5 dependents of App\Domain\User
+
+./
+  bootstrap.php  (depth 4)
+
+src/Domain/
+  Order.php  (depth 1)
+
+src/Http/
+  Router.php  (depth 3)
+  UserController.php  (depth 2)
+
+src/Infra/
+  UserRepository.php  (depth 1)

@@ -7,6 +7,7 @@ import { basename, join, resolve } from "node:path";
 
 import { AnalysisError, analyze } from "./analysis/analyzer.js";
 import { Clustering, describeUnmatched } from "./analysis/clustering.js";
+import { DependentsError, findDependents, renderDependentsText } from "./analysis/dependents.js";
 import { Filter } from "./analysis/filter.js";
 import { DocumentError, encode, PairsDocument } from "./graph.js";
 import { renderDot, STYLES } from "./report/dot.js";
@@ -24,11 +25,14 @@ Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--aliases=<file.jso
                          [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
        untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                          [--title=<text>] [analyze options]
+       untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [--transitive]
+                            [--format=text|json] [analyze options]
 
 Commands:
   scan       Write the dependency pairs of a JavaScript/TypeScript project (default path: .)
   analyze    Write cycles and coupling metrics for a project or a pairs document
   report     Write a readable HTML report (or a Graphviz DOT graph) of the analysis
+  dependents List the files that depend on files or declared symbols
 
 Options:
   --dev              Also scan tests (*.test.*, *.spec.*, and __tests__, __mocks__, test and
@@ -40,6 +44,8 @@ Options:
                      (repeatable)
   --format=FORMAT    scan: json (default, the Untangled pairs document) or snakefood
                      report: html (default) or dot
+                     dependents: text (default) or json
+  --transitive       dependents: also the files that depend on a dependent, with their depth
   --style=STYLE      report --format=dot only: default, or classic for snakefood's
                      black and white sfood-graph look
   --title=TEXT       report only: the report's title (default: the name in package.json)
@@ -59,6 +65,7 @@ const COMMANDS: Record<string, Set<string>> = {
   scan: new Set([...SCAN, "format", "output"]),
   analyze: new Set([...SCAN, "cluster", "strict", "include", "exclude", "output"]),
   report: new Set([...SCAN, "cluster", "strict", "include", "exclude", "output", "format", "style", "title"]),
+  dependents: new Set([...SCAN, "transitive", "include", "exclude", "output", "format"]),
 };
 const REPEATABLE = new Set(["source", "aliases"]);
 
@@ -127,10 +134,10 @@ function run(args: string[], out: Writer, err: Writer): number {
     if (name === "dev" && value !== true) {
       throw new Usage("Option --dev takes no value");
     }
-    if (name === "strict" && value !== true) {
-      throw new Usage("Option --strict takes no value");
+    if ((name === "strict" || name === "transitive") && value !== true) {
+      throw new Usage(`Option --${name} takes no value`);
     }
-    if (name !== "dev" && name !== "strict" && typeof value !== "string") {
+    if (name !== "dev" && name !== "strict" && name !== "transitive" && typeof value !== "string") {
       throw new Usage(`Option --${name} needs a value, as in --${name}=...`);
     }
   }
@@ -160,6 +167,10 @@ function run(args: string[], out: Writer, err: Writer): number {
     return write(format === "json" ? pairs.toJson() : pairs.toSnakefood(path));
   }
 
+  if (command === "dependents") {
+    return dependents(positional, options, patterns, scanOptions, write, err);
+  }
+
   const format = options.get("format") ?? "html";
   if (command === "report" && format !== "html" && format !== "dot") {
     throw new Usage(`Unknown format: ${String(format)}`);
@@ -177,26 +188,7 @@ function run(args: string[], out: Writer, err: Writer): number {
   }
   const clustering = parseClustering(strategy);
 
-  let pairs: PairsDocument;
-  if (isFile(path)) {
-    const warnings: string[] = [];
-    let data: unknown;
-    try {
-      data = JSON.parse(decode(readFileSync(path)));
-    } catch (error) {
-      throw new Failure(error instanceof SyntaxError ? `${path} is not valid JSON: ${error.message}` : `cannot read ${path}`);
-    }
-    try {
-      pairs = PairsDocument.fromObject(data, warnings);
-    } catch (error) {
-      throw error instanceof DocumentError ? new Failure(error.message) : error;
-    }
-    for (const warning of warnings) {
-      err.write(`warning: ${warning}\n`);
-    }
-  } else {
-    pairs = scanProject(path, scanOptions, err);
-  }
+  const pairs = loadPairs(path, scanOptions, err);
 
   const filter = new Filter();
   for (const [kind, glob] of patterns) {
@@ -225,6 +217,66 @@ function run(args: string[], out: Writer, err: Writer): number {
   } catch (error) {
     throw error instanceof AnalysisError ? new Failure(error.message) : error;
   }
+}
+
+/** The source is the first argument when it is a folder or a .json file, else the current folder; the rest are the targets. */
+function dependents(
+  positional: string[],
+  options: Map<string, string | true>,
+  patterns: ["include" | "exclude", string][],
+  scanOptions: ScanOptions,
+  write: (text: string) => number,
+  err: Writer,
+): number {
+  const format = options.get("format") ?? "text";
+  if (format !== "text" && format !== "json") {
+    throw new Usage(`Unknown format: ${String(format)}`);
+  }
+  const first = positional[0];
+  const hasSource = first !== undefined && (isDirectory(first) || (isFile(first) && first.toLowerCase().endsWith(".json")));
+  const targets = hasSource ? positional.slice(1) : positional;
+  if (targets.length === 0) {
+    throw new Usage("dependents needs at least one file or symbol to look up");
+  }
+  const pairs = loadPairs(hasSource ? first : ".", scanOptions, err);
+  const filter = new Filter();
+  for (const [kind, glob] of patterns) {
+    if (kind === "include") {
+      filter.include(glob);
+    } else {
+      filter.exclude(glob);
+    }
+  }
+  try {
+    const document = findDependents(pairs, targets, options.has("transitive"), filter);
+    return write(format === "json" ? encode(document) : renderDependentsText(document));
+  } catch (error) {
+    throw error instanceof DependentsError ? new Failure(error.message) : error;
+  }
+}
+
+/** Reads a pairs document, or scans a project, and writes the warnings to standard error. */
+function loadPairs(path: string, options: ScanOptions, err: Writer): PairsDocument {
+  if (!isFile(path)) {
+    return scanProject(path, options, err);
+  }
+  const warnings: string[] = [];
+  let data: unknown;
+  try {
+    data = JSON.parse(decode(readFileSync(path)));
+  } catch (error) {
+    throw new Failure(error instanceof SyntaxError ? `${path} is not valid JSON: ${error.message}` : `cannot read ${path}`);
+  }
+  let pairs: PairsDocument;
+  try {
+    pairs = PairsDocument.fromObject(data, warnings);
+  } catch (error) {
+    throw error instanceof DocumentError ? new Failure(error.message) : error;
+  }
+  for (const warning of warnings) {
+    err.write(`warning: ${warning}\n`);
+  }
+  return pairs;
 }
 
 function scanProject(path: string, options: ScanOptions, err: Writer): PairsDocument {
@@ -279,6 +331,14 @@ function defaultTitle(path: string): string {
     // No package.json, or not a readable one: use the folder name.
   }
   return basename(resolve(path));
+}
+
+function isDirectory(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 function isFile(path: string): boolean {

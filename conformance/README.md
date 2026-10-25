@@ -13,10 +13,12 @@ cases/<case>/
         ├── pairs.json                 # the expected pairs document
         ├── analysis.json              # the expected analysis of the file graph
         ├── analysis.<strategy>.json   # optional: a clustered analysis
-        └── graph[.<strategy>].dot     # optional: the report's DOT graph
+        ├── graph[.<strategy>].dot     # optional: the report's DOT graph
+        └── dependents.<name>.json|txt # optional: the output of that `dependents` query
     clusters.rules             # optional: the rules for analysis.rules.json
     sources                    # optional: --source paths for the scan, one per line
     aliases                    # optional: --aliases presets or files (relative to <language>/), one per line
+    dependents.<name>.args     # optional: arguments of a `dependents` query on expected/pairs.json, one per line
 ```
 
 `<strategy>` is the clustering with `:` written as `-`: `analysis.namespace-2.json`

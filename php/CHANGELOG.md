@@ -7,6 +7,12 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- New `dependents` command: lists the files that depend on one or more files
+  (or declared symbols), directly or with `--transitive` through other files,
+  with each one's depth. It reads a project or a pairs document, accepts
+  `--include` / `--exclude`, and writes text grouped by folder or
+  `--format=json`. See spec/dependents.md.
+
 - `analyze` and `report` warn on standard error when `--cluster=rules:<file>`
   leaves files unmatched (each becomes its own cluster), naming the first few.
   `--strict` makes that an error: exit code 1 and no output, for CI. Before,

@@ -17,6 +17,7 @@ scan ──▶ pairs ──▶ filter / cluster ──▶ analyze ──▶ rend
 | [Pairs format](pairs-format.md) | Nodes, edges, external and unresolved targets, the JSON document |
 | [Clustering and filtering](clustering.md) | Grouping files into namespaces or folders, aggregating edges |
 | [Metrics](metrics.md) | Fan-in, fan-out, Ca, Ce, instability, cycles, project summary |
+| [Dependents](dependents.md) | The `dependents` command: which files depend on a file, directly or through others |
 | [Reports](report.md) | The `report` command: what the HTML report shows, and the Graphviz DOT graph |
 | [PHP profile](languages/php.md) | What the PHP scanner reads and how it resolves references |
 | [Python profile](languages/python.md) | What the Python scanner reads and how it resolves imports |
@@ -56,3 +57,7 @@ lists them, one per line, in `<language>/sources`. A library passes a case when 
 the expected document after ignoring the `generator` field and comparing
 numbers to 4 decimal places. A case may also pin the [DOT graph](report.md#dot-graph)
 in `graph.dot` (file graph) and `graph.<strategy>.dot`, compared byte for byte.
+It may pin [`dependents`](dependents.md) queries too: `<language>/dependents.<name>.args`
+holds the arguments after the pairs document, one per line, and
+`expected/dependents.<name>.json` or `.txt` the output (the JSON compared as a document, the
+text byte for byte).

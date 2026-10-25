@@ -4,6 +4,7 @@ python/ folder, scanned with the --source paths in its python/sources file if it
 must produce its expected pairs document, every expected analysis[.<strategy>].json, and
 every expected graph[.<strategy>].dot byte for byte."""
 
+import io
 import json
 import re
 from pathlib import Path
@@ -14,6 +15,7 @@ import pytest
 from untangled.analysis.analyzer import analyze
 from untangled.analysis.clustering import Clustering
 from untangled.analysis.filtering import Filter
+from untangled.cli import main
 from untangled.graph import PairsDocument, encode
 from untangled.report import dot
 from untangled.report.report import Report
@@ -22,6 +24,7 @@ from untangled.scanner.scanner import Scanner
 CASES = Path(__file__).resolve().parents[2] / "conformance" / "cases"
 PYTHON_CASES = sorted(path for path in CASES.glob("*/python") if path.is_dir())
 ANALYSES = [(case, file) for case in PYTHON_CASES for file in sorted((case / "expected").glob("analysis*.json"))]
+DEPENDENTS = [(case, file) for case in PYTHON_CASES for file in sorted((case / "expected").glob("dependents.*"))]
 GRAPHS = [(case, file) for case in PYTHON_CASES for file in sorted((case / "expected").glob("graph*.dot"))]
 
 
@@ -93,6 +96,22 @@ def test_analysis(case: Path, file: Path) -> None:
     actual = json.loads(encode(analyze(Filter().apply(scan(case)), strategy)))
     expected = json.loads(file.read_text(encoding="utf-8"))
     assert without_generator(actual) == without_generator(expected)
+
+
+@pytest.mark.parametrize(("case", "file"), DEPENDENTS, ids=case_id)
+def test_dependents(case: Path, file: Path) -> None:
+    """Runs `dependents` on the case's expected pairs document with the arguments, one per line, of
+    `dependents.<name>.args`. A .json expectation is compared as a document, a .txt one byte for byte."""
+    args = (case / f"{file.stem}.args").read_text(encoding="utf-8").split()
+    out, err = io.StringIO(), io.StringIO()
+    assert main(["dependents", str(case / "expected" / "pairs.json"), *args], out, err) == 0, err.getvalue()
+    if file.suffix == ".json":
+        assert without_generator(json.loads(out.getvalue())) == without_generator(
+            json.loads(file.read_text(encoding="utf-8"))
+        )
+        assert out.getvalue().endswith("}\n")
+    else:
+        assert out.getvalue() == file.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize(("case", "file"), GRAPHS, ids=case_id)

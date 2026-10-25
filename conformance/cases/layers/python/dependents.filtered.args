@@ -1,0 +1,5 @@
+--transitive
+--exclude=**
+--include=src/app/http/**
+--format=json
+src/app/infra/clock.py

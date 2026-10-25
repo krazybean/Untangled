@@ -12,6 +12,14 @@ A small layered app with three namespaces (`App\Domain`, `App\Infra`,
 - **`rules`** (`php/clusters.rules`): `Web` has `fan_out` 1 (one cluster) but
   `ce` 2 (two files in `Core`), which is why Ca / Ce count files.
   `bootstrap.php` matches no rule and is its own cluster.
+- **`dependents`** (`<language>/dependents.<name>.args`): who depends on `User`,
+  directly (`direct`) and through other files (`transitive`, which shows the
+  `Router` / `UserController` cycle listed once at its shortest depth, and
+  `bootstrap` at depth 4); the text form grouped by folder (`text`); two targets
+  at once, with `UserController` listed once (`multi`); and `--exclude=**
+  --include=<http folder>` (`filtered`), where only the `http` files are listed
+  but the walk still goes through `domain` and `infra`. PHP asks for `User` by its
+  class name too; Python and TypeScript nodes declare no symbols, so they use files.
 - `UserRepository` uses `App\Cache\Store`, which does not exist: one unresolved
   reference. `Clock` uses `DateTimeImmutable`, a builtin, which the default
   filter drops before analysis.

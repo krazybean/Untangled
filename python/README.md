@@ -40,6 +40,8 @@ untangled scan    [<path>]               [scan options] [--format=json|snakefood
 untangled analyze [<path>|<pairs.json>]  [scan options] [filter options] [--output=<file>]
 untangled report  [<path>|<pairs.json>]  [scan options] [filter options]
                                          [--format=html|dot] [--style=classic] [--title=<text>] [--output=<file>]
+untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [scan options] [--include/--exclude ...]
+                                         [--transitive] [--format=text|json] [--output=<file>]
 ```
 
 Each command runs the steps before it: `analyze` scans first, and `report`
@@ -76,6 +78,30 @@ untangled analyze pairs.json --cluster=namespace:2          # from a saved scan
 
 What each number means, and why it matters, is in [metrics](https://github.com/krazybean/Untangled/blob/main/spec/metrics.md).
 
+### dependents
+
+Lists the files that depend on one or more files, before you change them or
+when you choose which tests to run. A target is a node id (a file path) or,
+where the scanner records them, a declared symbol (the Python scanner records none, so use files).
+
+```sh
+untangled dependents /path/to/project src/shop/billing/tax.py
+untangled dependents /path/to/project src/shop/billing/tax.py --transitive
+untangled dependents pairs.json src/shop/billing/tax.py --transitive --format=json
+untangled dependents /path/to/project src/shop/billing/tax.py --transitive --exclude='**' --include='tests/**'
+```
+
+By default it lists the direct dependents. `--transitive` adds the files that
+depend on those, and so on, each with its depth (the shortest distance from a
+target). `--include` and `--exclude` filter the list, not the walk, so a test
+that reaches a target only through application code is still found (scan with
+`--dev` to have tests in the graph). The text form groups files by folder;
+`--format=json` writes the document of the
+[spec](https://github.com/krazybean/Untangled/blob/main/spec/dependents.md).
+The first argument is the source when it is a folder or a `.json` file; any
+other argument is a target, and the source is the current folder. A target
+that matches nothing exits with code 1.
+
 ### report
 
 Writes one self-contained HTML page meant for people who do not read code: a
@@ -110,6 +136,7 @@ thousands of files take `dot` minutes and come out too small to read.
 | `--style=classic` | `report --format=dot` only: snakefood's black and white look. |
 | `--title=TEXT` | `report` only: the report's title. Defaults to the project name in `pyproject.toml`, else the folder name. |
 | `--cluster=STRATEGY` | `analyze`, `report`: group files into units. `namespace:N` keeps the first N segments of the module name (`shop.billing.invoice` → `shop.billing` with N=2), `folder:N` the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines from a file, the first matching path prefix wins. See [clustering](https://github.com/krazybean/Untangled/blob/main/spec/clustering.md). |
+| `--transitive` | `dependents`: also list the files that depend on a dependent, with their depth. |
 | `--strict` | `analyze`, `report`: with `rules:<file>`, exit 1 instead of warning when a file matches no rule (a file no rule matches is its own unit, and the warning names it). |
 | `--include=GLOB`, `--exclude=GLOB` | `analyze`, `report`: keep or drop project files by path (repeatable, the last matching pattern wins). `*` stays within a folder, `**` crosses folders. |
 | `--output=FILE` | Write to a file instead of standard output. |

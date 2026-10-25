@@ -265,6 +265,79 @@ final class ApplicationTest extends TestCase
         self::assertStringContainsString('Unknown option for scan: --strict', $err);
     }
 
+    public function testDependentsOfAFileInAPairsDocument(): void
+    {
+        $pairs = self::CASES . '/layers/php/expected/pairs.json';
+        [$code, $out, $err] = self::cli(['dependents', $pairs, 'src/Domain/User.php']);
+        self::assertSame(0, $code);
+        self::assertSame('', $err);
+        self::assertSame("2 dependents of src/Domain/User.php\n\nsrc/Domain/\n  Order.php\n\nsrc/Infra/\n  UserRepository.php\n", $out);
+    }
+
+    public function testDependentsScansAProject(): void
+    {
+        [$code, $out] = self::cli(['dependents', self::CASES . '/layers/php/project', 'App\\Domain\\User', '--format=json']);
+        self::assertSame(0, $code);
+        self::assertSame(['src/Domain/Order.php', 'src/Infra/UserRepository.php'], array_column(json_decode($out, true)['dependents'], 'id'));
+    }
+
+    public function testDependentsTakesTheCurrentFolderWhenTheFirstArgumentIsATarget(): void
+    {
+        $project = self::CASES . '/layers/php/project';
+        $previous = getcwd();
+        chdir($project);
+        try {
+            [$code, $out] = self::cli(['dependents', 'App\\Domain\\User', '--format=json']);
+        } finally {
+            chdir($previous);
+        }
+        self::assertSame(0, $code);
+        self::assertSame(['src/Domain/Order.php', 'src/Infra/UserRepository.php'], array_column(json_decode($out, true)['dependents'], 'id'));
+    }
+
+    public function testDependentsWritesToAFile(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'untangled-dependents');
+        [$code, $out] = self::cli(['dependents', self::CASES . '/layers/php/expected/pairs.json', 'src/Domain/User.php', '--format=json', '--output=' . $file]);
+        self::assertSame([0, ''], [$code, $out]);
+        self::assertSame('untangled-dependents', json_decode((string) file_get_contents($file), true)['format']);
+        unlink($file);
+    }
+
+    public function testDependentsFailsOnAnUnknownTarget(): void
+    {
+        [$code, $out, $err] = self::cli(['dependents', self::CASES . '/layers/php/expected/pairs.json', 'src/Nope.php']);
+        self::assertSame([1, ''], [$code, $out]);
+        self::assertSame("error: no node or symbol \"src/Nope.php\" in the pairs document\n", $err);
+    }
+
+    public function testDependentsRefusesAClusteredDocument(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'untangled-clustered');
+        file_put_contents($file . '.json', json_encode(['format' => 'untangled-pairs', 'version' => '0.1', 'language' => 'php', 'nodes' => [['id' => 'Core', 'kind' => 'cluster', 'members' => ['a.php']]], 'edges' => []]));
+        [$code, , $err] = self::cli(['dependents', $file . '.json', 'Core']);
+        unlink($file);
+        unlink($file . '.json');
+        self::assertSame(1, $code);
+        self::assertStringContainsString('already clustered', $err);
+    }
+
+    public function testDependentsUsageErrors(): void
+    {
+        $pairs = self::CASES . '/layers/php/expected/pairs.json';
+        foreach ([
+            [['dependents', $pairs], 'dependents needs at least one file or symbol'],
+            [['dependents', $pairs, 'src/Domain/User.php', '--format=html'], 'Unknown format: html'],
+            [['dependents', $pairs, 'src/Domain/User.php', '--transitive=yes'], 'Option --transitive takes no value'],
+            [['dependents', $pairs, 'src/Domain/User.php', '--cluster=folder:1'], 'Unknown option for dependents: --cluster'],
+            [['analyze', $pairs, '--transitive'], 'Unknown option for analyze: --transitive'],
+        ] as [$args, $message]) {
+            [$code, , $err] = self::cli($args);
+            self::assertSame(2, $code, $message);
+            self::assertStringContainsString($message, $err);
+        }
+    }
+
     public function testAnalyzeAppliesIncludeAndExcludeInOrder(): void
     {
         $project = self::CASES . '/layers/php/project';

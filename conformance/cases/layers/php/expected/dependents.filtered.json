@@ -1,0 +1,28 @@
+{
+  "format": "untangled-dependents",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "1.0.1"
+  },
+  "transitive": true,
+  "targets": [
+    {
+      "target": "src/Infra/Clock.php",
+      "nodes": [
+        "src/Infra/Clock.php"
+      ]
+    }
+  ],
+  "dependents": [
+    {
+      "id": "src/Http/UserController.php",
+      "depth": 2
+    },
+    {
+      "id": "src/Http/Router.php",
+      "depth": 3
+    }
+  ]
+}

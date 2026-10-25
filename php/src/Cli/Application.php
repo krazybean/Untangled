@@ -7,6 +7,7 @@ namespace Untangled\Cli;
 
 use Untangled\Analysis\Analyzer;
 use Untangled\Analysis\Clustering;
+use Untangled\Analysis\Dependents;
 use Untangled\Analysis\Filter;
 use Untangled\Composer\ProjectException;
 use Untangled\Graph\DocumentException;
@@ -32,11 +33,14 @@ final class Application
                                  [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
                untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                                  [--title=<text>] [analyze options]
+               untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [--transitive]
+                                    [--format=text|json] [analyze options]
 
         Commands:
           scan       Write the dependency pairs of a Composer project (default path: .)
           analyze    Write cycles and coupling metrics for a project or a pairs document
           report     Write a readable HTML report (or a Graphviz DOT graph) of the analysis
+          dependents List the files that depend on files or declared symbols
 
         Options:
           --dev              Also scan autoload-dev (tests)
@@ -47,6 +51,8 @@ final class Application
                              (repeatable, a later one wins)
           --format=FORMAT    scan: json (default, the Untangled pairs document) or snakefood
                              report: html (default) or dot
+                             dependents: text (default) or json
+          --transitive       dependents: also the files that depend on a dependent, with their depth
           --style=STYLE      report --format=dot only: default, or classic for snakefood's
                              black and white sfood-graph look
           --title=TEXT       report only: the report's title (default: the Composer package name)
@@ -102,7 +108,7 @@ final class Application
         }
 
         $command = array_shift($positional);
-        if (!in_array($command, ['scan', 'analyze', 'report'], true)) {
+        if (!in_array($command, ['scan', 'analyze', 'report', 'dependents'], true)) {
             fwrite($this->stderr, $command === null ? self::USAGE : "Unknown command: {$command}\n\n" . self::USAGE);
             return 2;
         }
@@ -110,6 +116,7 @@ final class Application
             'scan' => ['dev', 'source', 'aliases', 'format', 'output'],
             'analyze' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output'],
             'report' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output', 'format', 'style', 'title'],
+            'dependents' => ['dev', 'source', 'aliases', 'transitive', 'include', 'exclude', 'output', 'format'],
         };
         $unknown = array_diff(array_keys($options), $allowed);
         if ($unknown !== []) {
@@ -117,11 +124,11 @@ final class Application
             return 2;
         }
         foreach ($options as $name => $value) {
-            if ($name === 'strict' && $value !== true) {
-                fwrite($this->stderr, "Option --strict takes no value\n");
+            if (($name === 'strict' || $name === 'transitive') && $value !== true) {
+                fwrite($this->stderr, "Option --{$name} takes no value\n");
                 return 2;
             }
-            if ($name !== 'dev' && $name !== 'strict' && !is_string($value)) {
+            if ($name !== 'dev' && $name !== 'strict' && $name !== 'transitive' && !is_string($value)) {
                 fwrite($this->stderr, "Option --{$name} needs a value, as in --{$name}=...\n");
                 return 2;
             }
@@ -134,6 +141,9 @@ final class Application
         }
         if ($command === 'analyze' || $command === 'report') {
             return $this->analyze($command, $positional[0] ?? '.', $options, $patterns, $scanner);
+        }
+        if ($command === 'dependents') {
+            return $this->dependents($positional, $options, $patterns, $scanner);
         }
         $format = $options['format'] ?? 'json';
         if (!in_array($format, ['json', 'snakefood'], true)) {
@@ -199,26 +209,9 @@ final class Application
             return 2;
         }
 
-        $warnings = [];
-        try {
-            if (is_file($path)) {
-                $contents = file_get_contents($path);
-                if ($contents === false) {
-                    fwrite($this->stderr, "error: cannot read {$path}\n");
-                    return 1;
-                }
-                $pairs = PairsDocument::fromArray(Json::decode($contents, $path), $warnings);
-            } else {
-                $result = $scanner->scan($path);
-                $pairs = $result->pairs;
-                $warnings = $result->warnings;
-            }
-        } catch (ProjectException | DocumentException $e) {
-            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
+        $pairs = $this->load($path, $scanner);
+        if ($pairs === null) {
             return 1;
-        }
-        foreach ($warnings as $warning) {
-            fwrite($this->stderr, "warning: {$warning}\n");
         }
 
         $filter = new Filter();
@@ -245,6 +238,76 @@ final class Application
             return 1;
         }
         return $this->write($format === 'dot' ? Dot::render($report, $style) : HtmlReport::render($report), $options['output'] ?? null);
+    }
+
+    /**
+     * Lists the files that depend on the targets, which are the arguments after the source.
+     * The source is the first argument when it is a folder or a .json file, else the current folder.
+     *
+     * @param list<string> $positional
+     * @param array<string, string|true> $options
+     * @param list<array{string, string}> $patterns include / exclude globs in command-line order
+     */
+    private function dependents(array $positional, array $options, array $patterns, Scanner $scanner): int
+    {
+        $format = $options['format'] ?? 'text';
+        if (!in_array($format, ['text', 'json'], true)) {
+            fwrite($this->stderr, "Unknown format: {$format}\n");
+            return 2;
+        }
+        $first = $positional[0] ?? null;
+        $hasSource = $first !== null && (is_dir($first) || (is_file($first) && str_ends_with(strtolower($first), '.json')));
+        $targets = $hasSource ? array_slice($positional, 1) : $positional;
+        if ($targets === []) {
+            fwrite($this->stderr, "dependents needs at least one file or symbol to look up\n");
+            return 2;
+        }
+
+        $pairs = $this->load($hasSource ? $first : '.', $scanner);
+        if ($pairs === null) {
+            return 1;
+        }
+        $filter = new Filter();
+        foreach ($patterns as [$kind, $glob]) {
+            $kind === 'include' ? $filter->include($glob) : $filter->exclude($glob);
+        }
+        try {
+            $document = (new Dependents())->find($pairs, $targets, isset($options['transitive']), $filter);
+        } catch (\InvalidArgumentException $e) {
+            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
+            return 1;
+        }
+        return $this->write($format === 'json' ? Json::encode($document) : Dependents::renderText($document), $options['output'] ?? null);
+    }
+
+    /**
+     * Reads a pairs document, or scans a project, and writes the warnings to standard error.
+     * Null, after writing the error, when it cannot.
+     */
+    private function load(string $path, Scanner $scanner): ?PairsDocument
+    {
+        $warnings = [];
+        try {
+            if (is_file($path)) {
+                $contents = file_get_contents($path);
+                if ($contents === false) {
+                    fwrite($this->stderr, "error: cannot read {$path}\n");
+                    return null;
+                }
+                $pairs = PairsDocument::fromArray(Json::decode($contents, $path), $warnings);
+            } else {
+                $result = $scanner->scan($path);
+                $pairs = $result->pairs;
+                $warnings = $result->warnings;
+            }
+        } catch (ProjectException | DocumentException $e) {
+            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
+            return null;
+        }
+        foreach ($warnings as $warning) {
+            fwrite($this->stderr, "warning: {$warning}\n");
+        }
+        return $pairs;
     }
 
     /** The default report title: the Composer package name, else the folder or file name. */

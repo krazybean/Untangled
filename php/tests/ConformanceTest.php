@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use Untangled\Analysis\Analyzer;
 use Untangled\Analysis\Clustering;
 use Untangled\Analysis\Filter;
+use Untangled\Cli\Application;
 use Untangled\Graph\PairsDocument;
 use Untangled\Report\Dot;
 use Untangled\Report\Report;
@@ -55,6 +56,16 @@ final class ConformanceTest extends TestCase
         }
     }
 
+    /** @return iterable<string, array{string, string}> */
+    public static function dependents(): iterable
+    {
+        foreach (self::cases() as $name => [$case]) {
+            foreach (glob($case . '/expected/dependents.*') ?: [] as $file) {
+                yield $name . ' ' . basename($file) => [$case, $file];
+            }
+        }
+    }
+
     public function testThereAreCases(): void
     {
         self::assertGreaterThanOrEqual(8, iterator_count(self::cases()));
@@ -94,6 +105,29 @@ final class ConformanceTest extends TestCase
         $pairs = self::scan($case)->pairs;
         $actual = (new Analyzer())->analyze((new Filter())->apply($pairs), $clustering);
         self::assertSameDocument(self::read($file), $actual);
+    }
+
+    /**
+     * Runs `dependents` on the case's expected pairs document with the arguments, one per line, of
+     * `dependents.<name>.args`. A .json expectation is compared as a document, a .txt one byte for byte.
+     */
+    #[DataProvider('dependents')]
+    public function testDependents(string $case, string $file): void
+    {
+        $name = pathinfo($file, PATHINFO_FILENAME);
+        $stdout = fopen('php://memory', 'w+');
+        $stderr = fopen('php://memory', 'w+');
+        $code = (new Application($stdout, $stderr))->run(['dependents', $case . '/expected/pairs.json', ...self::lines($case . '/' . $name . '.args')]);
+        rewind($stdout);
+        rewind($stderr);
+        self::assertSame(0, $code, (string) stream_get_contents($stderr));
+        $actual = (string) stream_get_contents($stdout);
+        if (str_ends_with($file, '.json')) {
+            self::assertSameDocument(self::read($file), json_decode($actual, true, 512, JSON_THROW_ON_ERROR));
+            self::assertStringEndsWith("}\n", $actual);
+        } else {
+            self::assertSame(file_get_contents($file), $actual);
+        }
     }
 
     #[DataProvider('graphs')]
