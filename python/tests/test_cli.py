@@ -178,6 +178,64 @@ def test_a_missing_rules_file_is_an_error(tmp_path) -> None:
     assert code == 1 and err == f"error: cannot read rules file {tmp_path}\n"
 
 
+def rules_file(tmp_path: Path, text: str) -> str:
+    path = tmp_path / "t.rules"
+    path.write_text(text, encoding="utf-8")
+    return f"--cluster=rules:{path}"
+
+
+def test_unmatched_nodes_warn_and_still_write_the_output(tmp_path) -> None:
+    code, out, err = run(
+        "analyze", str(LAYERS / "expected" / "pairs.json"), rules_file(tmp_path, "src/app/domain/ core\n")
+    )
+    assert code == 0
+    assert err.startswith("warning: rules: ")
+    assert " match no rule and each becomes its own cluster: bootstrap.py, src/app/http/" in err
+    assert json.loads(out)["clustering"] == "rules"
+
+
+def test_no_warning_when_every_node_matches(tmp_path) -> None:
+    rules = rules_file(tmp_path, "src/ core\nbootstrap.py boot\n")
+    assert run("analyze", str(LAYERS / "expected" / "pairs.json"), rules, "--strict")[::2] == (0, "")
+
+
+@pytest.mark.parametrize("command", ["analyze", "report"])
+def test_strict_fails_on_unmatched_nodes_and_writes_nothing(command: str, tmp_path) -> None:
+    rules = rules_file(tmp_path, "src/app/domain/ core\n")
+    code, out, err = run(command, str(LAYERS / "expected" / "pairs.json"), rules, "--strict")
+    assert (code, out) == (1, "")
+    assert err.startswith("error: rules: ") and "warning:" not in err
+
+
+def test_unmatched_nodes_are_counted_after_filtering(tmp_path) -> None:
+    rules = rules_file(tmp_path, "src/app/domain/ core\n")
+    args = ("--exclude=src/app/http/**", "--exclude=src/app/infra/**", "--exclude=bootstrap.py", "--strict")
+    assert run("analyze", str(LAYERS / "expected" / "pairs.json"), rules, *args)[::2] == (0, "")
+
+
+@pytest.mark.parametrize(
+    ("args", "message"),
+    [
+        pytest.param(
+            ["analyze", ".", "--strict"], "--strict only applies to --cluster=rules:<file>", id="no clustering"
+        ),
+        pytest.param(
+            ["analyze", ".", "--cluster=folder:1", "--strict"],
+            "--strict only applies to --cluster=rules:<file>",
+            id="folder clustering",
+        ),
+        pytest.param(["report", ".", "--strict"], "--strict only applies to --cluster=rules:<file>", id="report"),
+        pytest.param(
+            ["analyze", ".", "--cluster=rules:x", "--strict=yes"], "Option --strict takes no value", id="value"
+        ),
+        pytest.param(["scan", ".", "--strict"], "Unknown option for scan: --strict", id="scan"),
+    ],
+)
+def test_strict_needs_rules_clustering(args: list[str], message: str) -> None:
+    code, _, err = run(*args)
+    assert code == 2 and message in err
+
+
 def test_dependents_of_a_file_in_a_pairs_document() -> None:
     pairs = str(LAYERS / "expected" / "pairs.json")
     code, out, err = run("dependents", pairs, "src/app/domain/user.py")
@@ -279,7 +337,9 @@ def test_analyze_a_pairs_document() -> None:
 def test_analyze_with_a_clustering(strategy: str, expected: str) -> None:
     for source in (LAYERS / "project", LAYERS / "expected" / "pairs.json"):
         code, out, err = run("analyze", str(source), f"--cluster={strategy}")
-        assert (code, err) == (0, "")
+        # bootstrap.py matches no rule (the case keeps it as its own cluster), which the CLI says.
+        warning = "warning: rules: 1 file matches no rule and becomes its own cluster: bootstrap.py\n"
+        assert (code, err) == (0, warning if strategy.startswith("rules:") else "")
         assert without_generator(json.loads(out)) == without_generator(read(LAYERS / "expected" / expected))
 
 

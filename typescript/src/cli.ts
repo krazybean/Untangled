@@ -6,7 +6,7 @@ import { readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
 import { AnalysisError, analyze } from "./analysis/analyzer.js";
-import { Clustering } from "./analysis/clustering.js";
+import { Clustering, describeUnmatched } from "./analysis/clustering.js";
 import { DependentsError, findDependents, renderDependentsText } from "./analysis/dependents.js";
 import { Filter } from "./analysis/filter.js";
 import { DocumentError, encode, PairsDocument } from "./graph.js";
@@ -21,7 +21,7 @@ import { NAME, VERSION } from "./version.js";
 export const USAGE = `\
 Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--aliases=<file.json>]...
                       [--format=json|snakefood] [--output=<file>]
-       untangled analyze [<path>|<pairs.json>] [scan options] [--cluster=<strategy>]
+       untangled analyze [<path>|<pairs.json>] [scan options] [--cluster=<strategy>] [--strict]
                          [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
        untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                          [--title=<text>] [analyze options]
@@ -51,6 +51,8 @@ Options:
   --title=TEXT       report only: the report's title (default: the name in package.json)
   --cluster=STRATEGY analyze, report: namespace:N, folder:N or rules:<file>
                      (JavaScript has no namespaces, so namespace:N groups by folder)
+  --strict           analyze, report: with rules:<file>, exit 1 instead of warning when a
+                     file matches no rule
   --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
   --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
   --output=FILE      Write to FILE instead of standard output
@@ -61,8 +63,8 @@ Options:
 const SCAN = ["dev", "source", "aliases"];
 const COMMANDS: Record<string, Set<string>> = {
   scan: new Set([...SCAN, "format", "output"]),
-  analyze: new Set([...SCAN, "cluster", "include", "exclude", "output"]),
-  report: new Set([...SCAN, "cluster", "include", "exclude", "output", "format", "style", "title"]),
+  analyze: new Set([...SCAN, "cluster", "strict", "include", "exclude", "output"]),
+  report: new Set([...SCAN, "cluster", "strict", "include", "exclude", "output", "format", "style", "title"]),
   dependents: new Set([...SCAN, "transitive", "include", "exclude", "output", "format"]),
 };
 const REPEATABLE = new Set(["source", "aliases"]);
@@ -132,10 +134,10 @@ function run(args: string[], out: Writer, err: Writer): number {
     if (name === "dev" && value !== true) {
       throw new Usage("Option --dev takes no value");
     }
-    if (name === "transitive" && value !== true) {
-      throw new Usage("Option --transitive takes no value");
+    if ((name === "strict" || name === "transitive") && value !== true) {
+      throw new Usage(`Option --${name} takes no value`);
     }
-    if (name !== "dev" && name !== "transitive" && typeof value !== "string") {
+    if (name !== "dev" && name !== "strict" && name !== "transitive" && typeof value !== "string") {
       throw new Usage(`Option --${name} needs a value, as in --${name}=...`);
     }
   }
@@ -180,7 +182,11 @@ function run(args: string[], out: Writer, err: Writer): number {
   if (options.has("style") && format !== "dot") {
     throw new Usage("--style only applies to --format=dot");
   }
-  const clustering = parseClustering(options.get("cluster"));
+  const strategy = options.get("cluster");
+  if (options.has("strict") && !(typeof strategy === "string" && strategy.startsWith("rules:"))) {
+    throw new Usage("--strict only applies to --cluster=rules:<file>");
+  }
+  const clustering = parseClustering(strategy);
 
   const pairs = loadPairs(path, scanOptions, err);
 
@@ -192,12 +198,21 @@ function run(args: string[], out: Writer, err: Writer): number {
       filter.exclude(glob);
     }
   }
+  const selected = filter.apply(pairs);
+  const unmatched = clustering?.unmatched(selected) ?? [];
+  if (unmatched.length > 0) {
+    const message = describeUnmatched(unmatched);
+    if (options.has("strict")) {
+      throw new Failure(message);
+    }
+    err.write(`warning: ${message}\n`);
+  }
   try {
     if (command === "analyze") {
-      return write(encode(analyze(filter.apply(pairs), clustering)));
+      return write(encode(analyze(selected, clustering)));
     }
     const title = options.get("title");
-    const report = Report.build(typeof title === "string" ? title : defaultTitle(path), filter.apply(pairs), clustering);
+    const report = Report.build(typeof title === "string" ? title : defaultTitle(path), selected, clustering);
     return write(format === "dot" ? renderDot(report, style) : renderHtml(report));
   } catch (error) {
     throw error instanceof AnalysisError ? new Failure(error.message) : error;

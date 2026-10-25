@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
@@ -161,6 +161,51 @@ describe("analyze", () => {
     const root = project({ ...files, "rules.txt": "src/ App\n" });
     const analysis = JSON.parse(run("analyze", root, `--cluster=rules:${join(root, "rules.txt")}`).out) as { units: { id: string }[] };
     expect(analysis.units.map((unit) => unit.id)).toEqual(["App", "lib/c.ts"]);
+  });
+
+  describe("rules that leave files unmatched", () => {
+    const rules = (root: string, text: string): string => {
+      writeFileSync(join(root, "rules.txt"), text);
+      return `--cluster=rules:${join(root, "rules.txt")}`;
+    };
+
+    test("warn on stderr and still write the output", () => {
+      const root = project(files);
+      const result = run("analyze", root, rules(root, "src/ App\n"));
+      expect(result.code).toBe(0);
+      expect(result.err).toBe("warning: rules: 1 file matches no rule and becomes its own cluster: lib/c.ts\n");
+      expect((JSON.parse(result.out) as { clustering: string }).clustering).toBe("rules");
+    });
+
+    test("say nothing when every file matches", () => {
+      const root = project(files);
+      expect(run("analyze", root, rules(root, "src/ App\nlib/ Lib\n"), "--strict")).toMatchObject({ code: 0, err: "" });
+    });
+
+    test("--strict fails and writes nothing", () => {
+      const root = project(files);
+      for (const command of ["analyze", "report"]) {
+        expect(run(command, root, rules(root, "src/ App\n"), "--strict")).toEqual({
+          code: 1,
+          out: "",
+          err: "error: rules: 1 file matches no rule and becomes its own cluster: lib/c.ts\n",
+        });
+      }
+    });
+
+    test("are counted after filtering", () => {
+      const root = project(files);
+      expect(run("analyze", root, rules(root, "src/ App\n"), "--exclude=lib/**", "--strict")).toMatchObject({ code: 0, err: "" });
+    });
+
+    test("--strict needs a rules clustering and takes no value", () => {
+      const message = "--strict only applies to --cluster=rules:<file>\n";
+      expect(run("analyze", "--strict")).toMatchObject({ code: 2, err: message });
+      expect(run("analyze", "--cluster=folder:1", "--strict")).toMatchObject({ code: 2, err: message });
+      expect(run("report", "--strict")).toMatchObject({ code: 2, err: message });
+      expect(run("analyze", "--cluster=rules:x", "--strict=yes")).toMatchObject({ code: 2, err: "Option --strict takes no value\n" });
+      expect(run("scan", "--strict")).toMatchObject({ code: 2, err: "Unknown option for scan: --strict\n" });
+    });
   });
 
   test("bad pairs documents fail with exit code 1", () => {

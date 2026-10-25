@@ -13,6 +13,12 @@ document and the command-line options are the public interface.
   `--include` / `--exclude`, and writes text grouped by folder or
   `--format=json`. See spec/dependents.md.
 
+- `analyze` and `report` warn on standard error when `--cluster=rules:<file>`
+  leaves files unmatched (each becomes its own cluster), naming the first few.
+  `--strict` makes that an error: exit code 1 and no output, for CI. Before,
+  a new top-level folder that no rule named dropped out of the grouped view
+  without a sign.
+
 ## 1.0.1
 
 - `scan` marks a file that does not parse, or cannot be read, with

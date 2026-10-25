@@ -29,7 +29,7 @@ final class Application
     private const USAGE = <<<'TXT'
         Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--aliases=<preset|file>]...
                               [--format=json|snakefood] [--output=<file>]
-               untangled analyze [<path>|<pairs.json>] [scan options] [--cluster=<strategy>]
+               untangled analyze [<path>|<pairs.json>] [scan options] [--cluster=<strategy>] [--strict]
                                  [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
                untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                                  [--title=<text>] [analyze options]
@@ -57,6 +57,8 @@ final class Application
                              black and white sfood-graph look
           --title=TEXT       report only: the report's title (default: the Composer package name)
           --cluster=STRATEGY analyze, report: namespace:N, folder:N or rules:<file>
+          --strict           analyze, report: with rules:<file>, exit 1 instead of warning when a
+                             file matches no rule
           --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
           --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
           --output=FILE      Write to FILE instead of standard output
@@ -112,8 +114,8 @@ final class Application
         }
         $allowed = match ($command) {
             'scan' => ['dev', 'source', 'aliases', 'format', 'output'],
-            'analyze' => ['dev', 'source', 'aliases', 'cluster', 'include', 'exclude', 'output'],
-            'report' => ['dev', 'source', 'aliases', 'cluster', 'include', 'exclude', 'output', 'format', 'style', 'title'],
+            'analyze' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output'],
+            'report' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output', 'format', 'style', 'title'],
             'dependents' => ['dev', 'source', 'aliases', 'transitive', 'include', 'exclude', 'output', 'format'],
         };
         $unknown = array_diff(array_keys($options), $allowed);
@@ -122,11 +124,11 @@ final class Application
             return 2;
         }
         foreach ($options as $name => $value) {
-            if ($name === 'transitive' && $value !== true) {
-                fwrite($this->stderr, "Option --transitive takes no value\n");
+            if (($name === 'strict' || $name === 'transitive') && $value !== true) {
+                fwrite($this->stderr, "Option --{$name} takes no value\n");
                 return 2;
             }
-            if ($name !== 'dev' && $name !== 'transitive' && !is_string($value)) {
+            if ($name !== 'dev' && $name !== 'strict' && $name !== 'transitive' && !is_string($value)) {
                 fwrite($this->stderr, "Option --{$name} needs a value, as in --{$name}=...\n");
                 return 2;
             }
@@ -184,9 +186,13 @@ final class Application
             fwrite($this->stderr, "--style only applies to --format=dot\n");
             return 2;
         }
+        $strategy = $options['cluster'] ?? null;
+        if (isset($options['strict']) && !(is_string($strategy) && str_starts_with($strategy, 'rules:'))) {
+            fwrite($this->stderr, "--strict only applies to --cluster=rules:<file>\n");
+            return 2;
+        }
         try {
             $clustering = null;
-            $strategy = $options['cluster'] ?? null;
             if (is_string($strategy) && str_starts_with($strategy, 'rules:')) {
                 $rulesFile = substr($strategy, strlen('rules:'));
                 $rules = is_file($rulesFile) ? file_get_contents($rulesFile) : false;
@@ -212,12 +218,21 @@ final class Application
         foreach ($patterns as [$kind, $glob]) {
             $kind === 'include' ? $filter->include($glob) : $filter->exclude($glob);
         }
+        $selected = $filter->apply($pairs);
+        $unmatched = $clustering?->unmatched($selected) ?? [];
+        if ($unmatched !== []) {
+            if (isset($options['strict'])) {
+                fwrite($this->stderr, 'error: ' . Clustering::describeUnmatched($unmatched) . "\n");
+                return 1;
+            }
+            fwrite($this->stderr, 'warning: ' . Clustering::describeUnmatched($unmatched) . "\n");
+        }
         try {
             if ($command === 'analyze') {
-                return $this->write(Json::encode((new Analyzer())->analyze($filter->apply($pairs), $clustering)), $options['output'] ?? null);
+                return $this->write(Json::encode((new Analyzer())->analyze($selected, $clustering)), $options['output'] ?? null);
             }
             $title = is_string($options['title'] ?? null) ? $options['title'] : self::title($path);
-            $report = Report::build($title, $filter->apply($pairs), $clustering);
+            $report = Report::build($title, $selected, $clustering);
         } catch (\InvalidArgumentException $e) {
             fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
             return 1;

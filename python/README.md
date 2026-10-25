@@ -137,6 +137,7 @@ thousands of files take `dot` minutes and come out too small to read.
 | `--title=TEXT` | `report` only: the report's title. Defaults to the project name in `pyproject.toml`, else the folder name. |
 | `--cluster=STRATEGY` | `analyze`, `report`: group files into units. `namespace:N` keeps the first N segments of the module name (`shop.billing.invoice` → `shop.billing` with N=2), `folder:N` the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines from a file, the first matching path prefix wins. See [clustering](https://github.com/krazybean/Untangled/blob/main/spec/clustering.md). |
 | `--transitive` | `dependents`: also list the files that depend on a dependent, with their depth. |
+| `--strict` | `analyze`, `report`: with `rules:<file>`, exit 1 instead of warning when a file matches no rule (a file no rule matches is its own unit, and the warning names it). |
 | `--include=GLOB`, `--exclude=GLOB` | `analyze`, `report`: keep or drop project files by path (repeatable, the last matching pattern wins). `*` stays within a folder, `**` crosses folders. |
 | `--output=FILE` | Write to a file instead of standard output. |
 
@@ -164,7 +165,8 @@ that does not exist is unresolved, never an edge to its parent package. The
 ## Exit codes and warnings
 
 `0` on success, `1` when the project folder does not exist, a pairs document
-or rules file cannot be read, or the output cannot be written, `2` for a usage
+or rules file cannot be read, the output cannot be written, or `--strict` finds a file no rule
+matches, `2` for a usage
 error. Warnings go to standard error and
 do not change the exit code: a file that does not parse (such as Python 2
 code; it stays in the pairs document marked `"error": "parse"`, and the report

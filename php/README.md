@@ -209,6 +209,7 @@ once.
 | `--title=<text>` | `report` | The report's title. Default: the Composer package name, else the folder or file name. |
 | `--cluster=<strategy>` | `analyze`, `report` | Group files before measuring: `namespace:N`, `folder:N` or `rules:<file>`. See [Clustering](#clustering). |
 | `--transitive` | `dependents` | Also list the files that depend on a dependent, with their depth. |
+| `--strict` | `analyze`, `report` | With `--cluster=rules:<file>`, exit 1 instead of warning when a file matches no rule. See [Clustering](#clustering). |
 | `--include=<glob>` | `analyze`, `report` | Keep files whose path matches `<glob>`. Repeatable. |
 | `--exclude=<glob>` | `analyze`, `report` | Drop files whose path matches `<glob>`. Repeatable. See [Include and exclude](#include-and-exclude). |
 | `--output=<file>` | all | Write to `<file>` instead of standard output. |
@@ -233,7 +234,10 @@ look at.
 A rules file has one rule per line, a path prefix and a cluster name
 separated by spaces; `#` starts a comment. The first prefix that matches a
 file wins, and a file no rule matches stays on its own. This is the format of
-snakefood's `sfood-cluster`.
+snakefood's `sfood-cluster`. So that a new folder does not drop out of the
+grouped view unnoticed, `analyze` and `report` print a warning on standard
+error that names the files no rule matches; add `--strict` to make it an error
+(exit code 1, no output), for CI.
 
 ```
 # prefix              cluster

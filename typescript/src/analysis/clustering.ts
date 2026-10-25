@@ -90,6 +90,23 @@ export class Clustering {
     return folders.length === 0 ? "." : folders.slice(0, this.depth).join("/");
   }
 
+  /**
+   * The internal nodes no rule matches, sorted. Each is its own cluster, so a new top-level
+   * folder that no rule names would otherwise drop out of the context view unnoticed.
+   * Always empty for namespace and folder clustering, which place every node.
+   */
+  unmatched(files: PairsDocument): string[] {
+    if (this.strategy !== "rules") {
+      return [];
+    }
+    return sortText(
+      files
+        .nodes()
+        .filter((node) => node.kind === INTERNAL && !this.rules.some((rule) => node.id.startsWith(rule.prefix)))
+        .map((node) => node.id),
+    );
+  }
+
   /** Applies the strategy. Nodes that are not internal pass through unchanged. */
   apply(files: PairsDocument): Clustered {
     const clusterOf = new Map<string, string>();
@@ -126,6 +143,20 @@ export class Clustering {
     }
     return { document, clusterOf, dropped: new Map(sortText(dropped.keys()).map((key) => [key, dropped.get(key)!])) };
   }
+}
+
+/** How many unmatched nodes the warning names. */
+const NAMED_UNMATCHED = 5;
+
+/** The sentence for the warning, or the error with --strict, about unmatched nodes: the first few are named. */
+export function describeUnmatched(unmatched: string[]): string {
+  const count = unmatched.length;
+  let named = unmatched.slice(0, NAMED_UNMATCHED).join(", ");
+  if (count > NAMED_UNMATCHED) {
+    named += ` and ${count - NAMED_UNMATCHED} more`;
+  }
+  const what = count === 1 ? "1 file matches no rule and becomes its own cluster" : `${count} files match no rule and each becomes its own cluster`;
+  return `rules: ${what}: ${named}`;
 }
 
 function checkDepth(depth: number): void {
