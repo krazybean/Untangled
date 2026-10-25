@@ -29,7 +29,10 @@ How the PHP library turns a project into a [pairs document](../pairs-format.md).
   - when `.php` files under the root are not scanned: not covered by any
     `autoload` or `autoload-dev` rule, a `--source` path, or a followed
     include, and not matched by `exclude-from-classmap` (`vendor/`,
-    `node_modules/` and hidden directories are not counted). The warning gives
+    `node_modules/` and hidden directories are not counted, nor are files git
+    ignores, such as compiled views; a tracked file counts even when a
+    `.gitignore` pattern matches it, and a project that is not a git
+    repository, or a machine without git, has nothing left out). The warning gives
     the count and, for the top-level folders holding the most of them, the
     deepest folder each one's files share (`database/migrations/`, `lang/`),
     so the user can decide what to pass to `--source`.
