@@ -7,6 +7,8 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+## 1.0.2
+
 - New `dependents` command: lists the files that depend on one or more files
   (or declared symbols), directly or with `--transitive` through other files,
   with each one's depth. It reads a project or a pairs document, accepts
