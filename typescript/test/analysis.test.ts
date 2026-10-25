@@ -3,7 +3,7 @@
 import { describe, expect, test } from "vitest";
 
 import { AnalysisError, analyze, type Unit } from "../src/analysis/analyzer.js";
-import { Clustering } from "../src/analysis/clustering.js";
+import { Clustering, describeUnmatched } from "../src/analysis/clustering.js";
 import { findCycles } from "../src/analysis/cycles.js";
 import { Filter } from "../src/analysis/filter.js";
 import { Glob } from "../src/analysis/glob.js";
@@ -81,6 +81,25 @@ describe("clustering", () => {
     expect(clustering.clusterOf({ id: "main.ts", kind: "internal" })).toBe("main.ts");
     expect(clustering.name()).toBe("rules");
     expect(() => Clustering.parseRules("a b c")).toThrow('rules line 1 must be "<prefix> <cluster>"');
+  });
+
+  test("unmatched lists the nodes no rule matches, sorted", () => {
+    const files = build(["src/billing/a.ts -> src/newfolder/z.ts", "src/newfolder/b.ts -> src/billing/a.ts", "lib/c.ts -> lib/c.ts"]);
+    expect(Clustering.parseRules("src/billing/ Billing\nlib/ Lib\n").unmatched(files)).toEqual(["src/newfolder/b.ts", "src/newfolder/z.ts"]);
+    expect(Clustering.parseRules("src/ Core\nlib/ Lib\n").unmatched(files)).toEqual([]);
+  });
+
+  test("nothing is unmatched without the rules strategy, and only internal nodes can be", () => {
+    const files = build(["src/a.ts -> lib/b.ts", "src/a.ts -> npm:left-pad"]);
+    expect(Clustering.byFolder(1).unmatched(files)).toEqual([]);
+    expect(Clustering.byNamespace(1).unmatched(files)).toEqual([]);
+    expect(Clustering.parseRules("src/ Core\nlib/ Lib\n").unmatched(files)).toEqual([]);
+  });
+
+  test("describeUnmatched names the first few", () => {
+    expect(describeUnmatched(["a.ts"])).toBe("rules: 1 file matches no rule and becomes its own cluster: a.ts");
+    expect(describeUnmatched(["a.ts", "b.ts"])).toBe("rules: 2 files match no rule and each becomes its own cluster: a.ts, b.ts");
+    expect(describeUnmatched([..."abcdefg"])).toBe("rules: 7 files match no rule and each becomes its own cluster: a, b, c, d, e and 2 more");
   });
 
   test("bad strategies", () => {

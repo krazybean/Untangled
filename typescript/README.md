@@ -119,6 +119,7 @@ thousands of files take `dot` minutes and come out too small to read.
 | `--style=classic` | `report --format=dot` only: snakefood's black and white look |
 | `--title=<text>` | `report` only: the title. Defaults to the `name` in `package.json`, else the folder name |
 | `--cluster=<strategy>` | `analyze`, `report`: group files into units. `folder:N` keeps the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines, where the first matching path prefix wins. JavaScript has no namespaces, so `namespace:N` is the same as `folder:N`. See [clustering](https://github.com/krazybean/Untangled/blob/main/spec/clustering.md) |
+| `--strict` | `analyze`, `report`: with `rules:<file>`, exit 1 instead of warning when a file matches no rule (a file no rule matches is its own unit, and the warning names it) |
 | `--include=<glob>`, `--exclude=<glob>` | `analyze`, `report`: keep or drop project files by path (repeatable, the last matching pattern wins). `*` stays within a folder, `**` crosses folders |
 | `--output=<file>` | Write to a file instead of standard output |
 
@@ -129,7 +130,8 @@ code. A file that does not parse is still in the pairs document, marked
 `"error": "parse"`, and the report lists it under "Files we could not read".
 
 Exit codes: 0 on success, 1 when the project, a pairs document or a rules
-file cannot be read or an output cannot be written, 2 for a usage error.
+file cannot be read, an output cannot be written, or `--strict` finds a file
+no rule matches, 2 for a usage error.
 
 ### Not in this version
 

@@ -75,6 +75,42 @@ final class ClusteringTest extends TestCase
         self::assertSame('index.php', self::of($rules, 'index.php'));
     }
 
+    public function testUnmatchedListsNodesNoRuleMatchesSorted(): void
+    {
+        $files = PairsBuilder::build(['src/Billing/a.php -> src/NewFolder/z.php', 'src/NewFolder/b.php -> src/Billing/a.php', 'lib/c.php -> lib/c.php']);
+        $rules = Clustering::parseRules("src/Billing/ Billing\nlib/ Lib\n");
+        self::assertSame(['src/NewFolder/b.php', 'src/NewFolder/z.php'], $rules->unmatched($files));
+    }
+
+    public function testNothingIsUnmatchedWhenEveryNodeHasARule(): void
+    {
+        $files = PairsBuilder::build(['src/a.php -> lib/b.php']);
+        self::assertSame([], Clustering::parseRules("src/ Core\nlib/ Lib\n")->unmatched($files));
+    }
+
+    public function testNothingIsUnmatchedWithoutRulesStrategy(): void
+    {
+        $files = PairsBuilder::build(['src/a.php -> lib/b.php']);
+        self::assertSame([], Clustering::byFolder(1)->unmatched($files));
+        self::assertSame([], Clustering::byNamespace(1)->unmatched($files));
+    }
+
+    public function testNonInternalNodesAreNeverUnmatched(): void
+    {
+        $files = PairsBuilder::build(['src/a.php -> composer:acme/lib']);
+        self::assertSame([], Clustering::parseRules("src/ Core\n")->unmatched($files));
+    }
+
+    public function testDescribeUnmatched(): void
+    {
+        self::assertSame('rules: 1 file matches no rule and becomes its own cluster: a.php', Clustering::describeUnmatched(['a.php']));
+        self::assertSame('rules: 2 files match no rule and each becomes its own cluster: a.php, b.php', Clustering::describeUnmatched(['a.php', 'b.php']));
+        self::assertSame(
+            'rules: 7 files match no rule and each becomes its own cluster: a, b, c, d, e and 2 more',
+            Clustering::describeUnmatched(['a', 'b', 'c', 'd', 'e', 'f', 'g']),
+        );
+    }
+
     public function testRulesOrderMatters(): void
     {
         $rules = Clustering::parseRules("src/ Core\nsrc/Billing/ Billing\n");

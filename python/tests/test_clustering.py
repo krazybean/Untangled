@@ -93,6 +93,39 @@ def test_rules_file_syntax() -> None:
     assert of(rules, "src/x.py") == "core"
 
 
+def test_unmatched_lists_the_nodes_no_rule_matches_sorted() -> None:
+    files = build(
+        ["src/billing/a.py -> src/newfolder/z.py", "src/newfolder/b.py -> src/billing/a.py", "lib/c.py -> lib/c.py"]
+    )
+    rules = Clustering.parse_rules("src/billing/ billing\nlib/ lib\n")
+    assert rules.unmatched(files) == ["src/newfolder/b.py", "src/newfolder/z.py"]
+
+
+def test_nothing_is_unmatched_when_every_node_has_a_rule() -> None:
+    assert Clustering.parse_rules("src/ core\nlib/ lib\n").unmatched(build(["src/a.py -> lib/b.py"])) == []
+
+
+def test_nothing_is_unmatched_without_the_rules_strategy() -> None:
+    files = build(["src/a.py -> lib/b.py"])
+    assert Clustering("folder", 1).unmatched(files) == []
+    assert Clustering("namespace", 1).unmatched(files) == []
+
+
+def test_non_internal_nodes_are_never_unmatched() -> None:
+    assert Clustering.parse_rules("src/ core\n").unmatched(build(["src/a.py -> pypi:requests"])) == []
+
+
+def test_describe_unmatched() -> None:
+    assert Clustering.describe_unmatched(["a.py"]) == "rules: 1 file matches no rule and becomes its own cluster: a.py"
+    assert (
+        Clustering.describe_unmatched(["a.py", "b.py"])
+        == "rules: 2 files match no rule and each becomes its own cluster: a.py, b.py"
+    )
+    assert Clustering.describe_unmatched(list("abcdefg")) == (
+        "rules: 7 files match no rule and each becomes its own cluster: a, b, c, d, e and 2 more"
+    )
+
+
 def test_an_empty_rules_file_keeps_every_file_alone() -> None:
     assert of(Clustering.parse_rules("# nothing\n"), "src/x.py") == "src/x.py"
 
