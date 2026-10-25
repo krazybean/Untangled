@@ -1,0 +1,5 @@
+--transitive
+--exclude=**
+--include=src/http/**
+--format=json
+src/infra/clock.ts

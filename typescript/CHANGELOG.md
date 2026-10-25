@@ -7,6 +7,12 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- New `dependents` command: lists the files that depend on one or more files
+  (or declared symbols), directly or with `--transitive` through other files,
+  with each one's depth. It reads a project or a pairs document, accepts
+  `--include` / `--exclude`, and writes text grouped by folder or
+  `--format=json`. See spec/dependents.md.
+
 ## 1.0.1
 
 - `scan` marks a file that does not parse, or cannot be read, with

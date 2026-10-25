@@ -7,6 +7,12 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- New `dependents` command: lists the files that depend on one or more files
+  (or declared symbols), directly or with `--transitive` through other files,
+  with each one's depth. It reads a project or a pairs document, accepts
+  `--include` / `--exclude`, and writes text grouped by folder or
+  `--format=json`. See spec/dependents.md.
+
 - `scan` records a class named by an expression (`new $class()`,
   `$class::method()`, `$class::CONST`, `$x instanceof $class`) as
   `unresolved:dynamic:<source text>`, with the edge kind of the construct, as

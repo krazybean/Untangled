@@ -1,0 +1,14 @@
+5 dependents of src/domain/user.ts
+
+./
+  bootstrap.ts  (depth 4)
+
+src/domain/
+  order.ts  (depth 1)
+
+src/http/
+  router.ts  (depth 3)
+  user-controller.ts  (depth 2)
+
+src/infra/
+  user-repository.ts  (depth 1)

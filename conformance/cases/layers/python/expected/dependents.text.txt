@@ -1,0 +1,14 @@
+5 dependents of src/app/domain/user.py
+
+./
+  bootstrap.py  (depth 4)
+
+src/app/domain/
+  order.py  (depth 1)
+
+src/app/http/
+  router.py  (depth 3)
+  user_controller.py  (depth 2)
+
+src/app/infra/
+  user_repository.py  (depth 1)

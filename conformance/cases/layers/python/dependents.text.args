@@ -1,0 +1,2 @@
+--transitive
+src/app/domain/user.py

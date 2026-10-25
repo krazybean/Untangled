@@ -1,0 +1,5 @@
+--transitive
+--exclude=**
+--include=src/Http/**
+--format=json
+src/Infra/Clock.php

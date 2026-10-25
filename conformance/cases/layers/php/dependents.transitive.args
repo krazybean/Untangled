@@ -1,0 +1,3 @@
+--transitive
+--format=json
+App\Domain\User

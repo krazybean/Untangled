@@ -178,6 +178,83 @@ def test_a_missing_rules_file_is_an_error(tmp_path) -> None:
     assert code == 1 and err == f"error: cannot read rules file {tmp_path}\n"
 
 
+def test_dependents_of_a_file_in_a_pairs_document() -> None:
+    pairs = str(LAYERS / "expected" / "pairs.json")
+    code, out, err = run("dependents", pairs, "src/app/domain/user.py")
+    assert (code, err) == (0, "")
+    assert out == (
+        "2 dependents of src/app/domain/user.py\n"
+        "\nsrc/app/domain/\n  order.py\n"
+        "\nsrc/app/infra/\n  user_repository.py\n"
+    )
+
+
+def test_dependents_scans_a_project() -> None:
+    code, out, _ = run("dependents", str(LAYERS / "project"), "src/app/domain/user.py", "--format=json")
+    assert code == 0
+    assert [item["id"] for item in json.loads(out)["dependents"]] == [
+        "src/app/domain/order.py",
+        "src/app/infra/user_repository.py",
+    ]
+
+
+def test_dependents_takes_the_current_folder_when_the_first_argument_is_a_target(monkeypatch) -> None:
+    monkeypatch.chdir(LAYERS / "project")
+    code, out, _ = run("dependents", "src/app/domain/user.py", "--format=json")
+    assert code == 0
+    assert len(json.loads(out)["dependents"]) == 2
+
+
+def test_dependents_writes_to_a_file(tmp_path) -> None:
+    target = tmp_path / "out.json"
+    pairs = str(LAYERS / "expected" / "pairs.json")
+    assert run("dependents", pairs, "src/app/domain/user.py", "--format=json", f"--output={target}") == (0, "", "")
+    assert json.loads(target.read_text(encoding="utf-8"))["format"] == "untangled-dependents"
+
+
+def test_dependents_fails_on_an_unknown_target() -> None:
+    pairs = str(LAYERS / "expected" / "pairs.json")
+    assert run("dependents", pairs, "src/nope.py") == (
+        1,
+        "",
+        'error: no node or symbol "src/nope.py" in the pairs document\n',
+    )
+
+
+def test_dependents_refuses_a_clustered_document(tmp_path) -> None:
+    document = {
+        "format": "untangled-pairs",
+        "version": "0.1",
+        "language": "python",
+        "nodes": [{"id": "core", "kind": "cluster", "members": ["a.py"]}],
+        "edges": [],
+    }
+    code, _, err = run("dependents", pairs_file(tmp_path, document), "core")
+    assert code == 1 and "already clustered" in err
+
+
+@pytest.mark.parametrize(
+    ("args", "message"),
+    [
+        pytest.param(["dependents", "PAIRS"], "dependents needs at least one file or symbol", id="no target"),
+        pytest.param(["dependents", "PAIRS", "a.py", "--format=html"], "Unknown format: html", id="format"),
+        pytest.param(
+            ["dependents", "PAIRS", "a.py", "--transitive=yes"], "Option --transitive takes no value", id="value"
+        ),
+        pytest.param(
+            ["dependents", "PAIRS", "a.py", "--cluster=folder:1"],
+            "Unknown option for dependents: --cluster",
+            id="cluster",
+        ),
+        pytest.param(["analyze", "PAIRS", "--transitive"], "Unknown option for analyze: --transitive", id="analyze"),
+    ],
+)
+def test_dependents_usage_errors(args: list[str], message: str) -> None:
+    pairs = str(LAYERS / "expected" / "pairs.json")
+    code, _, err = run(*[pairs if arg == "PAIRS" else arg for arg in args])
+    assert code == 2 and message in err
+
+
 def test_analyze_a_project() -> None:
     code, out, err = run("analyze", str(LAYERS / "project"))
     assert (code, err) == (0, "")

@@ -12,10 +12,12 @@ import { describe, expect, test } from "vitest";
 import { analyze } from "../src/analysis/analyzer.js";
 import { Clustering } from "../src/analysis/clustering.js";
 import { Filter } from "../src/analysis/filter.js";
+import { main } from "../src/cli.js";
 import { encode, PairsDocument } from "../src/graph.js";
 import { renderDot } from "../src/report/dot.js";
 import { Report } from "../src/report/report.js";
 import { scan } from "../src/scanner/scanner.js";
+import { Buffered } from "./helpers.js";
 
 const CASES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "conformance", "cases");
 const TYPESCRIPT_CASES = readdirSync(CASES)
@@ -107,6 +109,24 @@ describe.each(TYPESCRIPT_CASES)("%s", (name) => {
     test(file, () => {
       const report = Report.build(name, new Filter().apply(scanCase(name).pairs), clustering(name, suffix));
       expect(renderDot(report)).toBe(readFileSync(join(expected, file), "utf8"));
+    });
+  }
+
+  // `dependents` on the expected pairs document with the arguments, one per line, of
+  // `dependents.<name>.args`. A .json expectation is compared as a document, a .txt one byte for byte.
+  for (const [file] of expectedFiles(name, /^(dependents\..*\.(?:json|txt))$/)) {
+    test(file, () => {
+      const args = lines(join(CASES, name, "typescript", `${file.replace(/\.(json|txt)$/, "")}.args`));
+      const out = new Buffered();
+      const err = new Buffered();
+      expect(main(["dependents", join(expected, "pairs.json"), ...args], out, err), err.text).toBe(0);
+      const want = readFileSync(join(expected, file), "utf8");
+      if (file.endsWith(".json")) {
+        expect(withoutGenerator(JSON.parse(out.text) as Record<string, unknown>)).toEqual(withoutGenerator(JSON.parse(want) as Record<string, unknown>));
+        expect(out.text.endsWith("}\n")).toBe(true);
+      } else {
+        expect(out.text).toBe(want);
+      }
     });
   }
 });

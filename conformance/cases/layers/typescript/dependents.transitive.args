@@ -1,0 +1,3 @@
+--transitive
+--format=json
+src/domain/user.ts
