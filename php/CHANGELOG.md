@@ -7,6 +7,8 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+## 1.0.2
+
 - The "not covered by composer.json autoload rules" warning no longer counts
   files git ignores (`.gitignore`, nested ones and `.git/info/exclude`), such
   as a Laravel app's compiled views in `storage/framework/views/`, which

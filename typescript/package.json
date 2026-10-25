@@ -1,6 +1,6 @@
 {
   "name": "@krazybean/untangled",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Dependency health your whole team can understand: cycles, coupling and trends for JavaScript and TypeScript.",
   "license": "MIT",
   "author": "Juan Castro",
