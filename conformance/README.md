@@ -40,6 +40,7 @@ that has a folder for its language.
 | [psr4-basic](cases/psr4-basic/README.md) | Class-reference kinds, builtins, unresolved classes |
 | [three-cycle](cases/three-cycle/README.md) | A dependency loop and a file with no dependencies |
 | [includes](cases/includes/README.md) | `classmap` / `files` autoload, followed and unresolved includes, functions and constants |
+| [dynamic-classes](cases/dynamic-classes/README.md) | PHP: classes named by an expression (`new $class()`, `$class::method()`, `instanceof $class`) as `unresolved:dynamic:` |
 | [composer-packages](cases/composer-packages/README.md) | Packages from `composer.lock`, psr-0 prefixes, imports of namespaces |
 | [vendor-installed](cases/vendor-installed/README.md) | Packages from `vendor/`, classmap packages, includes into `vendor/` |
 | [legacy-app](cases/legacy-app/README.md) | Code outside autoload added with `--source`, includes found through `--source` folders, a Latin-1 class name, a polyfill that a builtin wins over, Composer's autoloader and runtime classes, a file that does not parse |

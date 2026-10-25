@@ -58,7 +58,15 @@ final class ReferenceCollectorTest extends CollectorTestCase
         yield 'parent without a parent is dropped' => ['namespace App; class A { function f() { parent::f(); } }', []];
         yield 'parent in a nested anonymous class' => ['namespace App; class A extends B { function f() { return new class extends C { function g() { parent::g(); } }; } }', ['extends class App\\B', 'extends class App\\C', 'static class App\\C']];
         yield 'parent after a nested class' => ['namespace App; class A extends B { function f() { new class {}; parent::f(); } }', ['extends class App\\B', 'static class App\\B']];
-        yield 'dynamic class names are skipped' => ['namespace App; new $class(); $class::make(); $x instanceof $y;', []];
+        yield 'dynamic class names are unresolved' => ['namespace App; new $class(); $class::make(); $x instanceof $y;', [
+            'new dynamic $class',
+            'static dynamic $class',
+            'instanceof dynamic $y',
+        ]];
+        yield 'dynamic class constants and properties' => ['namespace App; $c::CONST; $c::$prop;', ['static dynamic $c', 'static dynamic $c']];
+        yield 'dynamic class from an expression' => ['namespace App; new ($factory())(1);', ['new dynamic $factory()']];
+        yield 'dynamic source text collapses whitespace' => ["namespace App; new (\$a\n    ->b())();", ['new dynamic $a ->b()']];
+        yield '::class on an object names nothing to load' => ['namespace App; $o::class;', []];
         yield 'string class names are not references' => ['namespace App; $c = "App\\\\Foo";', []];
         yield 'docblock types are not references' => ["namespace App; /** @param Foo \$x */ function f(\$x) {}", []];
     }
