@@ -59,3 +59,20 @@ src/Billing/          Billing
 src/Invoice           Billing
 src/                  Core
 ```
+
+### Nodes no rule matches
+
+An unmatched node becomes its own cluster, so a new top-level folder that no
+rule names drops out of the grouped view without a sign. Libraries SHOULD say
+so: when `rules` leaves internal nodes unmatched (after include and exclude
+filters), the command-line tool writes one warning to standard error that
+counts them and names the first few, sorted:
+
+```
+warning: rules: 2 files match no rule and each becomes its own cluster: src/NewFolder/Foo.php, src/NewFolder/Bar.php
+```
+
+A `--strict` option turns that into a failure for CI: the same sentence as an
+error, exit code 1, and no output. `--strict` applies to `rules` only; using
+it with another strategy is a usage error (exit code 2). The `namespace` and
+`folder` strategies place every node, so they have nothing to report.

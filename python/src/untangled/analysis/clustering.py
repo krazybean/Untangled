@@ -9,6 +9,9 @@ from typing import Any
 
 from untangled.graph import CLUSTER, INTERNAL, PairsDocument
 
+_NAMED_UNMATCHED = 5
+"""How many unmatched nodes the warning names."""
+
 
 @dataclass
 class Clustered:
@@ -68,6 +71,33 @@ class Clustering:
             return "".join(parts[: 2 * self.depth - 1])
         folders = node_id.split("/")[:-1]
         return "/".join(folders[: self.depth]) if folders else "."
+
+    def unmatched(self, files: PairsDocument) -> list[str]:
+        """The internal nodes no rule matches, sorted. Each is its own cluster, so a new top-level
+        folder that no rule names would otherwise drop out of the context view unnoticed.
+        Always empty for namespace and folder clustering, which place every node."""
+        if self.strategy != "rules":
+            return []
+        return sorted(
+            node["id"]
+            for node in files.nodes()
+            if node["kind"] == INTERNAL and not any(node["id"].startswith(prefix) for prefix, _ in self.rules)
+        )
+
+    @staticmethod
+    def describe_unmatched(unmatched: list[str]) -> str:
+        """The sentence for the warning, or the error with --strict, about unmatched nodes:
+        the first few are named."""
+        count = len(unmatched)
+        named = ", ".join(unmatched[:_NAMED_UNMATCHED])
+        if count > _NAMED_UNMATCHED:
+            named += f" and {count - _NAMED_UNMATCHED} more"
+        what = (
+            "1 file matches no rule and becomes its own cluster"
+            if count == 1
+            else f"{count} files match no rule and each becomes its own cluster"
+        )
+        return f"rules: {what}: {named}"
 
     def apply(self, files: PairsDocument) -> Clustered:
         cluster_of: dict[str, str] = {}

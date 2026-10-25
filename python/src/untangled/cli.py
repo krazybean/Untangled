@@ -21,7 +21,7 @@ from untangled.scanner.scanner import Scanner
 USAGE = """\
 Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--venv=<path>]...
                       [--format=json|snakefood] [--output=<file>]
-       untangled analyze [<path>|<pairs.json>] [scan options] [--cluster=<strategy>]
+       untangled analyze [<path>|<pairs.json>] [scan options] [--cluster=<strategy>] [--strict]
                          [--include=<glob>]... [--exclude=<glob>]... [--output=<file>]
        untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                          [--title=<text>] [analyze options]
@@ -43,6 +43,8 @@ Options:
                      black and white sfood-graph look
   --title=TEXT       report only: the report's title (default: the project name in pyproject.toml)
   --cluster=STRATEGY analyze, report: namespace:N, folder:N or rules:<file>
+  --strict           analyze, report: with rules:<file>, exit 1 instead of warning when a
+                     file matches no rule
   --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
   --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
   --output=FILE      Write to FILE instead of standard output
@@ -53,8 +55,8 @@ Options:
 _SCAN = {"dev", "source", "venv"}
 _COMMANDS = {
     "scan": _SCAN | {"format", "output"},
-    "analyze": _SCAN | {"cluster", "include", "exclude", "output"},
-    "report": _SCAN | {"cluster", "include", "exclude", "output", "format", "style", "title"},
+    "analyze": _SCAN | {"cluster", "strict", "include", "exclude", "output"},
+    "report": _SCAN | {"cluster", "strict", "include", "exclude", "output", "format", "style", "title"},
 }
 _REPEATABLE = {"source", "venv"}
 
@@ -110,10 +112,12 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
     if unknown:
         raise _Usage(f"Unknown option for {command}: --{unknown[0]}")
     for name, value in options.items():
-        if name != "dev" and not isinstance(value, str):
+        if name not in ("dev", "strict") and not isinstance(value, str):
             raise _Usage(f"Option --{name} needs a value, as in --{name}=...")
     if "dev" in options and options["dev"] is not True:
         raise _Usage("Option --dev takes no value")
+    if "strict" in options and options["strict"] is not True:
+        raise _Usage("Option --strict takes no value")
 
     path = positional[0] if positional else "."
     scanner = Scanner(dev="dev" in options, sources=repeated["source"], venvs=repeated["venv"] or None)
@@ -135,7 +139,10 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
         raise _Usage(f"Unknown style: {style}")
     if "style" in options and output_format != "dot":
         raise _Usage("--style only applies to --format=dot")
-    clustering = _clustering(options.get("cluster"))
+    strategy = options.get("cluster")
+    if "strict" in options and not (isinstance(strategy, str) and strategy.startswith("rules:")):
+        raise _Usage("--strict only applies to --cluster=rules:<file>")
+    clustering = _clustering(strategy)
 
     if os.path.isfile(path):
         warnings: list[str] = []
@@ -157,11 +164,18 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
     selection = Filter()
     for kind, glob in patterns:
         selection.include(glob) if kind == "include" else selection.exclude(glob)
+    selected = selection.apply(pairs)
+    unmatched = clustering.unmatched(selected) if clustering is not None else []
+    if unmatched:
+        message = Clustering.describe_unmatched(unmatched)
+        if "strict" in options:
+            raise _Failure(message)
+        err.write(f"warning: {message}\n")
     try:
         if command == "analyze":
-            return _write(encode(analyze(selection.apply(pairs), clustering)), output, out)
+            return _write(encode(analyze(selected, clustering)), output, out)
         title = options.get("title")
-        report = Report.build(title if isinstance(title, str) else _title(path), selection.apply(pairs), clustering)
+        report = Report.build(title if isinstance(title, str) else _title(path), selected, clustering)
     except ValueError as error:
         raise _Failure(str(error)) from error
     return _write(dot.render(report, str(style)) if output_format == "dot" else html.render(report), output, out)

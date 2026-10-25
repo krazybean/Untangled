@@ -7,6 +7,11 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- `analyze` and `report` warn on standard error when `--cluster=rules:<file>`
+  leaves files unmatched (each becomes its own cluster), naming the first few.
+  `--strict` makes that an error: exit code 1 and no output, for CI. Before,
+  a new top-level folder that no rule named dropped out of the grouped view
+  without a sign.
 - `scan` records a class named by an expression (`new $class()`,
   `$class::method()`, `$class::CONST`, `$x instanceof $class`) as
   `unresolved:dynamic:<source text>`, with the edge kind of the construct, as

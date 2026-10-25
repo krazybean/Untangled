@@ -212,6 +212,59 @@ final class ApplicationTest extends TestCase
         ConformanceTest::assertSameDocument(ConformanceTest::read($layers . '/expected/analysis.rules.json'), json_decode($out, true));
     }
 
+    public function testUnmatchedNodesWarnAndStillWriteTheOutput(): void
+    {
+        $layers = self::CASES . '/layers/php';
+        [$code, $out, $err] = self::cli(['analyze', $layers . '/expected/pairs.json', '--cluster=rules:' . self::rulesFile("src/Domain/ Core\n")]);
+        self::assertSame(0, $code);
+        self::assertStringStartsWith('warning: rules: ', $err);
+        self::assertStringContainsString("5 files match no rule and each becomes its own cluster: bootstrap.php, src/Http/Router.php", $err);
+        self::assertSame('rules', json_decode($out, true)['clustering']);
+    }
+
+    public function testNoWarningWhenEveryNodeMatches(): void
+    {
+        $layers = self::CASES . '/layers/php';
+        [$code, , $err] = self::cli(['analyze', $layers . '/expected/pairs.json', '--cluster=rules:' . self::rulesFile("src/ Core\nbootstrap.php Boot\n"), '--strict']);
+        self::assertSame(0, $code);
+        self::assertSame('', $err);
+    }
+
+    public function testStrictFailsOnUnmatchedNodesAndWritesNothing(): void
+    {
+        $layers = self::CASES . '/layers/php';
+        foreach (['analyze', 'report'] as $command) {
+            [$code, $out, $err] = self::cli([$command, $layers . '/expected/pairs.json', '--cluster=rules:' . self::rulesFile("src/Domain/ Core\n"), '--strict']);
+            self::assertSame(1, $code, $command);
+            self::assertSame('', $out, $command);
+            self::assertStringStartsWith('error: rules: ', $err);
+            self::assertStringNotContainsString('warning:', $err);
+        }
+    }
+
+    public function testUnmatchedNodesAreCountedAfterFiltering(): void
+    {
+        $layers = self::CASES . '/layers/php';
+        [$code, , $err] = self::cli(['analyze', $layers . '/expected/pairs.json', '--cluster=rules:' . self::rulesFile("src/Domain/ Core\n"), '--exclude=src/Http/**', '--exclude=src/Infra/**', '--exclude=bootstrap.php', '--strict']);
+        self::assertSame(0, $code);
+        self::assertSame('', $err);
+    }
+
+    public function testStrictNeedsRulesClustering(): void
+    {
+        foreach ([['analyze', '.', '--strict'], ['analyze', '.', '--cluster=folder:1', '--strict'], ['report', '.', '--strict']] as $args) {
+            [$code, , $err] = self::cli($args);
+            self::assertSame(2, $code);
+            self::assertStringContainsString('--strict only applies to --cluster=rules:<file>', $err);
+        }
+        [$code, , $err] = self::cli(['analyze', '.', '--cluster=rules:x', '--strict=yes']);
+        self::assertSame(2, $code);
+        self::assertStringContainsString('--strict takes no value', $err);
+        [$code, , $err] = self::cli(['scan', '.', '--strict']);
+        self::assertSame(2, $code);
+        self::assertStringContainsString('Unknown option for scan: --strict', $err);
+    }
+
     public function testAnalyzeAppliesIncludeAndExcludeInOrder(): void
     {
         $project = self::CASES . '/layers/php/project';
@@ -350,6 +403,14 @@ final class ApplicationTest extends TestCase
      * @param list<string> $args
      * @return array{int, string, string} exit code, standard output, standard error
      */
+    private static function rulesFile(string $rules): string
+    {
+        $file = tempnam(sys_get_temp_dir(), 'untangled-rules');
+        file_put_contents($file, $rules);
+        register_shutdown_function(static fn () => @unlink($file));
+        return $file;
+    }
+
     private static function cli(array $args): array
     {
         $out = fopen('php://memory', 'w+');
