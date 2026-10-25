@@ -1,0 +1,40 @@
+{
+  "format": "untangled-analysis",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "1.0.1"
+  },
+  "clustering": null,
+  "summary": {
+    "units": 2,
+    "edges": 1,
+    "cycles": 0,
+    "largest_cycle": 0,
+    "units_in_cycles": 0,
+    "units_in_cycles_ratio": 0,
+    "mean_fan_out": 0.5,
+    "external_packages": 0,
+    "unresolved_references": 2
+  },
+  "units": [
+    {
+      "id": "src/Loader.php",
+      "fan_in": 0,
+      "fan_out": 1,
+      "external": 0,
+      "unresolved": 2,
+      "instability": 1
+    },
+    {
+      "id": "src/Plugin.php",
+      "fan_in": 1,
+      "fan_out": 0,
+      "external": 0,
+      "unresolved": 0,
+      "instability": 0
+    }
+  ],
+  "cycles": []
+}
