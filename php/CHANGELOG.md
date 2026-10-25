@@ -7,6 +7,13 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- The "not covered by composer.json autoload rules" warning no longer counts
+  files git ignores (`.gitignore`, nested ones and `.git/info/exclude`), such
+  as a Laravel app's compiled views in `storage/framework/views/`, which
+  buried the folders that might deserve `--source`. A tracked file still counts,
+  and nothing changes when the project is not a git repository or git is not
+  installed.
+
 - New `dependents` command: lists the files that depend on one or more files
   (or declared symbols), directly or with `--transitive` through other files,
   with each one's depth. It reads a project or a pairs document, accepts

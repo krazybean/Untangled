@@ -458,6 +458,59 @@ final class ScannerTest extends TestCase
         );
     }
 
+    public function testFilesGitIgnoresAreLeftOutOfTheUncoveredWarning(): void
+    {
+        $result = $this->scanInGitRepository([
+            '.gitignore' => "/storage/framework/views/\n*.cache.php\n",
+            'src/A.php' => '<?php namespace App;',
+            'storage/framework/views/a1.php' => '<?php',
+            'storage/framework/views/b2.php' => '<?php',
+            'bootstrap/app.php' => '<?php',
+            'bootstrap/routes.cache.php' => '<?php',
+        ]);
+        self::assertSame(
+            ['1 PHP file is not covered by composer.json autoload rules and was not scanned (bootstrap/ 1);'
+                . ' add folders with --source=<folder> if they hold code you want analyzed'],
+            $result->warnings,
+        );
+    }
+
+    public function testNestedGitignoreFilesAndNegationsApply(): void
+    {
+        $result = $this->scanInGitRepository([
+            '.gitignore' => "*.gen.php\n!keep.gen.php\n",
+            'src/A.php' => '<?php namespace App;',
+            'lib/.gitignore' => "/out/\n",
+            'lib/out/x.php' => '<?php',
+            'lib/a.gen.php' => '<?php',
+            'lib/keep.gen.php' => '<?php',
+        ]);
+        self::assertSame(
+            ['1 PHP file is not covered by composer.json autoload rules and was not scanned (lib/ 1);'
+                . ' add folders with --source=<folder> if they hold code you want analyzed'],
+            $result->warnings,
+        );
+    }
+
+    public function testAnIgnoredFileThatIsTrackedStillCounts(): void
+    {
+        $result = $this->scanInGitRepository(
+            ['.gitignore' => "generated/\n", 'src/A.php' => '<?php namespace App;', 'generated/x.php' => '<?php', 'generated/y.php' => '<?php'],
+            track: ['generated/x.php'],
+        );
+        self::assertSame(
+            ['1 PHP file is not covered by composer.json autoload rules and was not scanned (generated/ 1);'
+                . ' add folders with --source=<folder> if they hold code you want analyzed'],
+            $result->warnings,
+        );
+    }
+
+    public function testNothingIsLeftOutWhenTheProjectIsNotAGitRepository(): void
+    {
+        $result = $this->scan(['.gitignore' => "storage/\n", 'src/A.php' => '<?php namespace App;', 'storage/a.php' => '<?php']);
+        self::assertStringStartsWith('1 PHP file is not covered', $result->warnings[0]);
+    }
+
     public function testTheUncoveredWarningNamesFiveFoldersAtMost(): void
     {
         $files = ['src/A.php' => '<?php namespace App;'];
@@ -528,6 +581,28 @@ final class ScannerTest extends TestCase
     {
         $this->project = new TempProject(['composer.json' => $composer] + $files);
         return (new Scanner(dev: $dev, sources: $sources, aliases: $aliases))->scan($this->project->root);
+    }
+
+    /**
+     * Scans a project that is a git repository, as a real one is; skips the test without git.
+     *
+     * @param array<string, string|array<mixed>> $files
+     * @param list<string> $track files to `git add -f` even though .gitignore ignores them
+     */
+    private function scanInGitRepository(array $files, array $track = []): ScanResult
+    {
+        exec('git --version 2>&1', $ignored, $status);
+        if ($status !== 0) {
+            self::markTestSkipped('git is not installed');
+        }
+        $this->project = new TempProject(['composer.json' => ['autoload' => ['psr-4' => ['App\\' => 'src/']]]] + $files);
+        $root = escapeshellarg($this->project->root);
+        exec("git -C {$root} init -q 2>&1", $ignored, $status);
+        self::assertSame(0, $status);
+        foreach ($track as $file) {
+            exec("git -C {$root} add -f " . escapeshellarg($file) . ' 2>&1');
+        }
+        return (new Scanner())->scan($this->project->root);
     }
 
     /** @param array<string, string> $map */
