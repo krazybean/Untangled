@@ -169,7 +169,10 @@ A class named by an expression instead of a name (`new $class()`,
 `$x instanceof $class`) has no name to resolve. It is recorded as
 `unresolved:dynamic:<source text>`, the expression as written with runs of
 whitespace collapsed to one space, with the edge kind of the construct (`new`,
-`static`, `instanceof`). `$object::class` loads nothing and adds no edge.
+`static`, `instanceof`). `$object::class` loads nothing and adds no edge, and
+neither does `$this::X`, which is the enclosing class, like `static::X`. Any other
+expression is recorded, including `$this->model::query()`, since a property can
+hold a class name as well as an object.
 
 Not in v0.1: docblock types (`@param Foo`), string class names
 (`'App\Foo'`), and functions that take a class name (`class_exists($class)`,
