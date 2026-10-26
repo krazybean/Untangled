@@ -505,6 +505,60 @@ final class ScannerTest extends TestCase
         );
     }
 
+    public function testTheUsersGlobalIgnoreFileDoesNotHideFiles(): void
+    {
+        $config = tempnam(sys_get_temp_dir(), 'untangled-gitconfig');
+        $ignore = tempnam(sys_get_temp_dir(), 'untangled-gitignore');
+        file_put_contents($ignore, "scripts/\n");
+        file_put_contents($config, "[core]\n\texcludesFile = " . str_replace('\\', '/', $ignore) . "\n");
+        $previous = getenv('GIT_CONFIG_GLOBAL');
+        putenv('GIT_CONFIG_GLOBAL=' . $config);
+        try {
+            $result = $this->scanInGitRepository([
+                'src/A.php' => '<?php namespace App;',
+                'scripts/x.php' => '<?php',
+                'scripts/y.php' => '<?php',
+            ]);
+        } finally {
+            $previous === false ? putenv('GIT_CONFIG_GLOBAL') : putenv('GIT_CONFIG_GLOBAL=' . $previous);
+            unlink($config);
+            unlink($ignore);
+        }
+        self::assertStringStartsWith('2 PHP files are not covered', $result->warnings[0] ?? '');
+    }
+
+    public function testAProjectInsideAFolderAnEnclosingRepositoryIgnoresStillWarns(): void
+    {
+        $this->project = new TempProject([
+            '.gitignore' => "proj/\n",
+            'proj/composer.json' => ['autoload' => ['psr-4' => ['App\\' => 'src/']]],
+            'proj/src/A.php' => '<?php namespace App;',
+            'proj/scripts/x.php' => '<?php',
+            'proj/scripts/y.php' => '<?php',
+        ]);
+        $this->gitInit($this->project->root);
+        $result = (new Scanner())->scan($this->project->root . '/proj');
+        self::assertStringStartsWith('2 PHP files are not covered', $result->warnings[0] ?? '');
+    }
+
+    public function testAProjectInAFolderOfARepositoryUsesTheRepositorysRules(): void
+    {
+        $this->project = new TempProject([
+            '.gitignore' => "/app/storage/\n",
+            'app/composer.json' => ['autoload' => ['psr-4' => ['App\\' => 'src/']]],
+            'app/src/A.php' => '<?php namespace App;',
+            'app/storage/a.php' => '<?php',
+            'app/bootstrap/b.php' => '<?php',
+        ]);
+        $this->gitInit($this->project->root);
+        $result = (new Scanner())->scan($this->project->root . '/app');
+        self::assertSame(
+            ['1 PHP file is not covered by composer.json autoload rules and was not scanned (bootstrap/ 1);'
+                . ' add folders with --source=<folder> if they hold code you want analyzed'],
+            $result->warnings,
+        );
+    }
+
     public function testNothingIsLeftOutWhenTheProjectIsNotAGitRepository(): void
     {
         $result = $this->scan(['.gitignore' => "storage/\n", 'src/A.php' => '<?php namespace App;', 'storage/a.php' => '<?php']);
@@ -596,13 +650,22 @@ final class ScannerTest extends TestCase
             self::markTestSkipped('git is not installed');
         }
         $this->project = new TempProject(['composer.json' => ['autoload' => ['psr-4' => ['App\\' => 'src/']]]] + $files);
+        $this->gitInit($this->project->root);
         $root = escapeshellarg($this->project->root);
-        exec("git -C {$root} init -q 2>&1", $ignored, $status);
-        self::assertSame(0, $status);
         foreach ($track as $file) {
             exec("git -C {$root} add -f " . escapeshellarg($file) . ' 2>&1');
         }
         return (new Scanner())->scan($this->project->root);
+    }
+
+    private function gitInit(string $directory): void
+    {
+        exec('git --version 2>&1', $ignored, $status);
+        if ($status !== 0) {
+            self::markTestSkipped('git is not installed');
+        }
+        exec('git -C ' . escapeshellarg($directory) . ' init -q 2>&1', $ignored, $status);
+        self::assertSame(0, $status);
     }
 
     /** @param array<string, string> $map */

@@ -7,6 +7,11 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- The "not covered by autoload rules" warning leaves out only the files the repository's own
+  rules ignore. The user's global git ignore file no longer hides files (the warning
+  was missing on one machine and present in CI), and a project inside a folder that an
+  enclosing repository ignores warns as it does elsewhere.
+
 - `dependents` now agrees with the spec and the other libraries: dependents are sorted
   by byte value (`10` before `9`, where PHP's `<=>` put `9` first), and a symbol target
   matches only internal nodes.
