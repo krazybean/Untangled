@@ -86,6 +86,17 @@ describe("findDependents", () => {
     clustered.addNode("core", "cluster", { members: ["a.ts"] });
     expect(() => findDependents(clustered, ["core"], false)).toThrow(/already clustered/);
   });
+
+  test("ids are sorted by byte value even when they look numeric", () => {
+    const document = findDependents(build(["9 -> t", "10 -> t", "1e1 -> t", "2 -> t"]), ["t"], false);
+    expect(document.dependents.map((item) => item.id)).toEqual(["10", "1e1", "2", "9"]);
+  });
+
+  test("only internal nodes answer to a symbol", () => {
+    const document = build(["a.ts -> npm:y"]);
+    document.node("npm:y")!.symbols = ["Vendor.Y"];
+    expect(() => findDependents(document, ["Vendor.Y"], false)).toThrow(DependentsError);
+  });
 });
 
 describe("renderDependentsText", () => {

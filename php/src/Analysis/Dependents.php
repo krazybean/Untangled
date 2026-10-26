@@ -27,6 +27,10 @@ final class Dependents
             if ($node['kind'] === PairsDocument::CLUSTER) {
                 throw new \InvalidArgumentException('the pairs document is already clustered; ask about the file-level document instead');
             }
+            // Only files declare symbols a target can name; other kinds are ignored, as in the other libraries.
+            if ($node['kind'] !== PairsDocument::INTERNAL) {
+                continue;
+            }
             foreach ($node['symbols'] ?? [] as $symbol) {
                 $symbols[$symbol][] = $node['id'];
             }
@@ -73,7 +77,8 @@ final class Dependents
                 $dependents[] = ['id' => (string) $id, 'depth' => $level];
             }
         }
-        usort($dependents, static fn (array $a, array $b): int => [$a['depth'], $a['id']] <=> [$b['depth'], $b['id']]);
+        // By byte value: strcmp, since `<=>` compares numeric-looking ids ("9", "10") as numbers.
+        usort($dependents, static fn (array $a, array $b): int => $a['depth'] <=> $b['depth'] ?: strcmp($a['id'], $b['id']));
 
         return [
             'format' => 'untangled-dependents',
