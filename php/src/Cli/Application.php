@@ -214,11 +214,7 @@ final class Application
             return 1;
         }
 
-        $filter = new Filter();
-        foreach ($patterns as [$kind, $glob]) {
-            $kind === 'include' ? $filter->include($glob) : $filter->exclude($glob);
-        }
-        $selected = $filter->apply($pairs);
+        $selected = self::filter($patterns)->apply($pairs);
         $unmatched = $clustering?->unmatched($selected) ?? [];
         if ($unmatched !== []) {
             if (isset($options['strict'])) {
@@ -267,17 +263,23 @@ final class Application
         if ($pairs === null) {
             return 1;
         }
-        $filter = new Filter();
-        foreach ($patterns as [$kind, $glob]) {
-            $kind === 'include' ? $filter->include($glob) : $filter->exclude($glob);
-        }
         try {
-            $document = (new Dependents())->find($pairs, $targets, isset($options['transitive']), $filter);
+            $document = (new Dependents())->find($pairs, $targets, isset($options['transitive']), self::filter($patterns));
         } catch (\InvalidArgumentException $e) {
             fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
             return 1;
         }
         return $this->write($format === 'json' ? Json::encode($document) : Dependents::renderText($document), $options['output'] ?? null);
+    }
+
+    /** @param list<array{string, string}> $patterns include / exclude globs in command-line order */
+    private static function filter(array $patterns): Filter
+    {
+        $filter = new Filter();
+        foreach ($patterns as [$kind, $glob]) {
+            $kind === 'include' ? $filter->include($glob) : $filter->exclude($glob);
+        }
+        return $filter;
     }
 
     /**

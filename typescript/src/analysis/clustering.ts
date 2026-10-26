@@ -73,10 +73,15 @@ export class Clustering {
     return this.strategy === "rules" ? "rules" : `${this.strategy}:${this.depth}`;
   }
 
+  /** The cluster of the first rule whose prefix starts the id, or undefined when none does. */
+  private ruleFor(id: string): string | undefined {
+    return this.rules.find((rule) => id.startsWith(rule.prefix))?.cluster;
+  }
+
   clusterOf(node: Node): string {
     const id = node.id;
     if (this.strategy === "rules") {
-      return this.rules.find((rule) => id.startsWith(rule.prefix))?.cluster ?? id;
+      return this.ruleFor(id) ?? id;
     }
     if (this.strategy === "namespace" && typeof node.module === "string" && node.module !== "") {
       // Segments are separated by `\` (PHP namespaces) or `.` (Python modules); the separators
@@ -102,7 +107,7 @@ export class Clustering {
     return sortText(
       files
         .nodes()
-        .filter((node) => node.kind === INTERNAL && !this.rules.some((rule) => node.id.startsWith(rule.prefix)))
+        .filter((node) => node.kind === INTERNAL && this.ruleFor(node.id) === undefined)
         .map((node) => node.id),
     );
   }

@@ -83,17 +83,23 @@ final class Clustering
         return $this->strategy === 'rules' ? 'rules' : "{$this->strategy}:{$this->depth}";
     }
 
+    /** The cluster of the first rule whose prefix starts $id, or null when none does. */
+    private function ruleFor(string $id): ?string
+    {
+        foreach ($this->rules as $rule) {
+            if (str_starts_with($id, $rule['prefix'])) {
+                return $rule['cluster'];
+            }
+        }
+        return null;
+    }
+
     /** @param array<string, mixed> $node an internal node of a pairs document */
     public function clusterOf(array $node): string
     {
         $id = $node['id'];
         if ($this->strategy === 'rules') {
-            foreach ($this->rules as $rule) {
-                if (str_starts_with($id, $rule['prefix'])) {
-                    return $rule['cluster'];
-                }
-            }
-            return $id;
+            return $this->ruleFor($id) ?? $id;
         }
         if ($this->strategy === 'namespace' && is_string($node['module'] ?? null) && $node['module'] !== '') {
             // Segments are separated by `\` (PHP namespaces) or `.` (Python modules); the
@@ -123,12 +129,9 @@ final class Clustering
             if ($node['kind'] !== PairsDocument::INTERNAL) {
                 continue;
             }
-            foreach ($this->rules as $rule) {
-                if (str_starts_with($node['id'], $rule['prefix'])) {
-                    continue 2;
-                }
+            if ($this->ruleFor($node['id']) === null) {
+                $unmatched[] = $node['id'];
             }
-            $unmatched[] = $node['id'];
         }
         sort($unmatched, SORT_STRING);
         return $unmatched;
