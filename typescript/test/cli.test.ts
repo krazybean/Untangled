@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 import { main } from "../src/cli.js";
@@ -222,7 +222,7 @@ describe("report", () => {
     expect(run("report", root).out).toContain("<title>Dependencies: shop</title>");
     expect(run("report", root, "--title=Mine").out).toContain("<title>Dependencies: Mine</title>");
     const bare = project({ "a.ts": "" });
-    expect(run("report", bare).out).toContain(`<title>Dependencies: ${bare.split("/").at(-1)!}</title>`);
+    expect(run("report", bare).out).toContain(`<title>Dependencies: ${basename(bare)}</title>`);
   });
 
   test("DOT, default and classic", () => {

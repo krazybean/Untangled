@@ -302,7 +302,7 @@ final class Scanner
             return 'unresolved:include:' . $include['text'];
         }
         $path = $include['path'];
-        $isAbsolute = str_starts_with(str_replace('\\', '/', $path), '/');
+        $isAbsolute = Path::isAbsolute($path);
         // A relative path is tried against the project root (PHP's working directory
         // when run from the root), then against the including file's directory, then
         // against each --source folder (legacy applications put those on include_path).

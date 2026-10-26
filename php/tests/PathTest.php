@@ -20,6 +20,9 @@ final class PathTest extends TestCase
         yield ['a/b/..', 'a'];
         yield ['./', ''];
         yield ['C:\\src\\Foo.php', 'C:/src/Foo.php'];
+        yield ['d:/www/../app//x.php', 'D:/app/x.php'];
+        yield ['D:\\', 'D:/'];
+        yield ['C:/a/../../b', 'C:/b'];
         yield ['src\\..\\lib\\x.php', 'lib/x.php'];
     }
 
@@ -31,9 +34,29 @@ final class PathTest extends TestCase
 
     public function testJoin(): void
     {
+        self::assertSame('D:/other/x.php', Path::join('D:/www/p', 'd:\\other\\x.php'));
+        self::assertSame('D:/www/p/src/a.php', Path::join('D:/www/p', 'src\\a.php'));
         self::assertSame('/p/src/a.php', Path::join('/p', 'src/a.php'));
         self::assertSame('/p/a.php', Path::join('/p/src', '../a.php'));
         self::assertSame('/etc/x.php', Path::join('/p', '/etc/x.php'));
+    }
+
+    public function testIsAbsolute(): void
+    {
+        foreach (['/a', 'C:/a', 'c:\\a', 'D:\\'] as $path) {
+            self::assertTrue(Path::isAbsolute($path), $path);
+        }
+        foreach (['a/b', './a', '../a', 'C:a', 'C:', ''] as $path) {
+            self::assertFalse(Path::isAbsolute($path), $path);
+        }
+    }
+
+    public function testRelativeOnAWindowsDrive(): void
+    {
+        self::assertSame('vendor/autoload.php', Path::relative('d:\\www\\app', 'D:/www/app/vendor/autoload.php'));
+        self::assertSame('.', Path::relative('D:/www/app', 'D:/www/app'));
+        self::assertNull(Path::relative('D:/www/app', 'E:/www/app/x.php'));
+        self::assertSame('x.php', Path::relative('D:/', 'D:/x.php'));
     }
 
     public function testRelative(): void

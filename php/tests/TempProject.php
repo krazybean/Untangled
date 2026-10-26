@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 namespace Untangled\Tests;
 
+use Untangled\Path;
+
 /**
  * A throwaway project directory for tests that need files on disk. Paths are relative
  * to the project root; arrays are written as JSON.
@@ -18,7 +20,7 @@ final class TempProject
     {
         $root = sys_get_temp_dir() . '/untangled-test-' . bin2hex(random_bytes(6));
         mkdir($root, 0777, true);
-        $this->root = (string) realpath($root);
+        $this->root = Path::normalize((string) realpath($root));
         foreach ($files as $path => $contents) {
             $this->write($path, $contents);
         }
@@ -42,7 +44,13 @@ final class TempProject
         );
         foreach ($iterator as $file) {
             /** @var \SplFileInfo $file */
-            $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());
+            // git makes its object files read-only, which Windows will not delete.
+            if ($file->isDir()) {
+                rmdir($file->getPathname());
+                continue;
+            }
+            chmod($file->getPathname(), 0666);
+            unlink($file->getPathname());
         }
         rmdir($this->root);
     }

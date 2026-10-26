@@ -45,9 +45,10 @@ def test_scan_writes_json(project) -> None:
 
 def test_scan_writes_snakefood(project) -> None:
     root = project({"a.py": "import b\n", "b.py": ""})
+    quoted = root.replace("\\", "\\\\")  # a Windows path has backslashes, which the format doubles
     assert run("scan", root, "--format=snakefood") == (
         0,
-        f"(('{root}', 'a.py'), ('{root}', 'b.py'))\n(('{root}', 'b.py'), (None, None))\n",
+        f"(('{quoted}', 'a.py'), ('{quoted}', 'b.py'))\n(('{quoted}', 'b.py'), (None, None))\n",
         "",
     )
 

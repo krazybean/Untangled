@@ -15,12 +15,15 @@ defaults:
 
 jobs:
   typescript:
-    name: Node ${{ matrix.node }}
-    runs-on: ubuntu-latest
+    name: Node ${{ matrix.node }}${{ matrix.os == 'windows-latest' && ' on Windows' || '' }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         node: ['22', '24']
+        include:
+          - { os: windows-latest, node: '24' }
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -36,6 +39,7 @@ jobs:
       # Install the packed tarball the way users will, so a file missing from
       # the package fails here rather than for them.
       - name: Test the packed package
+        shell: bash
         run: |
           npm pack --pack-destination "$RUNNER_TEMP"
           mkdir "$RUNNER_TEMP/install" && cd "$RUNNER_TEMP/install"

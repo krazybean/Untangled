@@ -7,6 +7,11 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- Fixed on Windows: an include with a drive-letter path (`D:/app/vendor/autoload.php`,
+  or `D:\app\...` from `__DIR__`) was taken for a relative path, so includes of files
+  inside the project came out as `unresolved:include:D:/...`. Drive letters are now
+  recognised as absolute, and written in upper case so `d:` and `D:` agree.
+
 ## 1.0.2
 
 - The "not covered by composer.json autoload rules" warning no longer counts
