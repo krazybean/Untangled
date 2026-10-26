@@ -7,6 +7,10 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- `dependents` now agrees with the spec and the other libraries: dependents are sorted
+  by byte value (`10` before `9`, where PHP's `<=>` put `9` first), and a symbol target
+  matches only internal nodes.
+
 - Fixed on Windows: an include with a drive-letter path (`D:/app/vendor/autoload.php`,
   or `D:\app\...` from `__DIR__`) was taken for a relative path, so includes of files
   inside the project came out as `unresolved:include:D:/...`. Drive letters are now
