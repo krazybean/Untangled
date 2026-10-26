@@ -15,12 +15,15 @@ defaults:
 
 jobs:
   python:
-    name: Python ${{ matrix.python }}
-    runs-on: ubuntu-latest
+    name: Python ${{ matrix.python }}${{ matrix.os == 'windows-latest' && ' on Windows' || '' }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         python: ['3.11', '3.12', '3.13', '3.14']
+        include:
+          - { os: windows-latest, python: '3.14' }
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
