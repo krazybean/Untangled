@@ -153,4 +153,29 @@ final class DependentsTest extends TestCase
         $document = PairsBuilder::build(['a.php -> b.php']);
         self::assertStringStartsWith("1 dependent of b.php\n", Dependents::renderText((new Dependents())->find($document, ['b.php'], false)));
     }
+
+    public function testIdsAreSortedByByteValueEvenWhenTheyLookNumeric(): void
+    {
+        $document = new PairsDocument('php');
+        foreach (['t', '9', '10', '1e1', '2'] as $id) {
+            $document->addNode($id, PairsDocument::INTERNAL);
+        }
+        foreach (['9', '10', '1e1', '2'] as $from) {
+            $document->addEdge($from, 't', 'use');
+        }
+        $result = (new Dependents())->find($document, ['t'], false);
+        self::assertSame(['10', '1e1', '2', '9'], array_column($result['dependents'], 'id'));
+        self::assertSame("4 dependents of t\n\n./\n  10\n  1e1\n  2\n  9\n", Dependents::renderText($result));
+    }
+
+    public function testOnlyInternalNodesAnswerToASymbol(): void
+    {
+        $document = new PairsDocument('php');
+        $document->addNode('a.php', PairsDocument::INTERNAL, ['symbols' => ['App\\A']]);
+        $document->addNode('composer:x/y', PairsDocument::EXTERNAL, ['symbols' => ['Vendor\\Y']]);
+        $document->addEdge('a.php', 'composer:x/y', 'use');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('no node or symbol "Vendor\\Y"');
+        (new Dependents())->find($document, ['Vendor\\Y'], false);
+    }
 }

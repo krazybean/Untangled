@@ -32,7 +32,10 @@ How the PHP library turns a project into a [pairs document](../pairs-format.md).
     `node_modules/` and hidden directories are not counted, nor are files git
     ignores, such as compiled views; a tracked file counts even when a
     `.gitignore` pattern matches it, and a project that is not a git
-    repository, or a machine without git, has nothing left out). The warning gives
+    repository, or a machine without git, has nothing left out). Only the
+    repository's own rules count (`.gitignore` files and `.git/info/exclude`),
+    not the user's global ignore file, and nothing is left out when git ignores
+    the project folder itself, as when an enclosing repository ignores it. The warning gives
     the count and, for the top-level folders holding the most of them, the
     deepest folder each one's files share (`database/migrations/`, `lang/`),
     so the user can decide what to pass to `--source`.

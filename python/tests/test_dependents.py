@@ -121,3 +121,16 @@ def test_text_shows_the_depth_when_transitive_and_root_files_go_first() -> None:
 
 def test_text_counts_one_dependent_in_the_singular() -> None:
     assert render_text(find(build(["a.py -> b.py"]), ["b.py"], False)).startswith("1 dependent of b.py\n")
+
+
+def test_ids_are_sorted_by_byte_value_even_when_they_look_numeric() -> None:
+    document = build(["9 -> t", "10 -> t", "1e1 -> t", "2 -> t"])
+    result = find(document, ["t"], False)
+    assert [item["id"] for item in result["dependents"]] == ["10", "1e1", "2", "9"]
+
+
+def test_only_internal_nodes_answer_to_a_symbol() -> None:
+    document = build(["a.py -> pypi:y"])
+    document.node("pypi:y")["symbols"] = ["vendor.y"]
+    with pytest.raises(ValueError, match='no node or symbol "vendor.y"'):
+        find(document, ["vendor.y"], False)
