@@ -158,10 +158,7 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
 
     pairs = _load(path, scanner, err)
 
-    selection = Filter()
-    for kind, glob in patterns:
-        selection.include(glob) if kind == "include" else selection.exclude(glob)
-    selected = selection.apply(pairs)
+    selected = _filter(patterns).apply(pairs)
     unmatched = clustering.unmatched(selected) if clustering is not None else []
     if unmatched:
         message = Clustering.describe_unmatched(unmatched)
@@ -200,14 +197,19 @@ def _dependents(
     if not targets:
         raise _Usage("dependents needs at least one file or symbol to look up")
     pairs = _load(first if has_source and first is not None else ".", scanner, err)
-    selection = Filter()
-    for kind, glob in patterns:
-        selection.include(glob) if kind == "include" else selection.exclude(glob)
     try:
-        document = dependents.find(pairs, targets, "transitive" in options, selection)
+        document = dependents.find(pairs, targets, "transitive" in options, _filter(patterns))
     except ValueError as error:
         raise _Failure(str(error)) from error
     return _write(encode(document) if output_format == "json" else dependents.render_text(document), output, out)
+
+
+def _filter(patterns: list[tuple[str, str]]) -> Filter:
+    """The --include / --exclude globs, in command-line order."""
+    selection = Filter()
+    for kind, glob in patterns:
+        selection.include(glob) if kind == "include" else selection.exclude(glob)
+    return selection
 
 
 def _load(path: str, scanner: Scanner, err: TextIO) -> PairsDocument:

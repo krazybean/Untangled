@@ -190,15 +190,7 @@ function run(args: string[], out: Writer, err: Writer): number {
 
   const pairs = loadPairs(path, scanOptions, err);
 
-  const filter = new Filter();
-  for (const [kind, glob] of patterns) {
-    if (kind === "include") {
-      filter.include(glob);
-    } else {
-      filter.exclude(glob);
-    }
-  }
-  const selected = filter.apply(pairs);
+  const selected = buildFilter(patterns).apply(pairs);
   const unmatched = clustering?.unmatched(selected) ?? [];
   if (unmatched.length > 0) {
     const message = describeUnmatched(unmatched);
@@ -239,6 +231,16 @@ function dependents(
     throw new Usage("dependents needs at least one file or symbol to look up");
   }
   const pairs = loadPairs(hasSource ? first : ".", scanOptions, err);
+  try {
+    const document = findDependents(pairs, targets, options.has("transitive"), buildFilter(patterns));
+    return write(format === "json" ? encode(document) : renderDependentsText(document));
+  } catch (error) {
+    throw error instanceof DependentsError ? new Failure(error.message) : error;
+  }
+}
+
+/** The --include / --exclude globs, in command-line order. */
+function buildFilter(patterns: ["include" | "exclude", string][]): Filter {
   const filter = new Filter();
   for (const [kind, glob] of patterns) {
     if (kind === "include") {
@@ -247,12 +249,7 @@ function dependents(
       filter.exclude(glob);
     }
   }
-  try {
-    const document = findDependents(pairs, targets, options.has("transitive"), filter);
-    return write(format === "json" ? encode(document) : renderDependentsText(document));
-  } catch (error) {
-    throw error instanceof DependentsError ? new Failure(error.message) : error;
-  }
+  return filter;
 }
 
 /** Reads a pairs document, or scans a project, and writes the warnings to standard error. */
