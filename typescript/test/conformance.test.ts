@@ -4,7 +4,8 @@
 // --aliases files in its typescript/aliases file, must produce its expected pairs document, every
 // expected analysis[.<strategy>].json, and every expected graph[.<strategy>].dot byte for byte.
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
@@ -24,8 +25,9 @@ const TYPESCRIPT_CASES = readdirSync(CASES)
   .filter((name) => existsSync(join(CASES, name, "typescript")))
   .sort();
 
+/** The non-empty lines of an optional file: one value per line, so a value may hold spaces. */
 function lines(file: string): string[] {
-  return existsSync(file) ? readFileSync(file, "utf8").split(/\s+/).filter(Boolean) : [];
+  return existsSync(file) ? readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean) : [];
 }
 
 function scanCase(name: string): ReturnType<typeof scan> {
@@ -72,6 +74,13 @@ function expectedFiles(name: string, pattern: RegExp): [string, string][] {
       return match ? [[file, match[1]!] as [string, string]] : [];
     });
 }
+
+test("lines keeps spaces and drops empty lines", () => {
+  const file = join(mkdtempSync(join(tmpdir(), "untangled-lines-")), "args");
+  writeFileSync(file, "--include=docs/a b/**\n\nsrc/My Folder/A.php\r\n");
+  expect(lines(file)).toEqual(["--include=docs/a b/**", "src/My Folder/A.php"]);
+  expect(lines(`${file}.missing`)).toEqual([]);
+});
 
 test("there are cases", () => {
   expect(TYPESCRIPT_CASES.length).toBeGreaterThanOrEqual(7);

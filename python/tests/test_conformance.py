@@ -28,10 +28,13 @@ DEPENDENTS = [(case, file) for case in PYTHON_CASES for file in sorted((case / "
 GRAPHS = [(case, file) for case in PYTHON_CASES for file in sorted((case / "expected").glob("graph*.dot"))]
 
 
+def lines(file: Path) -> list[str]:
+    """The non-empty lines of an optional file: one value per line, so a value may hold spaces."""
+    return [line for line in file.read_text(encoding="utf-8").splitlines() if line] if file.is_file() else []
+
+
 def scan(case: Path) -> PairsDocument:
-    sources_file = case / "sources"
-    sources = sources_file.read_text(encoding="utf-8").split() if sources_file.is_file() else []
-    return Scanner(sources=sources).scan(str(case / "project")).pairs
+    return Scanner(sources=lines(case / "sources")).scan(str(case / "project")).pairs
 
 
 def clustering(case: Path, suffix: str) -> Clustering | None:
@@ -62,6 +65,13 @@ def case_id(item: Any) -> str:
     if isinstance(item, Path) and item.name == "python":
         return item.parent.name
     return item.name if isinstance(item, Path) else str(item)
+
+
+def test_lines_keeps_spaces_and_drops_empty_lines(tmp_path: Path) -> None:
+    file = tmp_path / "args"
+    file.write_text("--include=docs/a b/**\n\nsrc/My Folder/A.php\r\n", encoding="utf-8")
+    assert lines(file) == ["--include=docs/a b/**", "src/My Folder/A.php"]
+    assert lines(tmp_path / "missing") == []
 
 
 def test_there_are_cases() -> None:
@@ -102,7 +112,7 @@ def test_analysis(case: Path, file: Path) -> None:
 def test_dependents(case: Path, file: Path) -> None:
     """Runs `dependents` on the case's expected pairs document with the arguments, one per line, of
     `dependents.<name>.args`. A .json expectation is compared as a document, a .txt one byte for byte."""
-    args = (case / f"{file.stem}.args").read_text(encoding="utf-8").split()
+    args = lines(case / f"{file.stem}.args")
     out, err = io.StringIO(), io.StringIO()
     assert main(["dependents", str(case / "expected" / "pairs.json"), *args], out, err) == 0, err.getvalue()
     if file.suffix == ".json":
