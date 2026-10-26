@@ -7,6 +7,9 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- `$this::X`, `$this::method()` and `$this::$prop` no longer record an
+  `unresolved:dynamic:$this` reference: `$this` is the enclosing class, like `static`.
+
 - The "not covered by autoload rules" warning leaves out only the files the repository's own
   rules ignore. The user's global git ignore file no longer hides files (the warning
   was missing on one machine and present in CI), and a project inside a folder that an
