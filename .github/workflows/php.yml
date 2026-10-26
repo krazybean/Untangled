@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        php: ['8.2', '8.3', '8.4']
+        php: ['8.2', '8.3', '8.4', '8.5']
         include:
           # The suite also runs on Windows (drive-letter paths, CRLF checkouts), on the newest PHP only.
           - { os: windows-latest, php: '8.4' }
