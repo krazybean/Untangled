@@ -7,6 +7,15 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+## 1.0.2
+
+- The "not covered by composer.json autoload rules" warning no longer counts
+  files git ignores (`.gitignore`, nested ones and `.git/info/exclude`), such
+  as a Laravel app's compiled views in `storage/framework/views/`, which
+  buried the folders that might deserve `--source`. A tracked file still counts,
+  and nothing changes when the project is not a git repository or git is not
+  installed.
+
 - `$this::X`, `$this::method()` and `$this::$prop` no longer record an
   `unresolved:dynamic:$this` reference: `$this` is the enclosing class, like `static`.
 
@@ -23,15 +32,6 @@ document and the command-line options are the public interface.
   or `D:\app\...` from `__DIR__`) was taken for a relative path, so includes of files
   inside the project came out as `unresolved:include:D:/...`. Drive letters are now
   recognised as absolute, and written in upper case so `d:` and `D:` agree.
-
-## 1.0.2
-
-- The "not covered by composer.json autoload rules" warning no longer counts
-  files git ignores (`.gitignore`, nested ones and `.git/info/exclude`), such
-  as a Laravel app's compiled views in `storage/framework/views/`, which
-  buried the folders that might deserve `--source`. A tracked file still counts,
-  and nothing changes when the project is not a git repository or git is not
-  installed.
 
 - New `dependents` command: lists the files that depend on one or more files
   (or declared symbols), directly or with `--transitive` through other files,
