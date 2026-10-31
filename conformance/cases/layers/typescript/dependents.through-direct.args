@@ -1,0 +1,3 @@
+--through=src/domain/**
+--format=json
+src/domain/user.ts

@@ -1,0 +1,30 @@
+{
+  "format": "untangled-dependents",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-typescript",
+    "version": "1.0.2"
+  },
+  "transitive": true,
+  "targets": [
+    {
+      "target": "src/domain/order.ts",
+      "nodes": [
+        "src/domain/order.ts"
+      ]
+    },
+    {
+      "target": "src/http/router.ts",
+      "nodes": [
+        "src/http/router.ts"
+      ]
+    }
+  ],
+  "dependents": [
+    {
+      "id": "src/http/user-controller.ts",
+      "depth": 1
+    }
+  ]
+}

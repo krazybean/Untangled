@@ -34,7 +34,8 @@ untangled analyze [<path>|<pairs.json>]  [scan options] [filter options] [--outp
 untangled report  [<path>|<pairs.json>]  [scan options] [filter options]
                                          [--format=html|dot] [--style=classic] [--title=<text>] [--output=<file>]
 untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [scan options] [--include/--exclude ...]
-                                         [--transitive] [--format=text|json] [--output=<file>]
+                                         [--transitive] [--max-depth=<n>] [--through=<glob>]...
+                                         [--format=text|json] [--output=<file>]
 ```
 
 `analyze` scans first and `report` scans and analyzes first. Both also read a
@@ -113,6 +114,26 @@ The first argument is the source when it is a folder or a `.json` file; any
 other argument is a target, and the source is the current folder. A target
 that matches nothing exits with code 1.
 
+To choose the tests to run after a change, limit the walk instead of the list.
+`--max-depth=N` (with `--transitive`) stops after N steps from the targets, and
+`--through=<glob>` (repeatable, any match counts) only walks into files that
+match, so nothing is found by way of other files:
+
+```sh
+# tests that use the file, or reach it only through other tests (helpers, builders, base classes)
+untangled dependents /path/to/project src/billing/tax.ts --transitive --through='tests/**'
+# application code that reaches it, not through tests
+untangled dependents /path/to/project src/billing/tax.ts --transitive --through='src/**'
+# tests of the files that use it directly
+untangled dependents /path/to/project src/billing/tax.ts --transitive --max-depth=2 --exclude='**' --include='tests/**'
+```
+
+A file that `--through` leaves out is never listed, even when it uses a target
+directly, and it is not walked through. `--include` and `--exclude` still only
+filter the list afterwards, and `--max-depth` without `--transitive` is a usage
+error (exit code 2). A target can also be an absolute path inside the project,
+or a path with `./` or `\` separators.
+
 ### report
 
 Writes one self-contained HTML page for people who do not read code: a
@@ -146,9 +167,12 @@ thousands of files take `dot` minutes and come out too small to read.
 | `--title=<text>` | `report` only: the title. Defaults to the `name` in `package.json`, else the folder name |
 | `--cluster=<strategy>` | `analyze`, `report`: group files into units. `folder:N` keeps the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines, where the first matching path prefix wins. JavaScript has no namespaces, so `namespace:N` is the same as `folder:N`. See [clustering](https://github.com/krazybean/Untangled/blob/main/spec/clustering.md) |
 | `--transitive` | `dependents`: also list the files that depend on a dependent, with their depth |
+| `--max-depth=N` | `dependents`: with `--transitive`, stop after N steps from the targets (a positive integer) |
+| `--through=GLOB` | `dependents`: only walk into files matching GLOB; nothing is found by way of other files (repeatable, any match counts) |
 | `--strict` | `analyze`, `report`: with `rules:<file>`, exit 1 instead of warning when a file matches no rule (a file no rule matches is its own unit, and the warning names it) |
 | `--include=<glob>`, `--exclude=<glob>` | `analyze`, `report`: keep or drop project files by path (repeatable, the last matching pattern wins). `*` stays within a folder, `**` crosses folders |
 | `--output=<file>` | Write to a file instead of standard output |
+| `--diagnostics=<format>` | How warnings and errors are written to standard error: `text` (default), or `json`, one object per line. See [Diagnostics for programs](#diagnostics-for-programs) |
 
 Warnings (files that do not parse, skipped build output, imports of non-code
 files, packages that could not be found because `node_modules/` is missing,
@@ -159,6 +183,37 @@ code. A file that does not parse is still in the pairs document, marked
 Exit codes: 0 on success, 1 when the project, a pairs document or a rules
 file cannot be read, an output cannot be written, or `--strict` finds a file
 no rule matches, 2 for a usage error.
+
+### Diagnostics for programs
+
+Everything the commands have to say about a project goes to standard error;
+standard output holds only the result. By default that is text, one
+`warning: ...` or `error: ...` line each. `--diagnostics=json` writes one JSON
+object per line instead, with a stable `code` to branch on, so a CI job or an
+agent never has to read the wording of a message:
+
+```sh
+untangled scan /path/to/project --diagnostics=json --output=pairs.json 2> diagnostics.jsonl
+jq -r 'select(.code == "uncovered-files") | .files[]' diagnostics.jsonl
+```
+
+```json
+{"level":"warning","code":"file-unparseable","message":"bad.ts: cannot parse: ...","files":["bad.ts"]}
+```
+
+`level` is `warning` or `error` (the reason a command stopped, with exit code
+1), `code` names the condition, `message` is for people, and `files` lists the
+project-relative paths it is about when there are any. The exit code and the
+standard output do not change. The codes are listed in the
+[diagnostics specification](https://github.com/krazybean/Untangled/blob/main/spec/diagnostics.md),
+which also says how to read the lines. `--diagnostics=github` (annotations for
+GitHub Actions) is not supported yet; a formatter can be built on the JSON
+lines. A usage error (exit code 2) is always text.
+
+From TypeScript, `scan()` returns `{ pairs, diagnostics, warnings }`: `diagnostics` are
+`Diagnostic` objects (`level`, `code`, `message`, `files?`; `encodeDiagnostic()` writes one
+line), and the older `warnings` list of strings is kept.
+
 
 ### Not in this version
 

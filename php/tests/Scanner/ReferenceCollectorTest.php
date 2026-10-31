@@ -63,6 +63,8 @@ final class ReferenceCollectorTest extends CollectorTestCase
             'static dynamic $class',
             'instanceof dynamic $y',
         ]];
+        yield '$this names the enclosing class, not a dynamic one' => ['namespace App; class A { function f() { $this::X; $this::make(); $this::$p; $this instanceof Foo; } }', ['instanceof class App\\Foo']];
+        yield 'a property of $this still can hold a class name' => ['namespace App; $this->model::query();', ['static dynamic $this->model']];
         yield 'dynamic class constants and properties' => ['namespace App; $c::CONST; $c::$prop;', ['static dynamic $c', 'static dynamic $c']];
         yield 'dynamic class from an expression' => ['namespace App; new ($factory())(1);', ['new dynamic $factory()']];
         yield 'dynamic source text collapses whitespace' => ["namespace App; new (\$a\n    ->b())();", ['new dynamic $a ->b()']];

@@ -1,0 +1,6 @@
+--transitive
+--through=src/app/domain/**
+--through=src/app/http/**
+--max-depth=2
+--format=json
+src/app/domain/user.py

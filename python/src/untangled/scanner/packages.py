@@ -9,6 +9,8 @@ import re
 from email.parser import HeaderParser
 from typing import Any
 
+from untangled.diagnostics import Diagnostic
+
 _REQUIREMENT_NAME = re.compile(r"\s*([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)")
 _NATIVE_SUFFIXES = (".so", ".pyd")
 
@@ -40,7 +42,16 @@ class PackageIndex:
         return None
 
     @classmethod
-    def load(cls, root: str, venvs: list[str], pyproject: dict[str, Any], warnings: list[str]) -> "PackageIndex":
+    def load(
+        cls,
+        root: str,
+        venvs: list[str],
+        pyproject: dict[str, Any],
+        warnings: list[str] | None = None,
+        diagnostics: list[Diagnostic] | None = None,
+    ) -> "PackageIndex":
+        """Reads the installed packages of the virtualenvs. Problems are appended to `warnings` as text and to
+        `diagnostics` as data, whichever are given."""
         installed: dict[str, set[str]] = {}
         for venv in venvs:
             folder = os.path.join(root, venv)
@@ -49,7 +60,11 @@ class PackageIndex:
                 + glob.glob(os.path.join(glob.escape(folder), "Lib", "site-packages"))
             )
             if not site_packages:
-                warnings.append(f"{venv}: a virtualenv without a site-packages folder; its packages are not read")
+                message = f"{venv}: a virtualenv without a site-packages folder; its packages are not read"
+                if warnings is not None:
+                    warnings.append(message)
+                if diagnostics is not None:
+                    diagnostics.append(Diagnostic.warning("venv-without-site-packages", message, [venv]))
             for packages in site_packages:
                 _read_site_packages(packages, installed)
         return cls(installed, _declared(root, pyproject))

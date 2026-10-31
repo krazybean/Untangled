@@ -7,6 +7,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from untangled import version
+from untangled.diagnostics import Diagnostic
 
 INTERNAL = "internal"
 EXTERNAL = "external"
@@ -44,7 +45,9 @@ class PairsDocument:
         self._edges[(source, target)] = (merged, total + count)
 
     @classmethod
-    def from_dict(cls, data: Any, warnings: list[str] | None = None) -> "PairsDocument":
+    def from_dict(
+        cls, data: Any, warnings: list[str] | None = None, diagnostics: list[Diagnostic] | None = None
+    ) -> "PairsDocument":
         """Reads a pairs document, such as one written by `untangled scan` or by another library.
         A document with an unknown minor version is read with a warning."""
         if not isinstance(data, dict) or data.get("format") != "untangled-pairs":
@@ -54,8 +57,12 @@ class PairsDocument:
         known_major, _, known_minor = version.SPEC.partition(".")
         if major != known_major:
             raise DocumentError(f'unsupported pairs document version "{found}" (this library reads {version.SPEC})')
-        if minor != known_minor and warnings is not None:
-            warnings.append(f"pairs document version {found} is newer or older than {version.SPEC}; reading it anyway")
+        if minor != known_minor:
+            message = f"pairs document version {found} is newer or older than {version.SPEC}; reading it anyway"
+            if warnings is not None:
+                warnings.append(message)
+            if diagnostics is not None:
+                diagnostics.append(Diagnostic.warning("document-version", message))
         language, nodes, edges = data.get("language"), data.get("nodes"), data.get("edges")
         if not isinstance(language, str) or not isinstance(nodes, list) or not isinstance(edges, list):
             raise DocumentError('pairs document needs "language", "nodes" and "edges"')

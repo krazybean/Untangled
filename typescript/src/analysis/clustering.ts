@@ -3,6 +3,7 @@
 // step that applies it: one node per cluster, edges merged per (cluster, target), and edges
 // inside a cluster dropped.
 
+import { errorDiagnostic, warningDiagnostic, type Diagnostic } from "../diagnostics.js";
 import { CLUSTER, INTERNAL, PairsDocument, type Node } from "../graph.js";
 import { sortText } from "../text.js";
 
@@ -73,10 +74,15 @@ export class Clustering {
     return this.strategy === "rules" ? "rules" : `${this.strategy}:${this.depth}`;
   }
 
+  /** The cluster of the first rule whose prefix starts the id, or undefined when none does. */
+  private ruleFor(id: string): string | undefined {
+    return this.rules.find((rule) => id.startsWith(rule.prefix))?.cluster;
+  }
+
   clusterOf(node: Node): string {
     const id = node.id;
     if (this.strategy === "rules") {
-      return this.rules.find((rule) => id.startsWith(rule.prefix))?.cluster ?? id;
+      return this.ruleFor(id) ?? id;
     }
     if (this.strategy === "namespace" && typeof node.module === "string" && node.module !== "") {
       // Segments are separated by `\` (PHP namespaces) or `.` (Python modules); the separators
@@ -102,7 +108,7 @@ export class Clustering {
     return sortText(
       files
         .nodes()
-        .filter((node) => node.kind === INTERNAL && !this.rules.some((rule) => node.id.startsWith(rule.prefix)))
+        .filter((node) => node.kind === INTERNAL && this.ruleFor(node.id) === undefined)
         .map((node) => node.id),
     );
   }
@@ -147,6 +153,12 @@ export class Clustering {
 
 /** How many unmatched nodes the warning names. */
 const NAMED_UNMATCHED = 5;
+
+/** The diagnostic for unmatched nodes: a warning, or an error with --strict. */
+export function unmatchedDiagnostic(unmatched: string[], strict: boolean): Diagnostic {
+  const message = describeUnmatched(unmatched);
+  return strict ? errorDiagnostic("unmatched-rules", message, unmatched) : warningDiagnostic("unmatched-rules", message, unmatched);
+}
 
 /** The sentence for the warning, or the error with --strict, about unmatched nodes: the first few are named. */
 export function describeUnmatched(unmatched: string[]): string {

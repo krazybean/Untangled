@@ -5,6 +5,8 @@ namespace App;
 
 final class Loader
 {
+    private const LABEL = 'loader';
+
     public function create(string $class): Plugin
     {
         return new $class();
@@ -19,6 +21,7 @@ final class Loader
     {
         $class::boot();
         $version = $class::VERSION;
+        $own = $this::class . $this::LABEL;
         return $subject instanceof $class && $subject::class !== Plugin::class;
     }
 }

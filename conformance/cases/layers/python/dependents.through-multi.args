@@ -1,0 +1,5 @@
+--transitive
+--through=src/app/domain/**
+--through=src/app/http/**
+--format=json
+src/app/domain/user.py

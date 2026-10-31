@@ -172,11 +172,16 @@ final class ReferenceCollector extends NodeVisitorAbstract
         $this->references[] = ['symbol' => FileResult::CLASS_SYMBOL, 'candidates' => [$resolved], 'kind' => $kind];
     }
 
-    /** A class named in code: a Name is resolved, an expression becomes a dynamic reference. */
+    /**
+     * A class named in code: a Name is resolved, an expression becomes a dynamic reference.
+     * `$this::X` is the enclosing class, like `static::X`, so it names nothing to resolve.
+     */
     private function addClassExpr(Node $class, string $kind): void
     {
         if ($class instanceof Name) {
             $this->addClass($class, $kind);
+        } elseif ($class instanceof Expr\Variable && $class->name === 'this') {
+            return;
         } elseif ($class instanceof Expr) {
             $this->references[] = ['symbol' => FileResult::DYNAMIC_SYMBOL, 'candidates' => [$this->sourceText($class)], 'kind' => $kind];
         }

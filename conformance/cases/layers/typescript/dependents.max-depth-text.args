@@ -1,0 +1,3 @@
+--transitive
+--max-depth=2
+src/domain/user.ts

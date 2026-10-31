@@ -6,9 +6,10 @@ import { readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
 import { AnalysisError, analyze } from "./analysis/analyzer.js";
-import { Clustering, describeUnmatched } from "./analysis/clustering.js";
+import { Clustering, unmatchedDiagnostic } from "./analysis/clustering.js";
 import { DependentsError, findDependents, renderDependentsText } from "./analysis/dependents.js";
 import { Filter } from "./analysis/filter.js";
+import { diagnosticText, encodeDiagnostic, errorDiagnostic, type Diagnostic } from "./diagnostics.js";
 import { DocumentError, encode, PairsDocument } from "./graph.js";
 import { renderDot, STYLES } from "./report/dot.js";
 import { renderHtml } from "./report/html.js";
@@ -26,7 +27,10 @@ Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--aliases=<file.jso
        untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                          [--title=<text>] [analyze options]
        untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [--transitive]
+                            [--max-depth=<n>] [--through=<glob>]...
                             [--format=text|json] [analyze options]
+
+Every command also takes --diagnostics=text|json.
 
 Commands:
   scan       Write the dependency pairs of a JavaScript/TypeScript project (default path: .)
@@ -46,6 +50,9 @@ Options:
                      report: html (default) or dot
                      dependents: text (default) or json
   --transitive       dependents: also the files that depend on a dependent, with their depth
+  --max-depth=N      dependents: with --transitive, stop after N steps from the targets
+  --through=GLOB     dependents: only walk into files matching GLOB (repeatable, any match counts),
+                     so nothing is found by way of other files
   --style=STYLE      report --format=dot only: default, or classic for snakefood's
                      black and white sfood-graph look
   --title=TEXT       report only: the report's title (default: the name in package.json)
@@ -53,49 +60,74 @@ Options:
                      (JavaScript has no namespaces, so namespace:N groups by folder)
   --strict           analyze, report: with rules:<file>, exit 1 instead of warning when a
                      file matches no rule
-  --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
-  --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
+  --include=GLOB     analyze, report, dependents: keep files matching GLOB (repeatable, last match wins)
+  --exclude=GLOB     analyze, report, dependents: drop files matching GLOB (repeatable, last match wins)
   --output=FILE      Write to FILE instead of standard output
+  --diagnostics=FMT  How warnings and errors are written to standard error: text (default),
+                     or json, one object per line with level, code, message and files
   -h, --help         Show this help
   -V, --version      Show the version
 `;
 
-const SCAN = ["dev", "source", "aliases"];
+const SCAN = ["dev", "source", "aliases", "diagnostics"];
 const COMMANDS: Record<string, Set<string>> = {
   scan: new Set([...SCAN, "format", "output"]),
   analyze: new Set([...SCAN, "cluster", "strict", "include", "exclude", "output"]),
   report: new Set([...SCAN, "cluster", "strict", "include", "exclude", "output", "format", "style", "title"]),
-  dependents: new Set([...SCAN, "transitive", "include", "exclude", "output", "format"]),
+  dependents: new Set([...SCAN, "transitive", "max-depth", "through", "include", "exclude", "output", "format"]),
 };
-const REPEATABLE = new Set(["source", "aliases"]);
+const REPEATABLE = new Set(["source", "aliases", "through"]);
 
 export interface Writer {
   write(text: string): unknown;
 }
 
 class Usage extends Error {}
-class Failure extends Error {}
+
+/** An error reading or writing: exit code 1. `code` is its diagnostic code (spec/diagnostics.md). */
+class Failure extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** Writes diagnostics to standard error as text lines or as JSON Lines (--diagnostics). */
+class Reporter {
+  mode: "text" | "json" = "text";
+
+  constructor(private readonly err: Writer) {}
+
+  report(diagnostics: Diagnostic[]): void {
+    for (const item of diagnostics) {
+      this.err.write(`${this.mode === "json" ? encodeDiagnostic(item) : diagnosticText(item)}\n`);
+    }
+  }
+}
 
 export function main(argv: string[], out: Writer = process.stdout, err: Writer = process.stderr): number {
+  const reporter = new Reporter(err);
   try {
-    return run(argv, out, err);
+    return run(argv, out, reporter);
   } catch (error) {
     if (error instanceof Usage) {
       err.write(`${error.message}\n`);
       return 2;
     }
     if (error instanceof Failure) {
-      err.write(`error: ${error.message}\n`);
+      reporter.report([errorDiagnostic(error.code, error.message)]);
       return 1;
     }
     throw error;
   }
 }
 
-function run(args: string[], out: Writer, err: Writer): number {
+function run(args: string[], out: Writer, reporter: Reporter): number {
   const positional: string[] = [];
   const options = new Map<string, string | true>();
-  const repeated: Record<string, string[]> = { source: [], aliases: [] };
+  const repeated: Record<string, string[]> = { source: [], aliases: [], through: [] };
   // Order matters for these, so they are kept as a list rather than by name.
   const patterns: ["include" | "exclude", string][] = [];
   for (const arg of args) {
@@ -141,6 +173,11 @@ function run(args: string[], out: Writer, err: Writer): number {
       throw new Usage(`Option --${name} needs a value, as in --${name}=...`);
     }
   }
+  const diagnosticsFormat = options.get("diagnostics") ?? "text";
+  if (diagnosticsFormat !== "text" && diagnosticsFormat !== "json") {
+    throw new Usage(`Unknown diagnostics format: ${String(diagnosticsFormat)} (use text or json)`);
+  }
+  reporter.mode = diagnosticsFormat;
 
   const path = positional[0] ?? ".";
   const scanOptions: ScanOptions = { dev: options.has("dev"), sources: repeated.source!, aliases: repeated.aliases! };
@@ -153,7 +190,7 @@ function run(args: string[], out: Writer, err: Writer): number {
     try {
       writeFileSync(output, text, "utf8");
     } catch {
-      throw new Failure(`cannot write ${output}`);
+      throw new Failure("output-unwritable", `cannot write ${output}`);
     }
     return 0;
   };
@@ -163,12 +200,12 @@ function run(args: string[], out: Writer, err: Writer): number {
     if (format !== "json" && format !== "snakefood") {
       throw new Usage(`Unknown format: ${String(format)}`);
     }
-    const pairs = scanProject(path, scanOptions, err);
+    const pairs = scanProject(path, scanOptions, reporter);
     return write(format === "json" ? pairs.toJson() : pairs.toSnakefood(path));
   }
 
   if (command === "dependents") {
-    return dependents(positional, options, patterns, scanOptions, write, err);
+    return dependents(positional, options, patterns, repeated.through!, scanOptions, write, reporter);
   }
 
   const format = options.get("format") ?? "html";
@@ -188,24 +225,15 @@ function run(args: string[], out: Writer, err: Writer): number {
   }
   const clustering = parseClustering(strategy);
 
-  const pairs = loadPairs(path, scanOptions, err);
+  const pairs = loadPairs(path, scanOptions, reporter);
 
-  const filter = new Filter();
-  for (const [kind, glob] of patterns) {
-    if (kind === "include") {
-      filter.include(glob);
-    } else {
-      filter.exclude(glob);
-    }
-  }
-  const selected = filter.apply(pairs);
+  const selected = buildFilter(patterns).apply(pairs);
   const unmatched = clustering?.unmatched(selected) ?? [];
   if (unmatched.length > 0) {
-    const message = describeUnmatched(unmatched);
+    reporter.report([unmatchedDiagnostic(unmatched, options.has("strict"))]);
     if (options.has("strict")) {
-      throw new Failure(message);
+      return 1;
     }
-    err.write(`warning: ${message}\n`);
   }
   try {
     if (command === "analyze") {
@@ -215,7 +243,7 @@ function run(args: string[], out: Writer, err: Writer): number {
     const report = Report.build(typeof title === "string" ? title : defaultTitle(path), selected, clustering);
     return write(format === "dot" ? renderDot(report, style) : renderHtml(report));
   } catch (error) {
-    throw error instanceof AnalysisError ? new Failure(error.message) : error;
+    throw error instanceof AnalysisError ? new Failure("document-clustered", error.message) : error;
   }
 }
 
@@ -224,13 +252,26 @@ function dependents(
   positional: string[],
   options: Map<string, string | true>,
   patterns: ["include" | "exclude", string][],
+  through: string[],
   scanOptions: ScanOptions,
   write: (text: string) => number,
-  err: Writer,
+  reporter: Reporter,
 ): number {
   const format = options.get("format") ?? "text";
   if (format !== "text" && format !== "json") {
     throw new Usage(`Unknown format: ${String(format)}`);
+  }
+  let maxDepth: number | undefined;
+  const given = options.get("max-depth");
+  if (given !== undefined) {
+    if (typeof given !== "string" || !/^[1-9][0-9]*$/.test(given)) {
+      throw new Usage(`Option --max-depth needs a positive integer, as in --max-depth=2 (got "${String(given)}")`);
+    }
+    if (!options.has("transitive")) {
+      throw new Usage("--max-depth only applies with --transitive");
+    }
+    // More than 9 digits is deeper than any graph, so it is the same as no limit.
+    maxDepth = given.length > 9 ? 999999999 : Number(given);
   }
   const first = positional[0];
   const hasSource = first !== undefined && (isDirectory(first) || (isFile(first) && first.toLowerCase().endsWith(".json")));
@@ -238,7 +279,19 @@ function dependents(
   if (targets.length === 0) {
     throw new Usage("dependents needs at least one file or symbol to look up");
   }
-  const pairs = loadPairs(hasSource ? first : ".", scanOptions, err);
+  const pairs = loadPairs(hasSource ? first : ".", scanOptions, reporter);
+  // Absolute paths are relative to the project when the source is one, else to the current folder.
+  const root = resolve(hasSource && isDirectory(first) ? first : ".");
+  try {
+    const document = findDependents(pairs, targets, options.has("transitive"), buildFilter(patterns), { through, maxDepth, root });
+    return write(format === "json" ? encode(document) : renderDependentsText(document));
+  } catch (error) {
+    throw error instanceof DependentsError ? new Failure(error.code, error.message) : error;
+  }
+}
+
+/** The --include / --exclude globs, in command-line order. */
+function buildFilter(patterns: ["include" | "exclude", string][]): Filter {
   const filter = new Filter();
   for (const [kind, glob] of patterns) {
     if (kind === "include") {
@@ -247,48 +300,41 @@ function dependents(
       filter.exclude(glob);
     }
   }
-  try {
-    const document = findDependents(pairs, targets, options.has("transitive"), filter);
-    return write(format === "json" ? encode(document) : renderDependentsText(document));
-  } catch (error) {
-    throw error instanceof DependentsError ? new Failure(error.message) : error;
-  }
+  return filter;
 }
 
-/** Reads a pairs document, or scans a project, and writes the warnings to standard error. */
-function loadPairs(path: string, options: ScanOptions, err: Writer): PairsDocument {
+/** Reads a pairs document, or scans a project, and writes the diagnostics to standard error. */
+function loadPairs(path: string, options: ScanOptions, reporter: Reporter): PairsDocument {
   if (!isFile(path)) {
-    return scanProject(path, options, err);
+    return scanProject(path, options, reporter);
   }
-  const warnings: string[] = [];
+  const diagnostics: Diagnostic[] = [];
   let data: unknown;
   try {
     data = JSON.parse(decode(readFileSync(path)));
   } catch (error) {
-    throw new Failure(error instanceof SyntaxError ? `${path} is not valid JSON: ${error.message}` : `cannot read ${path}`);
+    throw error instanceof SyntaxError
+      ? new Failure("document-invalid", `${path} is not valid JSON: ${error.message}`)
+      : new Failure("document-unreadable", `cannot read ${path}`);
   }
   let pairs: PairsDocument;
   try {
-    pairs = PairsDocument.fromObject(data, warnings);
+    pairs = PairsDocument.fromObject(data, [], diagnostics);
   } catch (error) {
-    throw error instanceof DocumentError ? new Failure(error.message) : error;
+    throw error instanceof DocumentError ? new Failure("document-invalid", error.message) : error;
   }
-  for (const warning of warnings) {
-    err.write(`warning: ${warning}\n`);
-  }
+  reporter.report(diagnostics);
   return pairs;
 }
 
-function scanProject(path: string, options: ScanOptions, err: Writer): PairsDocument {
+function scanProject(path: string, options: ScanOptions, reporter: Reporter): PairsDocument {
   let result;
   try {
     result = scan(path, options);
   } catch (error) {
-    throw error instanceof ProjectError ? new Failure(error.message) : error;
+    throw error instanceof ProjectError ? new Failure("project-unreadable", error.message) : error;
   }
-  for (const warning of result.warnings) {
-    err.write(`warning: ${warning}\n`);
-  }
+  reporter.report(result.diagnostics);
   return result.pairs;
 }
 
@@ -302,7 +348,7 @@ function parseClustering(strategy: string | true | undefined): Clustering | unde
     try {
       text = decode(readFileSync(file));
     } catch {
-      throw new Failure(`cannot read rules file ${file}`);
+      throw new Failure("rules-file-unreadable", `cannot read rules file ${file}`);
     }
     try {
       return Clustering.parseRules(text);

@@ -8,6 +8,7 @@ import platform
 from collections import deque
 from dataclasses import dataclass, field
 
+from untangled.diagnostics import WARNING, Diagnostic
 from untangled.graph import BUILTIN, EXTERNAL, INTERNAL, UNRESOLVED, PairsDocument
 from untangled.scanner import imports
 from untangled.scanner.packages import PackageIndex
@@ -24,6 +25,14 @@ _NAMESPACE = object()
 class ScanResult:
     pairs: PairsDocument
     warnings: list[str] = field(default_factory=list)
+    """Problems that did not stop the scan, as text."""
+    diagnostics: list[Diagnostic] = field(default_factory=list)
+    """The same problems as data (spec/diagnostics.md); a result built from strings can leave it empty."""
+
+    @classmethod
+    def from_diagnostics(cls, pairs: PairsDocument, diagnostics: list[Diagnostic]) -> "ScanResult":
+        """A result whose warnings are the messages of the warning diagnostics, in order."""
+        return cls(pairs, [item.message for item in diagnostics if item.level == WARNING], diagnostics)
 
 
 NOTHING_SCANNED = (
@@ -40,18 +49,19 @@ class Scanner:
 
     def scan(self, path: str) -> ScanResult:
         project = Project.load(path, self.sources)
-        warnings = list(project.warnings)
+        diagnostics = list(project.diagnostics)
         venvs = project.venvs if self.venvs is None else self.venvs
         for venv in self.venvs or []:
             if not os.path.isdir(os.path.join(project.root, venv)):
-                warnings.append(f"--venv={venv}: no such folder")
+                diagnostics.append(Diagnostic.warning("venv-not-found", f"--venv={venv}: no such folder", [venv]))
         existing = [venv for venv in venvs if os.path.isdir(os.path.join(project.root, venv))]
-        packages = PackageIndex.load(project.root, existing, project.pyproject, warnings)
+        packages = PackageIndex.load(project.root, existing, project.pyproject, diagnostics=diagnostics)
         resolver = _Resolver(project, packages)
 
         # Scan the default files, then any test file a scanned file imports.
         results: dict[str, imports.FileImports] = {}
         partial: list[str] = []
+        partial_files: list[str] = []
         targets: dict[str, list[tuple[str, list[str]]]] = {}
         queue = deque(file for file in project.files if self.dev or file not in project.tests)
         while queue:
@@ -65,9 +75,11 @@ class Scanner:
                 result = imports.FileImports(error=f"cannot read it: {error.strerror}", unread="read")
             results[file] = result
             if result.error is not None:
-                warnings.append(f"{file}: {result.error}")
+                code = "file-unreadable" if result.unread == "read" else "file-unparseable"
+                diagnostics.append(Diagnostic.warning(code, f"{file}: {result.error}", [file]))
             elif result.partial is not None:
                 partial.append(f"{file}: {result.partial}")
+                partial_files.append(file)
             targets[file] = []
             for item in result.imports:
                 for target in resolver.resolve(file, item):
@@ -79,7 +91,7 @@ class Scanner:
                         queue.append(target)
 
         if not results:
-            warnings.append(NOTHING_SCANNED)
+            diagnostics.append(Diagnostic.warning("nothing-scanned", NOTHING_SCANNED))
         pairs = PairsDocument("python")
         for file in sorted(results):
             name = project.module_name(file)
@@ -101,11 +113,15 @@ class Scanner:
         if partial:
             # Usually code for a newer Python: one warning, not one per file.
             files = "; ".join(partial[:3]) + (f"; and {len(partial) - 3} more" if len(partial) > 3 else "")
-            warnings.append(
-                f"{len(partial)} file{'s' if len(partial) > 1 else ''} could not be parsed whole by Python"
-                f" {platform.python_version()}, so their imports were read statement by statement, which misses"
-                f" imports inside statements that do not parse (usually syntax from a newer Python; run Untangled"
-                f" with the Python the project targets for a complete scan): {files}"
+            diagnostics.append(
+                Diagnostic.warning(
+                    "file-partially-parsed",
+                    f"{len(partial)} file{'s' if len(partial) > 1 else ''} could not be parsed whole by Python"
+                    f" {platform.python_version()}, so their imports were read statement by statement, which misses"
+                    f" imports inside statements that do not parse (usually syntax from a newer Python; run Untangled"
+                    f" with the Python the project targets for a complete scan): {files}",
+                    partial_files,
+                )
             )
 
         outside = sorted(
@@ -113,12 +129,15 @@ class Scanner:
         )
         if not venvs and outside:
             named = ", ".join(outside[:5]) + (f" and {len(outside) - 5} more" if len(outside) > 5 else "")
-            warnings.append(
-                f"no virtualenv found (a folder with pyvenv.cfg, or --venv=<path>), so imports of {named} could only be"
-                " matched against declared dependencies by name, and show as unresolved; create the project's"
-                " virtualenv first for a complete picture"
+            diagnostics.append(
+                Diagnostic.warning(
+                    "package-list-missing",
+                    f"no virtualenv found (a folder with pyvenv.cfg, or --venv=<path>), so imports of {named} could"
+                    " only be matched against declared dependencies by name, and show as unresolved; create the"
+                    " project's virtualenv first for a complete picture",
+                )
             )
-        return ScanResult(pairs, warnings)
+        return ScanResult.from_diagnostics(pairs, diagnostics)
 
 
 class _Resolver:

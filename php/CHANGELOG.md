@@ -7,10 +7,28 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
-- Fixed on Windows: an include with a drive-letter path (`D:/app/vendor/autoload.php`,
-  or `D:\app\...` from `__DIR__`) was taken for a relative path, so includes of files
-  inside the project came out as `unresolved:include:D:/...`. Drive letters are now
-  recognised as absolute, and written in upper case so `d:` and `D:` agree.
+- `--diagnostics=json` writes every warning and error as one JSON object per line on
+  standard error (`level`, `code`, `message`, and `files` when there are any), so CI and
+  agents do not have to read message text. Text stays the default and is unchanged.
+  Every command takes it; standard output, exit codes and the pairs and analysis
+  documents are as before. The codes and the encoding are in spec/diagnostics.md;
+  `--diagnostics=github` is not supported yet.
+
+- `ScanResult::$diagnostics` holds the scan's `Diagnostic` objects. `ScanResult::$warnings`
+  is kept: it is the message of each warning diagnostic. `new ScanResult($pairs, $warnings)`
+  works as before, with `$diagnostics` an optional third argument. `PairsDocument::fromArray()` takes
+  a `$diagnostics` list after `$warnings`. `DependentsException` (a subclass of
+  `InvalidArgumentException`) carries the code of a failed `dependents` query.
+
+- `dependents --max-depth=N` (with `--transitive`) stops the walk after N steps from the
+  targets, and `--through=<glob>` (repeatable) only walks into files that match, so a
+  test that reaches a target only through application code is not found by way of it.
+  `--include` and `--exclude` still filter the list afterwards. `--max-depth` without
+  `--transitive`, or not a positive integer, is a usage error. See spec/dependents.md.
+
+- `dependents` accepts a class name with a leading backslash (`\App\Billing\Tax`),
+  an absolute path inside the project, and a path written with `./` or `\`. An absolute
+  path outside the project is an error rather than a lookup that finds nothing.
 
 ## 1.0.2
 
@@ -20,6 +38,23 @@ document and the command-line options are the public interface.
   buried the folders that might deserve `--source`. A tracked file still counts,
   and nothing changes when the project is not a git repository or git is not
   installed.
+
+- `$this::X`, `$this::method()` and `$this::$prop` no longer record an
+  `unresolved:dynamic:$this` reference: `$this` is the enclosing class, like `static`.
+
+- The "not covered by autoload rules" warning leaves out only the files the repository's own
+  rules ignore. The user's global git ignore file no longer hides files (the warning
+  was missing on one machine and present in CI), and a project inside a folder that an
+  enclosing repository ignores warns as it does elsewhere.
+
+- `dependents` now agrees with the spec and the other libraries: dependents are sorted
+  by byte value (`10` before `9`, where PHP's `<=>` put `9` first), and a symbol target
+  matches only internal nodes.
+
+- Fixed on Windows: an include with a drive-letter path (`D:/app/vendor/autoload.php`,
+  or `D:\app\...` from `__DIR__`) was taken for a relative path, so includes of files
+  inside the project came out as `unresolved:include:D:/...`. Drive letters are now
+  recognised as absolute, and written in upper case so `d:` and `D:` agree.
 
 - New `dependents` command: lists the files that depend on one or more files
   (or declared symbols), directly or with `--transitive` through other files,

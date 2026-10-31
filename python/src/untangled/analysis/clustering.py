@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from untangled.diagnostics import Diagnostic
 from untangled.graph import CLUSTER, INTERNAL, PairsDocument
 
 _NAMED_UNMATCHED = 5
@@ -56,13 +57,14 @@ class Clustering:
         """The name written in the analysis document's `clustering` field."""
         return "rules" if self.strategy == "rules" else f"{self.strategy}:{self.depth}"
 
+    def _rule_for(self, node_id: str) -> str | None:
+        """The cluster of the first rule whose prefix starts the id, or None when none does."""
+        return next((cluster for prefix, cluster in self.rules if node_id.startswith(prefix)), None)
+
     def cluster_of(self, node: dict[str, Any]) -> str:
         node_id = node["id"]
         if self.strategy == "rules":
-            for prefix, cluster in self.rules:
-                if node_id.startswith(prefix):
-                    return cluster
-            return node_id
+            return self._rule_for(node_id) or node_id
         module = node.get("module")
         if self.strategy == "namespace" and isinstance(module, str) and module:
             # Segments are separated by `\\` (PHP namespaces) or `.` (Python modules); the
@@ -79,9 +81,7 @@ class Clustering:
         if self.strategy != "rules":
             return []
         return sorted(
-            node["id"]
-            for node in files.nodes()
-            if node["kind"] == INTERNAL and not any(node["id"].startswith(prefix) for prefix, _ in self.rules)
+            node["id"] for node in files.nodes() if node["kind"] == INTERNAL and self._rule_for(node["id"]) is None
         )
 
     @staticmethod
@@ -98,6 +98,12 @@ class Clustering:
             else f"{count} files match no rule and each becomes its own cluster"
         )
         return f"rules: {what}: {named}"
+
+    @staticmethod
+    def unmatched_diagnostic(unmatched: list[str], strict: bool) -> Diagnostic:
+        """The diagnostic for unmatched nodes: a warning, or an error with --strict."""
+        make = Diagnostic.error if strict else Diagnostic.warning
+        return make("unmatched-rules", Clustering.describe_unmatched(unmatched), unmatched)
 
     def apply(self, files: PairsDocument) -> Clustered:
         cluster_of: dict[str, str] = {}

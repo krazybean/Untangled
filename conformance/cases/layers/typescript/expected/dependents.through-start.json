@@ -1,0 +1,28 @@
+{
+  "format": "untangled-dependents",
+  "version": "0.1",
+  "language": "typescript",
+  "generator": {
+    "name": "untangled-typescript",
+    "version": "1.0.2"
+  },
+  "transitive": true,
+  "targets": [
+    {
+      "target": "src/infra/clock.ts",
+      "nodes": [
+        "src/infra/clock.ts"
+      ]
+    }
+  ],
+  "dependents": [
+    {
+      "id": "src/domain/user.ts",
+      "depth": 1
+    },
+    {
+      "id": "src/domain/order.ts",
+      "depth": 2
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+--transitive
+--through=src/domain/**
+--through=src/http/**
+--max-depth=2
+--format=json
+src/domain/user.ts

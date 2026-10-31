@@ -32,7 +32,10 @@ How the PHP library turns a project into a [pairs document](../pairs-format.md).
     `node_modules/` and hidden directories are not counted, nor are files git
     ignores, such as compiled views; a tracked file counts even when a
     `.gitignore` pattern matches it, and a project that is not a git
-    repository, or a machine without git, has nothing left out). The warning gives
+    repository, or a machine without git, has nothing left out). Only the
+    repository's own rules count (`.gitignore` files and `.git/info/exclude`),
+    not the user's global ignore file, and nothing is left out when git ignores
+    the project folder itself, as when an enclosing repository ignores it. The warning gives
     the count and, for the top-level folders holding the most of them, the
     deepest folder each one's files share (`database/migrations/`, `lang/`),
     so the user can decide what to pass to `--source`.
@@ -169,11 +172,22 @@ A class named by an expression instead of a name (`new $class()`,
 `$x instanceof $class`) has no name to resolve. It is recorded as
 `unresolved:dynamic:<source text>`, the expression as written with runs of
 whitespace collapsed to one space, with the edge kind of the construct (`new`,
-`static`, `instanceof`). `$object::class` loads nothing and adds no edge.
+`static`, `instanceof`). `$object::class` loads nothing and adds no edge, and
+neither does `$this::X`, which is the enclosing class, like `static::X`. Any other
+expression is recorded, including `$this->model::query()`, since a property can
+hold a class name as well as an object.
 
 Not in v0.1: docblock types (`@param Foo`), string class names
 (`'App\Foo'`), and functions that take a class name (`class_exists($class)`,
 `app()->make($class)`).
+
+## Dependents targets
+
+`untangled dependents` looks a class up by the name the file declares, as in
+`symbols`: `App\Billing\Tax`. When that matches nothing, the same name with
+one or more leading backslashes (`\App\Billing\Tax`, the way class names are
+written in code and by many tools) is looked up without them. The target is
+listed as it was written. See [dependents](../dependents.md#targets).
 
 ## Parser
 
