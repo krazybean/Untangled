@@ -3,6 +3,7 @@
 
 import { compareText } from "./text.js";
 import { NAME, SPEC, VERSION } from "./version.js";
+import { warningDiagnostic, type Diagnostic } from "./diagnostics.js";
 
 export const INTERNAL = "internal";
 export const EXTERNAL = "external";
@@ -43,7 +44,7 @@ export class PairsDocument {
    * Reads a pairs document, such as one written by `untangled scan` or by another library.
    * A different minor version is read with a warning; a different major version is an error.
    */
-  static fromObject(data: unknown, warnings: string[] = []): PairsDocument {
+  static fromObject(data: unknown, warnings: string[] = [], diagnostics: Diagnostic[] = []): PairsDocument {
     const object = isObject(data) ? data : {};
     if (object.format !== "untangled-pairs") {
       throw new DocumentError('not an Untangled pairs document (expected "format": "untangled-pairs")');
@@ -55,7 +56,9 @@ export class PairsDocument {
       throw new DocumentError(`unsupported pairs document version "${version}" (this library reads ${SPEC})`);
     }
     if (minor !== knownMinor) {
-      warnings.push(`pairs document version ${version} is newer or older than ${SPEC}; reading it anyway`);
+      const message = `pairs document version ${version} is newer or older than ${SPEC}; reading it anyway`;
+      warnings.push(message);
+      diagnostics.push(warningDiagnostic("document-version", message));
     }
     if (typeof object.language !== "string" || !Array.isArray(object.nodes) || !Array.isArray(object.edges)) {
       throw new DocumentError('pairs document needs "language", "nodes" and "edges"');

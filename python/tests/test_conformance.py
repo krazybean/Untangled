@@ -19,12 +19,13 @@ from untangled.cli import main
 from untangled.graph import PairsDocument, encode
 from untangled.report import dot
 from untangled.report.report import Report
-from untangled.scanner.scanner import Scanner
+from untangled.scanner.scanner import Scanner, ScanResult
 
 CASES = Path(__file__).resolve().parents[2] / "conformance" / "cases"
 PYTHON_CASES = sorted(path for path in CASES.glob("*/python") if path.is_dir())
 ANALYSES = [(case, file) for case in PYTHON_CASES for file in sorted((case / "expected").glob("analysis*.json"))]
 DEPENDENTS = [(case, file) for case in PYTHON_CASES for file in sorted((case / "expected").glob("dependents.*"))]
+DIAGNOSTICS = [case for case in PYTHON_CASES if (case / "expected" / "diagnostics.jsonl").is_file()]
 GRAPHS = [(case, file) for case in PYTHON_CASES for file in sorted((case / "expected").glob("graph*.dot"))]
 
 
@@ -33,8 +34,12 @@ def lines(file: Path) -> list[str]:
     return [line for line in file.read_text(encoding="utf-8").splitlines() if line] if file.is_file() else []
 
 
+def scan_result(case: Path) -> ScanResult:
+    return Scanner(sources=lines(case / "sources")).scan(str(case / "project"))
+
+
 def scan(case: Path) -> PairsDocument:
-    return Scanner(sources=lines(case / "sources")).scan(str(case / "project")).pairs
+    return scan_result(case).pairs
 
 
 def clustering(case: Path, suffix: str) -> Clustering | None:
@@ -122,6 +127,18 @@ def test_dependents(case: Path, file: Path) -> None:
         assert out.getvalue().endswith("}\n")
     else:
         assert out.getvalue() == file.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("case", DIAGNOSTICS, ids=case_id)
+def test_diagnostics(case: Path) -> None:
+    """The scan's diagnostics, one JSON object per line of `expected/diagnostics.jsonl`, are compared on level,
+    code and files, in order: the message is for people and is not pinned."""
+
+    def project(item: dict[str, Any]) -> tuple[str, str, list[str]]:
+        return item["level"], item["code"], item.get("files", [])
+
+    expected = [project(json.loads(line)) for line in lines(case / "expected" / "diagnostics.jsonl")]
+    assert [project(item.to_dict()) for item in scan_result(case).diagnostics] == expected
 
 
 @pytest.mark.parametrize(("case", "file"), GRAPHS, ids=case_id)

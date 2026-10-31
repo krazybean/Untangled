@@ -13,6 +13,15 @@ from untangled import version
 from untangled.analysis.filtering import Filter, Glob
 from untangled.graph import CLUSTER, INTERNAL, PairsDocument
 
+
+class DependentsError(ValueError):
+    """A dependents query that cannot be answered, with the diagnostic code of spec/diagnostics.md."""
+
+    def __init__(self, message: str, code: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
 _ABSOLUTE = re.compile(r"^(?:/|[A-Za-z]:[/\\])")
 _DRIVE = re.compile(r"^([A-Za-z]):(?:/|$)")
 
@@ -41,7 +50,10 @@ def find(
     symbols: dict[str, list[str]] = {}
     for node in files.nodes():
         if node["kind"] == CLUSTER:
-            raise ValueError("the pairs document is already clustered; ask about the file-level document instead")
+            raise DependentsError(
+                "the pairs document is already clustered; ask about the file-level document instead",
+                "document-clustered",
+            )
         if node["kind"] == INTERNAL:
             for symbol in node.get("symbols", []):
                 symbols.setdefault(symbol, []).append(node["id"])
@@ -53,7 +65,7 @@ def find(
         if not nodes:
             nodes = _respelled(files, target, root)
         if not nodes:
-            raise ValueError(f'no node or symbol "{target}" in the pairs document')
+            raise DependentsError(f'no node or symbol "{target}" in the pairs document', "target-not-found")
         resolved.append({"target": target, "nodes": sorted(nodes)})
         start.update(nodes)
 
@@ -105,7 +117,7 @@ def _respelled(files: PairsDocument, target: str, root: str | None) -> list[str]
     if root is not None and _ABSOLUTE.match(target):
         relative = _inside_project(target, root)
         if relative is None:
-            raise ValueError(f'"{target}" is outside the project folder {root}')
+            raise DependentsError(f'"{target}" is outside the project folder {root}', "target-outside-project")
         path = relative
     path = _normalize(path)
     return [path] if path and files.has_node(path) else []

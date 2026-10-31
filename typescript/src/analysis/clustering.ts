@@ -3,6 +3,7 @@
 // step that applies it: one node per cluster, edges merged per (cluster, target), and edges
 // inside a cluster dropped.
 
+import { errorDiagnostic, warningDiagnostic, type Diagnostic } from "../diagnostics.js";
 import { CLUSTER, INTERNAL, PairsDocument, type Node } from "../graph.js";
 import { sortText } from "../text.js";
 
@@ -152,6 +153,12 @@ export class Clustering {
 
 /** How many unmatched nodes the warning names. */
 const NAMED_UNMATCHED = 5;
+
+/** The diagnostic for unmatched nodes: a warning, or an error with --strict. */
+export function unmatchedDiagnostic(unmatched: string[], strict: boolean): Diagnostic {
+  const message = describeUnmatched(unmatched);
+  return strict ? errorDiagnostic("unmatched-rules", message, unmatched) : warningDiagnostic("unmatched-rules", message, unmatched);
+}
 
 /** The sentence for the warning, or the error with --strict, about unmatched nodes: the first few are named. */
 export function describeUnmatched(unmatched: string[]): string {

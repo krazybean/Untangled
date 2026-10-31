@@ -81,7 +81,7 @@ describe("findDependents", () => {
   });
 
   test("an unknown target and a clustered document are errors", () => {
-    expect(() => findDependents(graph(), ["core/service.ts", "nope"], false)).toThrow(new DependentsError('no node or symbol "nope" in the pairs document'));
+    expect(() => findDependents(graph(), ["core/service.ts", "nope"], false)).toThrow(new DependentsError('no node or symbol "nope" in the pairs document', "target-not-found"));
     const clustered = new PairsDocument("typescript");
     clustered.addNode("core", "cluster", { members: ["a.ts"] });
     expect(() => findDependents(clustered, ["core"], false)).toThrow(/already clustered/);

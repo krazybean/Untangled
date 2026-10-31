@@ -8,6 +8,7 @@ import tomllib
 from dataclasses import dataclass, field
 from typing import Any
 
+from untangled.diagnostics import WARNING, Diagnostic
 from untangled.text import path_text
 
 _SKIPPED_FOLDERS = {"__pycache__", "node_modules", "site-packages"}
@@ -37,24 +38,35 @@ class Project:
     """Folders directly under the root that hold a pyvenv.cfg."""
     extensions: list[str] = field(default_factory=list)
     """Modules without a .py file (see EXTENSION_SUFFIXES), sorted by id: import targets, never scanned."""
-    warnings: list[str] = field(default_factory=list)
+    diagnostics: list[Diagnostic] = field(default_factory=list)
     _paths: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def warnings(self) -> list[str]:
+        """The messages of the warning diagnostics, kept for callers that read strings."""
+        return [item.message for item in self.diagnostics if item.level == WARNING]
 
     @classmethod
     def load(cls, path: str, sources: list[str] | None = None) -> "Project":
         if not os.path.isdir(path):
             raise ProjectError(f"{path} is not a folder")
         root = os.path.abspath(path)
-        warnings: list[str] = []
-        pyproject = _read_pyproject(root, warnings)
+        diagnostics: list[Diagnostic] = []
+        pyproject = _read_pyproject(root, diagnostics)
         files, tests, venvs, paths, extensions = _walk(root)
         roots: list[str] = []
         for source in sources or []:
             folder = _relative_folder(root, source)
             if folder is None:
-                warnings.append(f"--source={source}: outside the project, ignored")
+                diagnostics.append(
+                    Diagnostic.warning("source-outside-project", f"--source={source}: outside the project, ignored")
+                )
             elif not os.path.isdir(os.path.join(root, folder)):
-                warnings.append(f"--source={source}: no such folder in the project")
+                diagnostics.append(
+                    Diagnostic.warning(
+                        "source-not-found", f"--source={source}: no such folder in the project", [folder]
+                    )
+                )
             else:
                 roots.append(folder)
         tool = pyproject.get("tool")
@@ -76,7 +88,7 @@ class Project:
             roots.append("src")
         roots.append("")
         unique = list(dict.fromkeys(roots))
-        return cls(root, files, tests, unique, pyproject, venvs, extensions, warnings, paths)
+        return cls(root, files, tests, unique, pyproject, venvs, extensions, diagnostics, paths)
 
     def has_file(self, file_id: str) -> bool:
         return file_id in self._paths
@@ -129,7 +141,7 @@ def _relative_folder(root: str, path: str) -> str | None:
     return path_text(relative).replace(os.sep, "/")
 
 
-def _read_pyproject(root: str, warnings: list[str]) -> dict[str, Any]:
+def _read_pyproject(root: str, diagnostics: list[Diagnostic]) -> dict[str, Any]:
     file = os.path.join(root, "pyproject.toml")
     if not os.path.isfile(file):
         return {}
@@ -137,7 +149,11 @@ def _read_pyproject(root: str, warnings: list[str]) -> dict[str, Any]:
         with open(file, "rb") as handle:
             return tomllib.load(handle)
     except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
-        warnings.append(f"pyproject.toml: cannot read it ({error}); ignoring it")
+        diagnostics.append(
+            Diagnostic.warning(
+                "config-unreadable", f"pyproject.toml: cannot read it ({error}); ignoring it", ["pyproject.toml"]
+            )
+        )
         return {}
 
 

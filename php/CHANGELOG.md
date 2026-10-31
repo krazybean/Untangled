@@ -7,6 +7,18 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- `--diagnostics=json` writes every warning and error as one JSON object per line on
+  standard error (`level`, `code`, `message`, and `files` when there are any), so CI and
+  agents do not have to read message text. Text stays the default and is unchanged.
+  Every command takes it; standard output, exit codes and the pairs and analysis
+  documents are as before. The codes and the encoding are in spec/diagnostics.md;
+  `--diagnostics=github` is not supported yet.
+
+- `ScanResult::$diagnostics` holds the scan's `Diagnostic` objects. `ScanResult::$warnings`
+  is kept: it is the message of each warning diagnostic. `PairsDocument::fromArray()` takes
+  a `$diagnostics` list after `$warnings`. `DependentsException` (a subclass of
+  `InvalidArgumentException`) carries the code of a failed `dependents` query.
+
 - `dependents --max-depth=N` (with `--transitive`) stops the walk after N steps from the
   targets, and `--through=<glob>` (repeatable) only walks into files that match, so a
   test that reaches a target only through application code is not found by way of it.

@@ -21,8 +21,18 @@ export interface DependentsDocument {
   dependents: { id: string; depth: number }[];
 }
 
-/** Thrown when the document is clustered or a target matches nothing. */
-export class DependentsError extends Error {}
+/**
+ * Thrown when the document is clustered, a target matches nothing, or an argument is wrong. `code` is the
+ * diagnostic code of spec/diagnostics.md for the first two.
+ */
+export class DependentsError extends Error {
+  constructor(
+    message: string,
+    readonly code = "invalid-argument",
+  ) {
+    super(message);
+  }
+}
 
 /** What limits the walk, and how targets are spelled. */
 export interface DependentsOptions {
@@ -57,7 +67,7 @@ export function findDependents(
   const symbols = new Map<string, string[]>();
   for (const node of files.nodes()) {
     if (node.kind === CLUSTER) {
-      throw new DependentsError("the pairs document is already clustered; ask about the file-level document instead");
+      throw new DependentsError("the pairs document is already clustered; ask about the file-level document instead", "document-clustered");
     }
     if (node.kind === INTERNAL && Array.isArray(node.symbols)) {
       for (const symbol of node.symbols as string[]) {
@@ -74,7 +84,7 @@ export function findDependents(
       nodes = respelled(files, target, root);
     }
     if (nodes.length === 0) {
-      throw new DependentsError(`no node or symbol "${target}" in the pairs document`);
+      throw new DependentsError(`no node or symbol "${target}" in the pairs document`, "target-not-found");
     }
     resolved.push({ target, nodes: [...nodes].sort(compareText) });
     nodes.forEach((id) => start.add(id));
@@ -130,7 +140,7 @@ function respelled(files: PairsDocument, target: string, root: string | undefine
   if (root !== undefined && ABSOLUTE.test(target)) {
     const relative = insideProject(target, root);
     if (relative === undefined) {
-      throw new DependentsError(`"${target}" is outside the project folder ${root}`);
+      throw new DependentsError(`"${target}" is outside the project folder ${root}`, "target-outside-project");
     }
     path = relative;
   }

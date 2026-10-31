@@ -14,6 +14,7 @@ import { analyze } from "../src/analysis/analyzer.js";
 import { Clustering } from "../src/analysis/clustering.js";
 import { Filter } from "../src/analysis/filter.js";
 import { main } from "../src/cli.js";
+import type { Diagnostic } from "../src/diagnostics.js";
 import { encode, PairsDocument } from "../src/graph.js";
 import { renderDot } from "../src/report/dot.js";
 import { Report } from "../src/report/report.js";
@@ -111,6 +112,16 @@ describe.each(TYPESCRIPT_CASES)("%s", (name) => {
       // The generator names this library's version, which the expected files do not pin.
       const generator = /\n {2}"generator": \{[^}]*\},/;
       expect(encode(analysis).replace(generator, "")).toBe(readFileSync(join(expected, file), "utf8").replace(generator, ""));
+    });
+  }
+
+  // The scan's diagnostics, one JSON object per line, are compared on level, code and files, in order:
+  // the message is for people and is not pinned.
+  if (existsSync(join(expected, "diagnostics.jsonl"))) {
+    test("diagnostics.jsonl", () => {
+      const project = (item: Diagnostic): [string, string, string[]] => [item.level, item.code, item.files ?? []];
+      const want = lines(join(expected, "diagnostics.jsonl")).map((line) => project(JSON.parse(line) as Diagnostic));
+      expect(scanCase(name).diagnostics.map(project)).toEqual(want);
     });
   }
 

@@ -7,6 +7,7 @@ import { join } from "node:path";
 
 import { decode } from "../text.js";
 import { isUnder, joinPath } from "./paths.js";
+import { warningDiagnostic, type Diagnostic } from "../diagnostics.js";
 
 export const CODE_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"];
 export const DECLARATION_SUFFIXES = [".d.ts", ".d.mts", ".d.cts"];
@@ -28,7 +29,7 @@ export class Project {
   readonly skippedBuild = new Map<string, number>();
   /** The folders holding a node_modules folder ("" for the root). */
   readonly nodeModules = new Set<string>();
-  readonly warnings: string[] = [];
+  readonly diagnostics: Diagnostic[] = [];
 
   constructor(
     readonly root: string,
@@ -66,9 +67,9 @@ export class Project {
     for (const source of options.sources) {
       const path = joinPath("", source);
       if (path === undefined) {
-        this.warnings.push(`--source=${source}: outside the project, ignored`);
+        this.diagnostics.push(warningDiagnostic("source-outside-project", `--source=${source}: outside the project, ignored`));
       } else if (!this.files.has(path) && ![...this.files.keys()].some((id) => isUnder(id, path))) {
-        this.warnings.push(`--source=${source}: no such file or folder in the project`);
+        this.diagnostics.push(warningDiagnostic("source-not-found", `--source=${source}: no such file or folder in the project`, [path]));
       } else {
         sources.push(path);
       }
