@@ -35,6 +35,11 @@ describe("glob", () => {
     expect(new Glob("src/**/a.ts").matches("src/a.ts")).toBe(true);
   });
 
+  test("a hyphen is literal, in the pattern and in the id", () => {
+    expect(new Glob("src/user-controller.ts").matches("src/user-controller.ts")).toBe(true);
+    expect(new Glob("src/*-controller.ts").matches("src/user-controller.ts")).toBe(true);
+  });
+
   test("other characters are literal", () => {
     expect(new Glob("a+b(1).[ts]").matches("a+b(1).[ts]")).toBe(true);
     expect(new Glob("a.ts").matches("abts")).toBe(false);

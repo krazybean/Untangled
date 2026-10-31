@@ -4,6 +4,7 @@ Untangled library: `scan`, `analyze`, `report` and `dependents`."""
 
 import json
 import os
+import re
 import sys
 import tomllib
 from typing import TextIO
@@ -27,6 +28,7 @@ Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--venv=<path>]...
        untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                          [--title=<text>] [analyze options]
        untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [--transitive]
+                            [--max-depth=<n>] [--through=<glob>]...
                             [--format=text|json] [analyze options]
 
 Commands:
@@ -45,14 +47,17 @@ Options:
                      report: html (default) or dot
                      dependents: text (default) or json
   --transitive       dependents: also the files that depend on a dependent, with their depth
+  --max-depth=N      dependents: with --transitive, stop after N steps from the targets
+  --through=GLOB     dependents: only walk into files matching GLOB (repeatable, any match counts),
+                     so nothing is found by way of other files
   --style=STYLE      report --format=dot only: default, or classic for snakefood's
                      black and white sfood-graph look
   --title=TEXT       report only: the report's title (default: the project name in pyproject.toml)
   --cluster=STRATEGY analyze, report: namespace:N, folder:N or rules:<file>
   --strict           analyze, report: with rules:<file>, exit 1 instead of warning when a
                      file matches no rule
-  --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
-  --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
+  --include=GLOB     analyze, report, dependents: keep files matching GLOB (repeatable, last match wins)
+  --exclude=GLOB     analyze, report, dependents: drop files matching GLOB (repeatable, last match wins)
   --output=FILE      Write to FILE instead of standard output
   -h, --help         Show this help
   -V, --version      Show the version
@@ -63,9 +68,9 @@ _COMMANDS = {
     "scan": _SCAN | {"format", "output"},
     "analyze": _SCAN | {"cluster", "strict", "include", "exclude", "output"},
     "report": _SCAN | {"cluster", "strict", "include", "exclude", "output", "format", "style", "title"},
-    "dependents": _SCAN | {"transitive", "include", "exclude", "output", "format"},
+    "dependents": _SCAN | {"transitive", "max-depth", "through", "include", "exclude", "output", "format"},
 }
-_REPEATABLE = {"source", "venv"}
+_REPEATABLE = {"source", "venv", "through"}
 
 
 class _Usage(Exception):
@@ -141,7 +146,7 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
         return _write(pairs.to_json() if output_format == "json" else pairs.to_snakefood(path), output, out)
 
     if command == "dependents":
-        return _dependents(positional, options, patterns, scanner, output, out, err)
+        return _dependents(positional, options, patterns, repeated["through"], scanner, output, out, err)
 
     output_format = options.get("format", "html")
     if command == "report" and output_format not in ("html", "dot"):
@@ -179,6 +184,7 @@ def _dependents(
     positional: list[str],
     options: dict[str, str | bool],
     patterns: list[tuple[str, str]],
+    through: list[str],
     scanner: Scanner,
     output: str | None,
     out: TextIO,
@@ -189,6 +195,15 @@ def _dependents(
     output_format = options.get("format", "text")
     if output_format not in ("text", "json"):
         raise _Usage(f"Unknown format: {output_format}")
+    max_depth = None
+    if "max-depth" in options:
+        given = str(options["max-depth"])
+        if not re.fullmatch(r"[1-9][0-9]*", given):
+            raise _Usage(f'Option --max-depth needs a positive integer, as in --max-depth=2 (got "{given}")')
+        if "transitive" not in options:
+            raise _Usage("--max-depth only applies with --transitive")
+        # More than 9 digits is deeper than any graph, so it is the same as no limit.
+        max_depth = 999999999 if len(given) > 9 else int(given)
     first = positional[0] if positional else None
     has_source = first is not None and (
         os.path.isdir(first) or (os.path.isfile(first) and first.lower().endswith(".json"))
@@ -197,8 +212,12 @@ def _dependents(
     if not targets:
         raise _Usage("dependents needs at least one file or symbol to look up")
     pairs = _load(first if has_source and first is not None else ".", scanner, err)
+    # Absolute paths are relative to the project when the source is one, else to the current folder.
+    root = os.path.realpath(first if has_source and first is not None and os.path.isdir(first) else ".")
     try:
-        document = dependents.find(pairs, targets, "transitive" in options, _filter(patterns))
+        document = dependents.find(
+            pairs, targets, "transitive" in options, _filter(patterns), through=through, max_depth=max_depth, root=root
+        )
     except ValueError as error:
         raise _Failure(str(error)) from error
     return _write(encode(document) if output_format == "json" else dependents.render_text(document), output, out)

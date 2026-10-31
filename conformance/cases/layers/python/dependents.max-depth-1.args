@@ -1,0 +1,4 @@
+--transitive
+--max-depth=1
+--format=json
+src/app/domain/user.py

@@ -63,7 +63,8 @@ untangled analyze [<path>|<pairs.json>]  [scan options] [filter options] [--outp
 untangled report  [<path>|<pairs.json>]  [scan options] [filter options]
                                          [--format=html|dot] [--style=classic] [--title=<text>] [--output=<file>]
 untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [scan options] [--include/--exclude ...]
-                                         [--transitive] [--format=text|json] [--output=<file>]
+                                         [--transitive] [--max-depth=<n>] [--through=<glob>]...
+                                         [--format=text|json] [--output=<file>]
 ```
 
 Each command runs the steps before it: `analyze` scans first, and `report`
@@ -159,6 +160,27 @@ The first argument is the source when it is a folder or a `.json` file; any
 other argument is a target, and the source is the current folder. A target
 that matches nothing exits with code 1.
 
+To choose the tests to run after a change, limit the walk instead of the list.
+`--max-depth=N` (with `--transitive`) stops after N steps from the targets, and
+`--through=<glob>` (repeatable, any match counts) only walks into files that
+match, so nothing is found by way of other files:
+
+```sh
+# tests that use the file, or reach it only through other tests (helpers, builders, base classes)
+vendor/bin/untangled dependents /path/to/project src/Billing/Tax.php --transitive --through='tests/**'
+# application code that reaches it, not through tests
+vendor/bin/untangled dependents /path/to/project src/Billing/Tax.php --transitive --through='src/**'
+# tests of the files that use it directly
+vendor/bin/untangled dependents /path/to/project src/Billing/Tax.php --transitive --max-depth=2 --exclude='**' --include='tests/**'
+```
+
+A file that `--through` leaves out is never listed, even when it uses a target
+directly, and it is not walked through. `--include` and `--exclude` still only
+filter the list afterwards, and `--max-depth` without `--transitive` is a usage
+error (exit code 2). A target can also be an absolute path inside the project,
+or a path with `./` or `\` separators. A class name may start with a
+backslash (`\App\Billing\Tax`).
+
 ### report
 
 Writes one self-contained HTML page meant for people who do not read code.
@@ -209,6 +231,8 @@ once.
 | `--title=<text>` | `report` | The report's title. Default: the Composer package name, else the folder or file name. |
 | `--cluster=<strategy>` | `analyze`, `report` | Group files before measuring: `namespace:N`, `folder:N` or `rules:<file>`. See [Clustering](#clustering). |
 | `--transitive` | `dependents` | Also list the files that depend on a dependent, with their depth. |
+| `--max-depth=<n>` | `dependents` | With `--transitive`, stop after `n` steps from the targets (a positive integer). |
+| `--through=<glob>` | `dependents` | Only walk into files matching `<glob>`; nothing is found by way of other files. Repeatable, any match counts. |
 | `--strict` | `analyze`, `report` | With `--cluster=rules:<file>`, exit 1 instead of warning when a file matches no rule. See [Clustering](#clustering). |
 | `--include=<glob>` | `analyze`, `report` | Keep files whose path matches `<glob>`. Repeatable. |
 | `--exclude=<glob>` | `analyze`, `report` | Drop files whose path matches `<glob>`. Repeatable. See [Include and exclude](#include-and-exclude). |

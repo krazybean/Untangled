@@ -181,6 +181,14 @@ Not in v0.1: docblock types (`@param Foo`), string class names
 (`'App\Foo'`), and functions that take a class name (`class_exists($class)`,
 `app()->make($class)`).
 
+## Dependents targets
+
+`untangled dependents` looks a class up by the name the file declares, as in
+`symbols`: `App\Billing\Tax`. When that matches nothing, the same name with
+one or more leading backslashes (`\App\Billing\Tax`, the way class names are
+written in code and by many tools) is looked up without them. The target is
+listed as it was written. See [dependents](../dependents.md#targets).
+
 ## Parser
 
 The reference implementation uses

@@ -1,0 +1,4 @@
+--transitive
+--max-depth=2
+--format=json
+src/domain/user.ts
