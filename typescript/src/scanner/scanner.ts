@@ -4,6 +4,7 @@
 
 import { readFileSync } from "node:fs";
 
+import { warningDiagnostic, warningMessages, type Diagnostic } from "../diagnostics.js";
 import { BUILTIN, EXTERNAL, INTERNAL, PairsDocument, UNRESOLVED } from "../graph.js";
 import { compareText, decode, sortText } from "../text.js";
 import { loadConfig } from "./config.js";
@@ -19,7 +20,13 @@ export interface ScanOptions {
 
 export interface ScanResult {
   pairs: PairsDocument;
+  /** Problems that did not stop the scan, as text. */
   warnings: string[];
+  /**
+   * The same problems as data (spec/diagnostics.md). Optional so that a result written as an object literal
+   * before diagnostics existed is still a ScanResult; `scan()` always sets it.
+   */
+  diagnostics?: Diagnostic[];
 }
 
 export const NOTHING_SCANNED =
@@ -28,16 +35,17 @@ export const NOTHING_SCANNED =
 
 const KINDS: Record<string, string> = { builtin: BUILTIN, npm: EXTERNAL, unresolved: UNRESOLVED };
 
-export function scan(root: string, options: ScanOptions = {}): ScanResult {
+export function scan(root: string, options: ScanOptions = {}): ScanResult & { diagnostics: Diagnostic[] } {
   const config = loadConfig(root, options.aliases ?? []);
   const project = new Project(root, { dev: options.dev ?? false, sources: options.sources ?? [], outDir: config.outDir });
-  const warnings = [...config.warnings, ...project.warnings];
-  const resolver = new Resolver(project, config, warnings);
+  const diagnostics = [...config.diagnostics, ...project.diagnostics];
+  const resolver = new Resolver(project, config, diagnostics);
 
   // Scan the default files, then any test or declaration file a scanned file imports.
   const results = new Map<string, FileImports>();
   const targets = new Map<string, [string, string[]][]>();
   const recovered: string[] = [];
+  const recoveredFiles: string[] = [];
   const assets = new Map<string, number>();
   const queue = [...project.scanned];
   for (let index = 0; index < queue.length; index++) {
@@ -53,9 +61,10 @@ export function scan(root: string, options: ScanOptions = {}): ScanResult {
     }
     results.set(file, result);
     if (result.error !== undefined) {
-      warnings.push(`${file}: ${result.error}`);
+      diagnostics.push(warningDiagnostic(result.unread === "read" ? "file-unreadable" : "file-unparseable", `${file}: ${result.error}`, [file]));
     } else if (result.recovered !== undefined) {
       recovered.push(`${file}: ${result.recovered}`);
+      recoveredFiles.push(file);
     }
     const list: [string, string[]][] = [];
     targets.set(file, list);
@@ -83,7 +92,7 @@ export function scan(root: string, options: ScanOptions = {}): ScanResult {
   }
 
   if (results.size === 0) {
-    warnings.push(NOTHING_SCANNED);
+    diagnostics.push(warningDiagnostic("nothing-scanned", NOTHING_SCANNED));
   }
   const pairs = new PairsDocument("typescript");
   for (const [file, result] of results) {
@@ -102,32 +111,43 @@ export function scan(root: string, options: ScanOptions = {}): ScanResult {
 
   if (project.skippedBuild.size) {
     const count = [...project.skippedBuild.values()].reduce((sum, item) => sum + item, 0);
-    warnings.push(
-      `skipped ${count} file${count === 1 ? "" : "s"} in build output (${few(sortText(project.skippedBuild.keys()))});` +
-        " add a folder back with --source=<path> if it holds source code",
+    diagnostics.push(
+      warningDiagnostic(
+        "build-output-skipped",
+        `skipped ${count} file${count === 1 ? "" : "s"} in build output (${few(sortText(project.skippedBuild.keys()))});` +
+          " add a folder back with --source=<path> if it holds source code",
+        sortText(project.skippedBuild.keys()),
+      ),
     );
   }
   if (recovered.length) {
-    warnings.push(
-      `${recovered.length} file${recovered.length === 1 ? " has" : "s have"} syntax errors; the imports the parser` +
-        ` could still read are kept: ${few(recovered, "; ")}`,
+    diagnostics.push(
+      warningDiagnostic(
+        "file-partially-parsed",
+        `${recovered.length} file${recovered.length === 1 ? " has" : "s have"} syntax errors; the imports the parser` +
+          ` could still read are kept: ${few(recovered, "; ")}`,
+        recoveredFiles,
+      ),
     );
   }
   if (assets.size) {
     const count = [...assets.values()].reduce((sum, item) => sum + item, 0);
     const list = [...assets].sort((a, b) => b[1] - a[1] || compareText(a[0], b[0])).map(([name, n]) => `${name} ${n}`);
-    warnings.push(
-      `${count} import${count === 1 ? "" : "s"} of non-code files gave no edge (${list.join(", ")})`,
+    diagnostics.push(
+      warningDiagnostic("non-code-imports", `${count} import${count === 1 ? "" : "s"} of non-code files gave no edge (${list.join(", ")})`),
     );
   }
   if (project.nodeModules.size === 0 && resolver.unresolvedBare.size) {
-    warnings.push(
-      `no node_modules folder, so imports of ${few(sortText(resolver.unresolvedBare), ", ", 5)} could only be` +
-        " matched against declared dependencies by name, and show as unresolved; if they are packages, install" +
-        " the project's dependencies first for a complete picture",
+    diagnostics.push(
+      warningDiagnostic(
+        "package-list-missing",
+        `no node_modules folder, so imports of ${few(sortText(resolver.unresolvedBare), ", ", 5)} could only be` +
+          " matched against declared dependencies by name, and show as unresolved; if they are packages, install" +
+          " the project's dependencies first for a complete picture",
+      ),
     );
   }
-  return { pairs, warnings };
+  return { pairs, diagnostics, warnings: warningMessages(diagnostics) };
 }
 
 /** The first few items of a list, then how many more. */

@@ -8,8 +8,10 @@ namespace Untangled\Cli;
 use Untangled\Analysis\Analyzer;
 use Untangled\Analysis\Clustering;
 use Untangled\Analysis\Dependents;
+use Untangled\Analysis\DependentsException;
 use Untangled\Analysis\Filter;
 use Untangled\Composer\ProjectException;
+use Untangled\Diagnostic;
 use Untangled\Graph\DocumentException;
 use Untangled\Graph\Json;
 use Untangled\Graph\PairsDocument;
@@ -37,6 +39,8 @@ final class Application
                untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [--transitive]
                                     [--max-depth=<n>] [--through=<glob>]...
                                     [--format=text|json] [analyze options]
+
+        Every command also takes --diagnostics=text|json.
 
         Commands:
           scan       Write the dependency pairs of a Composer project (default path: .)
@@ -67,12 +71,17 @@ final class Application
           --include=GLOB     analyze, report, dependents: keep files matching GLOB (repeatable, last match wins)
           --exclude=GLOB     analyze, report, dependents: drop files matching GLOB (repeatable, last match wins)
           --output=FILE      Write to FILE instead of standard output
+          --diagnostics=FMT  How warnings and errors are written to standard error: text (default),
+                             or json, one object per line with level, code, message and files
           -h, --help         Show this help
           -V, --version      Show the version
 
         TXT;
 
     /** @param resource $stdout @param resource $stderr */
+    /** How diagnostics are written to standard error: `text` or `json` (--diagnostics). */
+    private string $diagnostics = 'text';
+
     public function __construct(
         private $stdout = STDOUT,
         private $stderr = STDERR,
@@ -82,6 +91,7 @@ final class Application
     /** @param list<string> $argv arguments without the program name */
     public function run(array $argv): int
     {
+        $this->diagnostics = 'text';
         $positional = [];
         $options = [];
         $patterns = [];
@@ -121,10 +131,10 @@ final class Application
             return 2;
         }
         $allowed = match ($command) {
-            'scan' => ['dev', 'source', 'aliases', 'format', 'output'],
-            'analyze' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output'],
-            'report' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output', 'format', 'style', 'title'],
-            'dependents' => ['dev', 'source', 'aliases', 'transitive', 'max-depth', 'through', 'include', 'exclude', 'output', 'format'],
+            'scan' => ['dev', 'source', 'aliases', 'format', 'output', 'diagnostics'],
+            'analyze' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output', 'diagnostics'],
+            'report' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output', 'format', 'style', 'title', 'diagnostics'],
+            'dependents' => ['dev', 'source', 'aliases', 'transitive', 'max-depth', 'through', 'include', 'exclude', 'output', 'format', 'diagnostics'],
         };
         $unknown = array_diff(array_keys($options), $allowed);
         if ($unknown !== []) {
@@ -141,11 +151,17 @@ final class Application
                 return 2;
             }
         }
+        if (isset($options['diagnostics'])) {
+            if (!in_array($options['diagnostics'], ['text', 'json'], true)) {
+                fwrite($this->stderr, "Unknown diagnostics format: {$options['diagnostics']} (use text or json)\n");
+                return 2;
+            }
+            $this->diagnostics = $options['diagnostics'];
+        }
         try {
             $scanner = new Scanner(dev: isset($options['dev']), sources: $sources, aliases: ClassAliases::load($aliases));
         } catch (\InvalidArgumentException $e) {
-            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
-            return 1;
+            return $this->fail('aliases-unusable', $e->getMessage());
         }
         if ($command === 'analyze' || $command === 'report') {
             return $this->analyze($command, $positional[0] ?? '.', $options, $patterns, $scanner);
@@ -163,12 +179,9 @@ final class Application
         try {
             $result = $scanner->scan($path);
         } catch (ProjectException $e) {
-            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
-            return 1;
+            return $this->fail('project-unreadable', $e->getMessage());
         }
-        foreach ($result->warnings as $warning) {
-            fwrite($this->stderr, "warning: {$warning}\n");
-        }
+        $this->report($result->diagnostics);
 
         $output = $format === 'json' ? $result->pairs->toJson() : $result->pairs->toSnakefood($path);
         return $this->write($output, $options['output'] ?? null);
@@ -205,8 +218,7 @@ final class Application
                 $rulesFile = substr($strategy, strlen('rules:'));
                 $rules = is_file($rulesFile) ? file_get_contents($rulesFile) : false;
                 if ($rules === false) {
-                    fwrite($this->stderr, "error: cannot read rules file {$rulesFile}\n");
-                    return 1;
+                    return $this->fail('rules-file-unreadable', "cannot read rules file {$rulesFile}");
                 }
                 $clustering = Clustering::parseRules($rules);
             } elseif (is_string($strategy)) {
@@ -225,11 +237,11 @@ final class Application
         $selected = self::filter($patterns)->apply($pairs);
         $unmatched = $clustering?->unmatched($selected) ?? [];
         if ($unmatched !== []) {
+            $diagnostic = Clustering::unmatchedDiagnostic($unmatched, isset($options['strict']));
+            $this->report([$diagnostic]);
             if (isset($options['strict'])) {
-                fwrite($this->stderr, 'error: ' . Clustering::describeUnmatched($unmatched) . "\n");
                 return 1;
             }
-            fwrite($this->stderr, 'warning: ' . Clustering::describeUnmatched($unmatched) . "\n");
         }
         try {
             if ($command === 'analyze') {
@@ -238,8 +250,7 @@ final class Application
             $title = is_string($options['title'] ?? null) ? $options['title'] : self::title($path);
             $report = Report::build($title, $selected, $clustering);
         } catch (\InvalidArgumentException $e) {
-            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
-            return 1;
+            return $this->fail('document-clustered', $e->getMessage());
         }
         return $this->write($format === 'dot' ? Dot::render($report, $style) : HtmlReport::render($report), $options['output'] ?? null);
     }
@@ -298,9 +309,8 @@ final class Application
                 $maxDepth,
                 $root === false ? null : Path::normalize($root),
             );
-        } catch (\InvalidArgumentException $e) {
-            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
-            return 1;
+        } catch (DependentsException $e) {
+            return $this->fail($e->diagnosticCode, $e->getMessage());
         }
         return $this->write($format === 'json' ? Json::encode($document) : Dependents::renderText($document), $options['output'] ?? null);
     }
@@ -321,28 +331,49 @@ final class Application
      */
     private function load(string $path, Scanner $scanner): ?PairsDocument
     {
-        $warnings = [];
+        $diagnostics = [];
         try {
             if (is_file($path)) {
                 $contents = file_get_contents($path);
                 if ($contents === false) {
-                    fwrite($this->stderr, "error: cannot read {$path}\n");
+                    $this->fail('document-unreadable', "cannot read {$path}");
                     return null;
                 }
-                $pairs = PairsDocument::fromArray(Json::decode($contents, $path), $warnings);
+                $warnings = [];
+                $pairs = PairsDocument::fromArray(Json::decode($contents, $path), $warnings, $diagnostics);
             } else {
                 $result = $scanner->scan($path);
                 $pairs = $result->pairs;
-                $warnings = $result->warnings;
+                $diagnostics = $result->diagnostics;
             }
-        } catch (ProjectException | DocumentException $e) {
-            fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
+        } catch (ProjectException $e) {
+            $this->fail('project-unreadable', $e->getMessage());
+            return null;
+        } catch (DocumentException $e) {
+            $this->fail('document-invalid', $e->getMessage());
             return null;
         }
-        foreach ($warnings as $warning) {
-            fwrite($this->stderr, "warning: {$warning}\n");
-        }
+        $this->report($diagnostics);
         return $pairs;
+    }
+
+    /** @param list<Diagnostic> $diagnostics */
+    private function report(array $diagnostics): void
+    {
+        foreach ($diagnostics as $diagnostic) {
+            fwrite($this->stderr, ($this->diagnostics === 'json' ? $diagnostic->toJson() : $diagnostic->toText()) . "\n");
+        }
+    }
+
+    /**
+     * Writes the error that stops a command, and returns its exit code, 1.
+     *
+     * @param list<string> $files
+     */
+    private function fail(string $code, string $message, array $files = []): int
+    {
+        $this->report([Diagnostic::error($code, $message, $files)]);
+        return 1;
     }
 
     /** The default report title: the Composer package name, else the folder or file name. */
@@ -364,8 +395,7 @@ final class Application
     {
         if (is_string($file)) {
             if (@file_put_contents($file, $output) === false) {
-                fwrite($this->stderr, "error: cannot write {$file}\n");
-                return 1;
+                return $this->fail('output-unwritable', "cannot write {$file}");
             }
         } else {
             fwrite($this->stdout, $output);

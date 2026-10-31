@@ -45,7 +45,7 @@ final class Dependents
         $symbols = [];
         foreach ($files->nodes() as $node) {
             if ($node['kind'] === PairsDocument::CLUSTER) {
-                throw new \InvalidArgumentException('the pairs document is already clustered; ask about the file-level document instead');
+                throw new DependentsException('the pairs document is already clustered; ask about the file-level document instead', 'document-clustered');
             }
             // Only files declare symbols a target can name; other kinds are ignored, as in the other libraries.
             if ($node['kind'] !== PairsDocument::INTERNAL) {
@@ -64,7 +64,7 @@ final class Dependents
                 $nodes = self::respelled($files, $symbols, $target, $root);
             }
             if ($nodes === []) {
-                throw new \InvalidArgumentException("no node or symbol \"{$target}\" in the pairs document");
+                throw new DependentsException("no node or symbol \"{$target}\" in the pairs document", 'target-not-found');
             }
             sort($nodes, SORT_STRING);
             $resolved[] = ['target' => $target, 'nodes' => $nodes];
@@ -147,7 +147,7 @@ final class Dependents
         $path = $target;
         if ($root !== null && Path::isAbsolute($target)) {
             $path = self::insideProject($target, $root)
-                ?? throw new \InvalidArgumentException("\"{$target}\" is outside the project folder {$root}");
+                ?? throw new DependentsException("\"{$target}\" is outside the project folder {$root}", 'target-outside-project');
         }
         $path = Path::normalize($path);
         return $path !== '' && $files->hasNode($path) ? [$path] : [];
