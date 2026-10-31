@@ -1,0 +1,5 @@
+--transitive
+--through=src/**
+--exclude=src/app/http/user_controller.py
+--format=json
+src/app/domain/user.py

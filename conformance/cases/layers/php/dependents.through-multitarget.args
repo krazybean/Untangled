@@ -1,0 +1,5 @@
+--transitive
+--through=src/Http/**
+--format=json
+src/Domain/Order.php
+src/Http/Router.php

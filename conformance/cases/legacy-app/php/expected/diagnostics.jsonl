@@ -1,0 +1,2 @@
+{"level":"warning","code":"file-unparseable","message":"lib/Legacy/Broken.php: parse error: Syntax error, unexpected '{', expecting T_VARIABLE on line 5","files":["lib/Legacy/Broken.php"]}
+{"level":"warning","code":"uncovered-files","message":"1 PHP file is not covered by composer.json autoload rules and was not scanned (scripts/ 1); add folders with --source=<folder> if they hold code you want analyzed","files":["scripts/cron.php"]}

@@ -7,6 +7,31 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- `--diagnostics=json` writes every warning and error as one JSON object per line on
+  standard error (`level`, `code`, `message`, and `files` when there are any), so CI and
+  agents do not have to read message text. Text stays the default and is unchanged.
+  Every command takes it; standard output, exit codes and the pairs and analysis
+  documents are as before. The codes and the encoding are in spec/diagnostics.md;
+  `--diagnostics=github` is not supported yet.
+
+- `scan()` returns `diagnostics` (see `src/diagnostics.ts`) next to `warnings`, which is
+  kept: it is the message of each warning diagnostic. `ScanResult.diagnostics` is optional in the
+  type, so an object literal with only `pairs` and `warnings` is still a `ScanResult`; `scan()` always sets it. `PairsDocument.fromObject()` takes a
+  `diagnostics` list after `warnings`. `DependentsError` has a `code`.
+
+- `dependents --max-depth=N` (with `--transitive`) stops the walk after N steps from the
+  targets, and `--through=<glob>` (repeatable) only walks into files that match, so a
+  test that reaches a target only through application code is not found by way of it.
+  `--include` and `--exclude` still filter the list afterwards. `--max-depth` without
+  `--transitive`, or not a positive integer, is a usage error. See spec/dependents.md.
+
+- `dependents` accepts an absolute path inside the project, and a path written with `./`
+  or `\`. An absolute path outside the project is an error rather than a lookup that
+  finds nothing.
+
+- Globs with a hyphen in the pattern (`--exclude=src/user-controller.ts`) no longer make
+  the command fail: the hyphen was escaped in a way the regular expression rejected.
+
 ## 1.0.2
 
 - New `dependents` command: lists the files that depend on one or more files

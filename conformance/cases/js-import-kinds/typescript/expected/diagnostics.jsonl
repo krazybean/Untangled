@@ -1,0 +1,2 @@
+{"level":"warning","code":"file-unparseable","message":"src/broken.ts: cannot parse: Unexpected token (5:18)","files":["src/broken.ts"]}
+{"level":"warning","code":"file-partially-parsed","message":"1 file has syntax errors; the imports the parser could still read are kept: src/recovered.ts: Identifier 'twice' has already been declared. (6:4)","files":["src/recovered.ts"]}

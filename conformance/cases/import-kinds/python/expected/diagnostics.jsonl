@@ -1,0 +1,1 @@
+{"level":"warning","code":"package-list-missing","message":"no virtualenv found (a folder with pyvenv.cfg, or --venv=<path>), so imports of ujson could only be matched against declared dependencies by name, and show as unresolved; create the project's virtualenv first for a complete picture"}

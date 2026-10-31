@@ -1,0 +1,5 @@
+--transitive
+--through=src/domain/**
+--through=src/http/**
+--format=json
+src/domain/user.ts

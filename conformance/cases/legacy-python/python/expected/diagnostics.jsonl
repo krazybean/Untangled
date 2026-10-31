@@ -1,0 +1,1 @@
+{"level":"warning","code":"file-unparseable","message":"legacy/old.py: cannot parse as Python 3: Missing parentheses in call to 'print'. Did you mean print(...)? (line 6)","files":["legacy/old.py"]}

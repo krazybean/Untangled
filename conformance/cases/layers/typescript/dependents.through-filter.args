@@ -1,0 +1,5 @@
+--transitive
+--through=src/**
+--exclude=src/http/user-controller.ts
+--format=json
+src/domain/user.ts

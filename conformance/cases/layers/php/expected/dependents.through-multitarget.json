@@ -1,0 +1,30 @@
+{
+  "format": "untangled-dependents",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "1.0.2"
+  },
+  "transitive": true,
+  "targets": [
+    {
+      "target": "src/Domain/Order.php",
+      "nodes": [
+        "src/Domain/Order.php"
+      ]
+    },
+    {
+      "target": "src/Http/Router.php",
+      "nodes": [
+        "src/Http/Router.php"
+      ]
+    }
+  ],
+  "dependents": [
+    {
+      "id": "src/Http/UserController.php",
+      "depth": 1
+    }
+  ]
+}

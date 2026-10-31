@@ -4,7 +4,8 @@
 // --aliases files in its typescript/aliases file, must produce its expected pairs document, every
 // expected analysis[.<strategy>].json, and every expected graph[.<strategy>].dot byte for byte.
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
@@ -13,6 +14,7 @@ import { analyze } from "../src/analysis/analyzer.js";
 import { Clustering } from "../src/analysis/clustering.js";
 import { Filter } from "../src/analysis/filter.js";
 import { main } from "../src/cli.js";
+import type { Diagnostic } from "../src/diagnostics.js";
 import { encode, PairsDocument } from "../src/graph.js";
 import { renderDot } from "../src/report/dot.js";
 import { Report } from "../src/report/report.js";
@@ -24,8 +26,9 @@ const TYPESCRIPT_CASES = readdirSync(CASES)
   .filter((name) => existsSync(join(CASES, name, "typescript")))
   .sort();
 
+/** The non-empty lines of an optional file: one value per line, so a value may hold spaces. */
 function lines(file: string): string[] {
-  return existsSync(file) ? readFileSync(file, "utf8").split(/\s+/).filter(Boolean) : [];
+  return existsSync(file) ? readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean) : [];
 }
 
 function scanCase(name: string): ReturnType<typeof scan> {
@@ -73,6 +76,13 @@ function expectedFiles(name: string, pattern: RegExp): [string, string][] {
     });
 }
 
+test("lines keeps spaces and drops empty lines", () => {
+  const file = join(mkdtempSync(join(tmpdir(), "untangled-lines-")), "args");
+  writeFileSync(file, "--include=docs/a b/**\n\nsrc/My Folder/A.php\r\n");
+  expect(lines(file)).toEqual(["--include=docs/a b/**", "src/My Folder/A.php"]);
+  expect(lines(`${file}.missing`)).toEqual([]);
+});
+
 test("there are cases", () => {
   expect(TYPESCRIPT_CASES.length).toBeGreaterThanOrEqual(7);
 });
@@ -102,6 +112,16 @@ describe.each(TYPESCRIPT_CASES)("%s", (name) => {
       // The generator names this library's version, which the expected files do not pin.
       const generator = /\n {2}"generator": \{[^}]*\},/;
       expect(encode(analysis).replace(generator, "")).toBe(readFileSync(join(expected, file), "utf8").replace(generator, ""));
+    });
+  }
+
+  // The scan's diagnostics, one JSON object per line, are compared on level, code and files, in order:
+  // the message is for people and is not pinned.
+  if (existsSync(join(expected, "diagnostics.jsonl"))) {
+    test("diagnostics.jsonl", () => {
+      const project = (item: Diagnostic): [string, string, string[]] => [item.level, item.code, item.files ?? []];
+      const want = lines(join(expected, "diagnostics.jsonl")).map((line) => project(JSON.parse(line) as Diagnostic));
+      expect(scanCase(name).diagnostics.map(project)).toEqual(want);
     });
   }
 

@@ -9,6 +9,7 @@ import { builtinName } from "./builtins.js";
 import { bestMatch, readPackage, type Config, type Package } from "./config.js";
 import { folderOf, joinPath } from "./paths.js";
 import { isCode, type Project } from "./project.js";
+import type { Diagnostic } from "../diagnostics.js";
 
 /** Where a reference points: a node id, or a non-code file that gives no edge. */
 export type Target = { id: string } | { asset: string };
@@ -35,7 +36,7 @@ export class Resolver {
   constructor(
     private readonly project: Project,
     private readonly config: Config,
-    private readonly warnings: string[],
+    private readonly diagnostics: Diagnostic[],
   ) {}
 
   resolve(file: string, specifier: string): Target {
@@ -128,7 +129,7 @@ export class Resolver {
   private packageAt(folder: string): [string, Package] | undefined {
     if (!this.nearest.has(folder)) {
       const id = folder ? `${folder}/package.json` : "package.json";
-      const own = this.project.files.has(id) ? readPackage(this.project.root, id, this.warnings) : undefined;
+      const own = this.project.files.has(id) ? readPackage(this.project.root, id, this.diagnostics) : undefined;
       const up = parent(folder);
       this.nearest.set(folder, own !== undefined ? [folder, own] : up === undefined ? undefined : this.packageAt(up));
     }

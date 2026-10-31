@@ -20,6 +20,16 @@ A small layered app with three namespaces (`App\Domain`, `App\Infra`,
   --include=<http folder>` (`filtered`), where only the `http` files are listed
   but the walk still goes through `domain` and `infra`. PHP asks for `User` by its
   class name too; Python and TypeScript nodes declare no symbols, so they use files.
+  `--max-depth` and `--through` limit the walk: `max-depth-1`, `-2`, `-large` and
+  `-text` stop at a depth; `through-barrier` allows the `domain` files only, so
+  `UserRepository` (in `infra`) and `UserController` (in `http`, which reaches
+  `User` by way of `Order`) are not found, only `Order`; `through-multi` has two
+  patterns; `through-depth` adds `--max-depth=2`; `through-filter` shows that
+  `--exclude` hides `UserController` from the list while the walk still goes
+  through it; `through-start` begins at `Clock`, which `--through` does not match;
+  `through-multitarget` has two targets and the `Router` / `UserController`
+  cycle; `through-direct` has no `--transitive`; `through-none` matches nothing.
+  PHP also has `backslash`, a class name written with a leading `\`.
 - `UserRepository` uses `App\Cache\Store`, which does not exist: one unresolved
   reference. `Clock` uses `DateTimeImmutable`, a builtin, which the default
   filter drops before analysis.

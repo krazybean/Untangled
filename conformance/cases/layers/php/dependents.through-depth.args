@@ -1,0 +1,6 @@
+--transitive
+--through=src/Domain/**
+--through=src/Http/**
+--max-depth=2
+--format=json
+src/Domain/User.php

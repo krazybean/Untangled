@@ -41,7 +41,8 @@ untangled analyze [<path>|<pairs.json>]  [scan options] [filter options] [--outp
 untangled report  [<path>|<pairs.json>]  [scan options] [filter options]
                                          [--format=html|dot] [--style=classic] [--title=<text>] [--output=<file>]
 untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [scan options] [--include/--exclude ...]
-                                         [--transitive] [--format=text|json] [--output=<file>]
+                                         [--transitive] [--max-depth=<n>] [--through=<glob>]...
+                                         [--format=text|json] [--output=<file>]
 ```
 
 Each command runs the steps before it: `analyze` scans first, and `report`
@@ -102,6 +103,26 @@ The first argument is the source when it is a folder or a `.json` file; any
 other argument is a target, and the source is the current folder. A target
 that matches nothing exits with code 1.
 
+To choose the tests to run after a change, limit the walk instead of the list.
+`--max-depth=N` (with `--transitive`) stops after N steps from the targets, and
+`--through=<glob>` (repeatable, any match counts) only walks into files that
+match, so nothing is found by way of other files:
+
+```sh
+# tests that use the file, or reach it only through other tests (helpers, builders, base classes)
+untangled dependents /path/to/project src/shop/billing/tax.py --transitive --through='tests/**'
+# application code that reaches it, not through tests
+untangled dependents /path/to/project src/shop/billing/tax.py --transitive --through='src/**'
+# tests of the files that use it directly
+untangled dependents /path/to/project src/shop/billing/tax.py --transitive --max-depth=2 --exclude='**' --include='tests/**'
+```
+
+A file that `--through` leaves out is never listed, even when it uses a target
+directly, and it is not walked through. `--include` and `--exclude` still only
+filter the list afterwards, and `--max-depth` without `--transitive` is a usage
+error (exit code 2). A target can also be an absolute path inside the project,
+or a path with `./` or `\` separators.
+
 ### report
 
 Writes one self-contained HTML page meant for people who do not read code: a
@@ -137,9 +158,12 @@ thousands of files take `dot` minutes and come out too small to read.
 | `--title=TEXT` | `report` only: the report's title. Defaults to the project name in `pyproject.toml`, else the folder name. |
 | `--cluster=STRATEGY` | `analyze`, `report`: group files into units. `namespace:N` keeps the first N segments of the module name (`shop.billing.invoice` → `shop.billing` with N=2), `folder:N` the first N folders, and `rules:<file>` reads `<prefix> <cluster>` lines from a file, the first matching path prefix wins. See [clustering](https://github.com/krazybean/Untangled/blob/main/spec/clustering.md). |
 | `--transitive` | `dependents`: also list the files that depend on a dependent, with their depth. |
+| `--max-depth=N` | `dependents`: with `--transitive`, stop after N steps from the targets (a positive integer). |
+| `--through=GLOB` | `dependents`: only walk into files matching GLOB; nothing is found by way of other files. Repeatable, any match counts. |
 | `--strict` | `analyze`, `report`: with `rules:<file>`, exit 1 instead of warning when a file matches no rule (a file no rule matches is its own unit, and the warning names it). |
 | `--include=GLOB`, `--exclude=GLOB` | `analyze`, `report`: keep or drop project files by path (repeatable, the last matching pattern wins). `*` stays within a folder, `**` crosses folders. |
 | `--output=FILE` | Write to a file instead of standard output. |
+| `--diagnostics=FORMAT` | How warnings and errors are written to standard error: `text` (default), or `json`, one object per line. See [Diagnostics for programs](#diagnostics-for-programs). |
 
 ## What it reads
 
@@ -173,6 +197,37 @@ code; it stays in the pairs document marked `"error": "parse"`, and the report
 lists it under "Files we could not read"), files read statement by statement,
 finding no files to scan, a `--source` or `--venv` that does not exist, and unresolved imports
 of modules outside the project when no virtualenv was found.
+
+## Diagnostics for programs
+
+Everything the commands have to say about a project goes to standard error;
+standard output holds only the result. By default that is text, one
+`warning: ...` or `error: ...` line each. `--diagnostics=json` writes one JSON
+object per line instead, with a stable `code` to branch on, so a CI job or an
+agent never has to read the wording of a message:
+
+```sh
+untangled scan /path/to/project --diagnostics=json --output=pairs.json 2> diagnostics.jsonl
+jq -r 'select(.code == "uncovered-files") | .files[]' diagnostics.jsonl
+```
+
+```json
+{"level":"warning","code":"file-unparseable","message":"bad.py: cannot parse as Python 3: ...","files":["bad.py"]}
+```
+
+`level` is `warning` or `error` (the reason a command stopped, with exit code
+1), `code` names the condition, `message` is for people, and `files` lists the
+project-relative paths it is about when there are any. The exit code and the
+standard output do not change. The codes are listed in the
+[diagnostics specification](https://github.com/krazybean/Untangled/blob/main/spec/diagnostics.md),
+which also says how to read the lines. `--diagnostics=github` (annotations for
+GitHub Actions) is not supported yet; a formatter can be built on the JSON
+lines. A usage error (exit code 2) is always text.
+
+From Python, `Scanner.scan()` returns a `ScanResult` whose `diagnostics` are
+`untangled.diagnostics.Diagnostic` objects (`level`, `code`, `message`, `files`,
+`to_dict()`, `to_json()`); its older `warnings` list of strings is kept.
+
 
 ## Development
 

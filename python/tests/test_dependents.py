@@ -121,3 +121,147 @@ def test_text_shows_the_depth_when_transitive_and_root_files_go_first() -> None:
 
 def test_text_counts_one_dependent_in_the_singular() -> None:
     assert render_text(find(build(["a.py -> b.py"]), ["b.py"], False)).startswith("1 dependent of b.py\n")
+
+
+def test_ids_are_sorted_by_byte_value_even_when_they_look_numeric() -> None:
+    document = build(["9 -> t", "10 -> t", "1e1 -> t", "2 -> t"])
+    result = find(document, ["t"], False)
+    assert [item["id"] for item in result["dependents"]] == ["10", "1e1", "2", "9"]
+
+
+def test_only_internal_nodes_answer_to_a_symbol() -> None:
+    document = build(["a.py -> pypi:y"])
+    document.node("pypi:y")["symbols"] = ["vendor.y"]
+    with pytest.raises(ValueError, match='no node or symbol "vendor.y"'):
+        find(document, ["vendor.y"], False)
+
+
+def ids(document: dict) -> list[str]:
+    return [item["id"] for item in document["dependents"]]
+
+
+def test_max_depth_stops_the_walk() -> None:
+    def found(depth: int) -> dict[str, int]:
+        return depths(find(graph(), ["core/cache.py"], True, max_depth=depth))
+
+    assert found(1) == {"core/repo.py": 1}
+    assert found(2) == {"core/repo.py": 1, "core/service.py": 2}
+    assert found(3) == {"core/repo.py": 1, "core/service.py": 2, "web/controller.py": 3, "web/view.py": 3}
+    assert found(1000) == found(3)
+
+
+def test_max_depth_of_one_is_the_direct_dependents() -> None:
+    direct = find(graph(), ["core/service.py"], False)
+    limited = find(graph(), ["core/service.py"], True, max_depth=1)
+    assert limited["dependents"] == direct["dependents"]
+    assert limited["transitive"] is True
+
+
+def test_max_depth_below_one_is_refused() -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        find(graph(), ["core/service.py"], True, max_depth=0)
+
+
+@pytest.mark.parametrize("depth", [1, 2])
+def test_max_depth_without_transitive_is_refused(depth: int) -> None:
+    with pytest.raises(ValueError, match="only applies to a transitive search"):
+        find(graph(), ["core/service.py"], False, max_depth=depth)
+
+
+def test_through_only_goes_into_matching_files() -> None:
+    def found(through: list[str], targets: list[str] | None = None) -> dict[str, int]:
+        return depths(find(graph(), targets or ["core/cache.py"], True, through=through))
+
+    assert found(["core/**"]) == {"core/repo.py": 1, "core/service.py": 2}
+    # Repo is not eligible, so nothing is found by way of it, even the web files that use service.
+    assert found(["web/**"]) == {}
+    # The patterns are alternatives.
+    assert found(["core/**", "web/**"]) == {
+        "core/repo.py": 1,
+        "core/service.py": 2,
+        "web/controller.py": 3,
+        "web/view.py": 3,
+    }
+    # The target is the start of the walk whatever it matches: cache is not in the list.
+    assert found(["core/repo.py"]) == {"core/repo.py": 1}
+
+
+def test_through_finds_the_shortest_path_through_eligible_files_only() -> None:
+    # c is two steps from t by way of x, but x is not eligible: by way of m and a it is three.
+    document = build(["x.py -> t.py", "c.py -> x.py", "a.py -> t.py", "m.py -> a.py", "c.py -> m.py"])
+    assert depths(find(document, ["t.py"], True, through=["a.py", "m.py", "c.py"])) == {
+        "a.py": 1,
+        "m.py": 2,
+        "c.py": 3,
+    }
+    assert depths(find(document, ["t.py"], True)) == {"a.py": 1, "x.py": 1, "c.py": 2, "m.py": 2}
+
+
+def test_through_applies_to_direct_dependents_too() -> None:
+    assert ids(find(graph(), ["core/service.py"], False, through=["web/controller.py"])) == ["web/controller.py"]
+
+
+def test_through_combines_with_max_depth_and_the_output_filter() -> None:
+    both = ["core/**", "web/**"]
+    assert depths(find(graph(), ["core/cache.py"], True, through=both, max_depth=2)) == {
+        "core/repo.py": 1,
+        "core/service.py": 2,
+    }
+    # --exclude hides service from the list but the walk still goes through it.
+    hidden = Filter()
+    hidden.exclude("core/service.py")
+    assert depths(find(graph(), ["core/cache.py"], True, hidden, through=both)) == {
+        "core/repo.py": 1,
+        "web/controller.py": 3,
+        "web/view.py": 3,
+    }
+    # --include cannot bring back a file --through left out.
+    everything = Filter()
+    everything.include("**")
+    assert find(graph(), ["core/cache.py"], True, everything, through=["web/**"])["dependents"] == []
+
+
+def test_through_with_two_targets_and_a_cycle_lists_each_file_once() -> None:
+    document = find(graph(), ["core/repo.py", "core/cache.py"], True, through=["core/**", "web/**"])
+    assert depths(document) == {"core/service.py": 1, "web/controller.py": 2, "web/view.py": 2}
+
+
+@pytest.mark.parametrize(
+    ("target", "root"),
+    [
+        ("core/service.py", "/work/app"),
+        ("./core/service.py", "/work/app"),
+        ("core\\service.py", "/work/app"),
+        ("core//x/../service.py", "/work/app"),
+        ("/work/app/core/service.py", "/work/app"),
+        ("/work/app/./core/../core/service.py", "/work/app"),
+        ("C:\\work\\app\\core\\service.py", "c:/work/app"),
+    ],
+)
+def test_paths_are_respelled_to_project_ids(target: str, root: str) -> None:
+    assert find(graph(), [target], False, root=root)["targets"][0]["nodes"] == ["core/service.py"]
+
+
+@pytest.mark.parametrize(
+    ("target", "root"),
+    [
+        ("/work/other/core/service.py", "/work/app"),
+        ("/work/application/core/service.py", "/work/app"),
+        ("/work/app/../app2/x.py", "/work/app"),
+        # A drive other than the root's (os.path.realpath would give a drive-less root the current one).
+        ("D:\\work\\app\\core\\service.py", "C:/work/app"),
+    ],
+)
+def test_an_absolute_path_outside_the_project_is_refused(target: str, root: str) -> None:
+    with pytest.raises(ValueError, match="is outside the project folder"):
+        find(graph(), [target], False, root=root)
+
+
+def test_an_absolute_path_matches_nothing_without_a_project_folder() -> None:
+    with pytest.raises(ValueError, match='no node or symbol "/work/app/core/service.py"'):
+        find(graph(), ["/work/app/core/service.py"], False)
+
+
+def test_an_as_written_match_still_wins_over_a_respelling() -> None:
+    document = build(["./a/b.py -> a/b.py"])
+    assert find(document, ["./a/b.py"], False)["targets"][0]["nodes"] == ["./a/b.py"]

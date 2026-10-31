@@ -6,8 +6,8 @@ document, directly or through any chain of other files. It reads the
 language.
 
 ```
-untangled dependents [<path>|<pairs.json>] <target>... [--transitive]
-                     [--include=<glob>]... [--exclude=<glob>]...
+untangled dependents [<path>|<pairs.json>] <target>... [--transitive] [--max-depth=<n>]
+                     [--through=<glob>]... [--include=<glob>]... [--exclude=<glob>]...
                      [--format=text|json] [--output=<file>]
 ```
 
@@ -35,8 +35,26 @@ order:
    target (`App\Billing\Tax`). The match is exact, and more than one file can
    declare the same symbol.
 
+3. A spelling of a file path or of a symbol that is not an id but names
+   one, tried only when 1 and 2 matched nothing, so a target that matched
+   before still matches the same way:
+   - **Paths.** Separators are written as `/`; repeated separators and `.` and
+     `..` segments are collapsed (`.\src\Billing\Tax.php` is
+     `src/Billing/Tax.php`). An **absolute** path (one that starts with `/`, or
+     with a drive such as `C:/` or `C:\`) that is inside the project folder
+     becomes its path relative to it; a drive letter matches in either case.
+     The path and the folder are also compared with symbolic links resolved,
+     so a pasted `pwd` works either way. The project folder is the source when
+     it is a folder, else the current folder.
+   - **Symbols.** A library may accept more spellings of its own language's
+     symbols. The PHP library accepts a class name with a leading backslash
+     (`\App\Billing\Tax` for `App\Billing\Tax`), see the
+     [PHP profile](languages/php.md#dependents-targets).
+
 A target that matches nothing is an error (exit code 1); the command never
-guesses. The dependents are those of all the targets together.
+guesses. An absolute path outside the project folder is an error too, which
+says so, never a lookup under some other name. The dependents are those of all
+the targets together.
 
 ## What counts
 
@@ -52,11 +70,54 @@ can depend on anything, so dependents are always files of the project.
 A target is never listed as a dependent of itself or of another target, even
 inside a cycle.
 
+Two kinds of options narrow the answer, and they work at different times:
+
+- `--through` and `--max-depth` limit **the walk**.
+- `--include` and `--exclude` filter **the list**, once the walk is done.
+
+### Limiting the walk
+
+**`--max-depth=<n>`** stops the walk after `n` steps from the targets: only
+dependents with `depth` of at most `n` are found. `n` is a positive integer
+written in decimal digits, without a sign or a leading zero; one larger than
+the longest chain is the same as no limit. `--max-depth=1` finds the files
+`--transitive` alone would list at depth 1, which are the direct dependents
+(the document still says `"transitive": true`). It is a usage error (exit
+code 2) without `--transitive`, rather than ignored: someone who asks for a
+depth expects a walk that goes deeper than one step, and a depth of 1 is what
+the command already does. A library's function refuses it the same way, with an argument error.
+
+**`--through=<glob>`** (repeatable) limits the walk to some files. A file is
+**eligible** when it matches at least one `--through` glob, using the globs of
+[clustering](clustering.md#filtering); with no `--through`, every file is
+eligible. The patterns are alternatives, there is no way to exclude with
+`--through`, so no pattern takes precedence over another. The walk only goes
+**into** eligible files:
+
+- A file that is not eligible is never reached. It is not listed, not even
+  when it uses a target directly (depth 1), and the walk does not go through it,
+  so files that use the target only by way of an ineligible file are not found
+  through that file. `depth` is the shortest distance over eligible files only.
+- The targets are the start of the walk whatever they match, and so is every
+  node a target names.
+- It also applies without `--transitive`, where it keeps the direct dependents
+  that are eligible.
+- The check is made during the walk, one step at a time. Filtering the list
+  afterwards would be different: a test reached only through application code
+  is found by `--exclude=** --include=tests/**`, but not by
+  `--through=tests/**`.
+
+The two combine: `--through='src/**' --max-depth=2` is the application files
+within two steps of the targets by way of application files only.
+
+### Filtering the list
+
 `--include` and `--exclude` use the globs of [clustering](clustering.md#filtering)
 (the last matching pattern wins) and filter the **list**, not the walk: a file
 is walked through even when a glob hides it, so a test that reaches a target
 only through application code is still found by `--exclude=** --include=tests/**`.
-Targets are looked up before filtering.
+Targets are looked up before filtering, and files that `--through` leaves out
+are never in the list for them to filter.
 
 ## Output
 
@@ -113,5 +174,12 @@ Sorting is by byte value, as everywhere in the spec.
 ## Exit codes
 
 `0` when the query ran (even with no dependents), `1` when the source cannot
-be read, or a target matches nothing, or the document is clustered, `2` for a
-usage error (no target, an unknown option or format).
+be read, or a target matches nothing or is an absolute path outside the
+project folder, or the document is clustered, `2` for a usage error (no
+target, an unknown option or format, a `--max-depth` that is not a positive
+integer or is given without `--transitive`):
+
+```
+Option --max-depth needs a positive integer, as in --max-depth=2 (got "0")
+--max-depth only applies with --transitive
+```

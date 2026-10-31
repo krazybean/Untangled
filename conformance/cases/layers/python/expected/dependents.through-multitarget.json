@@ -1,0 +1,30 @@
+{
+  "format": "untangled-dependents",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "1.0.2"
+  },
+  "transitive": true,
+  "targets": [
+    {
+      "target": "src/app/domain/order.py",
+      "nodes": [
+        "src/app/domain/order.py"
+      ]
+    },
+    {
+      "target": "src/app/http/router.py",
+      "nodes": [
+        "src/app/http/router.py"
+      ]
+    }
+  ],
+  "dependents": [
+    {
+      "id": "src/app/http/user_controller.py",
+      "depth": 1
+    }
+  ]
+}
