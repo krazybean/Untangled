@@ -237,17 +237,18 @@ def test_paths_are_respelled_to_project_ids(target: str, root: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "target",
+    ("target", "root"),
     [
-        "/work/other/core/service.py",
-        "/work/application/core/service.py",
-        "/work/app/../app2/x.py",
-        "D:\\work\\app\\core\\service.py",
+        ("/work/other/core/service.py", "/work/app"),
+        ("/work/application/core/service.py", "/work/app"),
+        ("/work/app/../app2/x.py", "/work/app"),
+        # A drive other than the root's (os.path.realpath would give a drive-less root the current one).
+        ("D:\\work\\app\\core\\service.py", "C:/work/app"),
     ],
 )
-def test_an_absolute_path_outside_the_project_is_refused(target: str) -> None:
-    with pytest.raises(ValueError, match="is outside the project folder /work/app"):
-        find(graph(), [target], False, root="/work/app")
+def test_an_absolute_path_outside_the_project_is_refused(target: str, root: str) -> None:
+    with pytest.raises(ValueError, match="is outside the project folder"):
+        find(graph(), [target], False, root=root)
 
 
 def test_an_absolute_path_matches_nothing_without_a_project_folder() -> None:
