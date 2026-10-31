@@ -1,0 +1,5 @@
+--transitive
+--through=src/**
+--exclude=src/Http/UserController.php
+--format=json
+src/Domain/User.php

@@ -11,6 +11,7 @@ use Untangled\Analysis\Analyzer;
 use Untangled\Analysis\Clustering;
 use Untangled\Analysis\Filter;
 use Untangled\Cli\Application;
+use Untangled\Diagnostic;
 use Untangled\Graph\PairsDocument;
 use Untangled\Report\Dot;
 use Untangled\Report\Report;
@@ -52,6 +53,16 @@ final class ConformanceTest extends TestCase
         foreach (self::cases() as $name => [$case]) {
             foreach (glob($case . '/expected/graph*.dot') ?: [] as $file) {
                 yield $name . ' ' . basename($file) => [$case, $file];
+            }
+        }
+    }
+
+    /** @return iterable<string, array{string, string}> */
+    public static function diagnostics(): iterable
+    {
+        foreach (self::cases() as $name => [$case]) {
+            if (is_file($case . '/expected/diagnostics.jsonl')) {
+                yield $name => [$case, $case . '/expected/diagnostics.jsonl'];
             }
         }
     }
@@ -137,6 +148,22 @@ final class ConformanceTest extends TestCase
         $pairs = self::scan($case)->pairs;
         $actual = Dot::render(Report::build(basename(dirname($case)), (new Filter())->apply($pairs), $clustering));
         self::assertSame(file_get_contents($file), $actual);
+    }
+
+    /**
+     * The scan's diagnostics, one JSON object per line of `expected/diagnostics.jsonl`, are compared
+     * on level, code and files, in order: the message is for people and is not pinned.
+     */
+    #[DataProvider('diagnostics')]
+    public function testDiagnostics(string $case, string $file): void
+    {
+        $project = static fn (array $diagnostic): array => [$diagnostic['level'], $diagnostic['code'], $diagnostic['files'] ?? []];
+        $expected = array_map(
+            static fn (string $line): array => $project(json_decode($line, true, 512, JSON_THROW_ON_ERROR)),
+            self::lines($file),
+        );
+        $actual = array_map(static fn (Diagnostic $diagnostic): array => $project($diagnostic->toArray()), self::scan($case)->diagnostics);
+        self::assertSame($expected, $actual);
     }
 
     /**

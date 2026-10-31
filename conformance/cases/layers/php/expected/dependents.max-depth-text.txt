@@ -1,0 +1,10 @@
+3 dependents of src/Domain/User.php
+
+src/Domain/
+  Order.php  (depth 1)
+
+src/Http/
+  UserController.php  (depth 2)
+
+src/Infra/
+  UserRepository.php  (depth 1)

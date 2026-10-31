@@ -1,0 +1,28 @@
+{
+  "format": "untangled-dependents",
+  "version": "0.1",
+  "language": "php",
+  "generator": {
+    "name": "untangled-php",
+    "version": "1.0.2"
+  },
+  "transitive": false,
+  "targets": [
+    {
+      "target": "\\App\\Domain\\User",
+      "nodes": [
+        "src/Domain/User.php"
+      ]
+    }
+  ],
+  "dependents": [
+    {
+      "id": "src/Domain/Order.php",
+      "depth": 1
+    },
+    {
+      "id": "src/Infra/UserRepository.php",
+      "depth": 1
+    }
+  ]
+}

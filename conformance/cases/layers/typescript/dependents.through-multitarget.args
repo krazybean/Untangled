@@ -1,0 +1,5 @@
+--transitive
+--through=src/http/**
+--format=json
+src/domain/order.ts
+src/http/router.ts

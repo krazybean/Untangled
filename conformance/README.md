@@ -14,7 +14,8 @@ cases/<case>/
         ├── analysis.json              # the expected analysis of the file graph
         ├── analysis.<strategy>.json   # optional: a clustered analysis
         ├── graph[.<strategy>].dot     # optional: the report's DOT graph
-        └── dependents.<name>.json|txt # optional: the output of that `dependents` query
+        ├── dependents.<name>.json|txt # optional: the output of that `dependents` query
+        └── diagnostics.jsonl          # optional: the diagnostics of the scan, one JSON object per line
     clusters.rules             # optional: the rules for analysis.rules.json
     sources                    # optional: --source paths for the scan, one per line
     aliases                    # optional: --aliases presets or files (relative to <language>/), one per line

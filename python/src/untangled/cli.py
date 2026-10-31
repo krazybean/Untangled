@@ -4,6 +4,7 @@ Untangled library: `scan`, `analyze`, `report` and `dependents`."""
 
 import json
 import os
+import re
 import sys
 import tomllib
 from typing import TextIO
@@ -13,6 +14,7 @@ from untangled.analysis import dependents
 from untangled.analysis.analyzer import analyze
 from untangled.analysis.clustering import Clustering
 from untangled.analysis.filtering import Filter
+from untangled.diagnostics import Diagnostic
 from untangled.graph import DocumentError, PairsDocument, encode
 from untangled.report import dot, html
 from untangled.report.report import Report
@@ -27,7 +29,10 @@ Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--venv=<path>]...
        untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                          [--title=<text>] [analyze options]
        untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [--transitive]
+                            [--max-depth=<n>] [--through=<glob>]...
                             [--format=text|json] [analyze options]
+
+Every command also takes --diagnostics=text|json.
 
 Commands:
   scan       Write the dependency pairs of a Python project (default path: .)
@@ -45,27 +50,32 @@ Options:
                      report: html (default) or dot
                      dependents: text (default) or json
   --transitive       dependents: also the files that depend on a dependent, with their depth
+  --max-depth=N      dependents: with --transitive, stop after N steps from the targets
+  --through=GLOB     dependents: only walk into files matching GLOB (repeatable, any match counts),
+                     so nothing is found by way of other files
   --style=STYLE      report --format=dot only: default, or classic for snakefood's
                      black and white sfood-graph look
   --title=TEXT       report only: the report's title (default: the project name in pyproject.toml)
   --cluster=STRATEGY analyze, report: namespace:N, folder:N or rules:<file>
   --strict           analyze, report: with rules:<file>, exit 1 instead of warning when a
                      file matches no rule
-  --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
-  --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
+  --include=GLOB     analyze, report, dependents: keep files matching GLOB (repeatable, last match wins)
+  --exclude=GLOB     analyze, report, dependents: drop files matching GLOB (repeatable, last match wins)
   --output=FILE      Write to FILE instead of standard output
+  --diagnostics=FMT  How warnings and errors are written to standard error: text (default),
+                     or json, one object per line with level, code, message and files
   -h, --help         Show this help
   -V, --version      Show the version
 """
 
-_SCAN = {"dev", "source", "venv"}
+_SCAN = {"dev", "source", "venv", "diagnostics"}
 _COMMANDS = {
     "scan": _SCAN | {"format", "output"},
     "analyze": _SCAN | {"cluster", "strict", "include", "exclude", "output"},
     "report": _SCAN | {"cluster", "strict", "include", "exclude", "output", "format", "style", "title"},
-    "dependents": _SCAN | {"transitive", "include", "exclude", "output", "format"},
+    "dependents": _SCAN | {"transitive", "max-depth", "through", "include", "exclude", "output", "format"},
 }
-_REPEATABLE = {"source", "venv"}
+_REPEATABLE = {"source", "venv", "through"}
 
 
 class _Usage(Exception):
@@ -73,7 +83,23 @@ class _Usage(Exception):
 
 
 class _Failure(Exception):
-    """An error reading or writing: exit code 1."""
+    """An error reading or writing: exit code 1. `code` is its diagnostic code (spec/diagnostics.md)."""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
+class _Reporter:
+    """Writes diagnostics to standard error as text lines or as JSON Lines (--diagnostics)."""
+
+    def __init__(self, err: TextIO) -> None:
+        self.err = err
+        self.mode = "text"
+
+    def report(self, diagnostics: list[Diagnostic]) -> None:
+        for item in diagnostics:
+            self.err.write((item.to_json() if self.mode == "json" else item.to_text()) + "\n")
 
 
 def main(argv: list[str] | None = None, stdout: TextIO | None = None, stderr: TextIO | None = None) -> int:
@@ -84,12 +110,18 @@ def main(argv: list[str] | None = None, stdout: TextIO | None = None, stderr: Te
     except _Usage as error:
         err.write(f"{error}\n")
         return 2
-    except _Failure as error:
-        err.write(f"error: {error}\n")
-        return 1
 
 
 def _run(args: list[str], out: TextIO, err: TextIO) -> int:
+    reporter = _Reporter(err)
+    try:
+        return _execute(args, out, reporter)
+    except _Failure as failure:
+        reporter.report([Diagnostic.error(failure.code, str(failure))])
+        return 1
+
+
+def _execute(args: list[str], out: TextIO, reporter: _Reporter) -> int:
     positional: list[str] = []
     options: dict[str, str | bool] = {}
     repeated: dict[str, list[str]] = {name: [] for name in _REPEATABLE}
@@ -127,6 +159,10 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
         raise _Usage("Option --strict takes no value")
     if "transitive" in options and options["transitive"] is not True:
         raise _Usage("Option --transitive takes no value")
+    diagnostics_format = options.get("diagnostics", "text")
+    if diagnostics_format not in ("text", "json"):
+        raise _Usage(f"Unknown diagnostics format: {diagnostics_format} (use text or json)")
+    reporter.mode = str(diagnostics_format)
 
     path = positional[0] if positional else "."
     scanner = Scanner(dev="dev" in options, sources=repeated["source"], venvs=repeated["venv"] or None)
@@ -137,11 +173,11 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
         output_format = options.get("format", "json")
         if output_format not in ("json", "snakefood"):
             raise _Usage(f"Unknown format: {output_format}")
-        pairs = _scan(scanner, path, err)
+        pairs = _scan(scanner, path, reporter)
         return _write(pairs.to_json() if output_format == "json" else pairs.to_snakefood(path), output, out)
 
     if command == "dependents":
-        return _dependents(positional, options, patterns, scanner, output, out, err)
+        return _dependents(positional, options, patterns, repeated["through"], scanner, output, out, reporter)
 
     output_format = options.get("format", "html")
     if command == "report" and output_format not in ("html", "dot"):
@@ -156,22 +192,21 @@ def _run(args: list[str], out: TextIO, err: TextIO) -> int:
         raise _Usage("--strict only applies to --cluster=rules:<file>")
     clustering = _clustering(strategy)
 
-    pairs = _load(path, scanner, err)
+    pairs = _load(path, scanner, reporter)
 
     selected = _filter(patterns).apply(pairs)
     unmatched = clustering.unmatched(selected) if clustering is not None else []
     if unmatched:
-        message = Clustering.describe_unmatched(unmatched)
+        reporter.report([Clustering.unmatched_diagnostic(unmatched, "strict" in options)])
         if "strict" in options:
-            raise _Failure(message)
-        err.write(f"warning: {message}\n")
+            return 1
     try:
         if command == "analyze":
             return _write(encode(analyze(selected, clustering)), output, out)
         title = options.get("title")
         report = Report.build(title if isinstance(title, str) else _title(path), selected, clustering)
     except ValueError as error:
-        raise _Failure(str(error)) from error
+        raise _Failure("document-clustered", str(error)) from error
     return _write(dot.render(report, str(style)) if output_format == "dot" else html.render(report), output, out)
 
 
@@ -179,16 +214,26 @@ def _dependents(
     positional: list[str],
     options: dict[str, str | bool],
     patterns: list[tuple[str, str]],
+    through: list[str],
     scanner: Scanner,
     output: str | None,
     out: TextIO,
-    err: TextIO,
+    reporter: _Reporter,
 ) -> int:
     """The source is the first argument when it is a folder or a .json file, else the current folder;
     the rest are the targets."""
     output_format = options.get("format", "text")
     if output_format not in ("text", "json"):
         raise _Usage(f"Unknown format: {output_format}")
+    max_depth = None
+    if "max-depth" in options:
+        given = str(options["max-depth"])
+        if not re.fullmatch(r"[1-9][0-9]*", given):
+            raise _Usage(f'Option --max-depth needs a positive integer, as in --max-depth=2 (got "{given}")')
+        if "transitive" not in options:
+            raise _Usage("--max-depth only applies with --transitive")
+        # More than 9 digits is deeper than any graph, so it is the same as no limit.
+        max_depth = 999999999 if len(given) > 9 else int(given)
     first = positional[0] if positional else None
     has_source = first is not None and (
         os.path.isdir(first) or (os.path.isfile(first) and first.lower().endswith(".json"))
@@ -196,11 +241,15 @@ def _dependents(
     targets = positional[1:] if has_source else positional
     if not targets:
         raise _Usage("dependents needs at least one file or symbol to look up")
-    pairs = _load(first if has_source and first is not None else ".", scanner, err)
+    pairs = _load(first if has_source and first is not None else ".", scanner, reporter)
+    # Absolute paths are relative to the project when the source is one, else to the current folder.
+    root = os.path.realpath(first if has_source and first is not None and os.path.isdir(first) else ".")
     try:
-        document = dependents.find(pairs, targets, "transitive" in options, _filter(patterns))
-    except ValueError as error:
-        raise _Failure(str(error)) from error
+        document = dependents.find(
+            pairs, targets, "transitive" in options, _filter(patterns), through=through, max_depth=max_depth, root=root
+        )
+    except dependents.DependentsError as error:
+        raise _Failure(error.code, str(error)) from error
     return _write(encode(document) if output_format == "json" else dependents.render_text(document), output, out)
 
 
@@ -212,33 +261,31 @@ def _filter(patterns: list[tuple[str, str]]) -> Filter:
     return selection
 
 
-def _load(path: str, scanner: Scanner, err: TextIO) -> PairsDocument:
-    """Reads a pairs document, or scans a project, and writes the warnings to standard error."""
+def _load(path: str, scanner: Scanner, reporter: _Reporter) -> PairsDocument:
+    """Reads a pairs document, or scans a project, and writes the diagnostics to standard error."""
     if not os.path.isfile(path):
-        return _scan(scanner, path, err)
-    warnings: list[str] = []
+        return _scan(scanner, path, reporter)
+    diagnostics: list[Diagnostic] = []
     try:
         with open(path, encoding="utf-8") as handle:
             data = json.load(handle)
-        pairs = PairsDocument.from_dict(data, warnings)
+        pairs = PairsDocument.from_dict(data, diagnostics=diagnostics)
     except OSError as error:
-        raise _Failure(f"cannot read {path}") from error
+        raise _Failure("document-unreadable", f"cannot read {path}") from error
     except (json.JSONDecodeError, UnicodeDecodeError) as error:
-        raise _Failure(f"{path} is not valid JSON: {error}") from error
+        raise _Failure("document-invalid", f"{path} is not valid JSON: {error}") from error
     except DocumentError as error:
-        raise _Failure(str(error)) from error
-    for warning in warnings:
-        err.write(f"warning: {warning}\n")
+        raise _Failure("document-invalid", str(error)) from error
+    reporter.report(diagnostics)
     return pairs
 
 
-def _scan(scanner: Scanner, path: str, err: TextIO) -> PairsDocument:
+def _scan(scanner: Scanner, path: str, reporter: _Reporter) -> PairsDocument:
     try:
         result = scanner.scan(path)
     except ProjectError as error:
-        raise _Failure(str(error)) from error
-    for warning in result.warnings:
-        err.write(f"warning: {warning}\n")
+        raise _Failure("project-unreadable", str(error)) from error
+    reporter.report(result.diagnostics)
     return result.pairs
 
 
@@ -251,7 +298,7 @@ def _clustering(strategy: str | bool | None) -> Clustering | None:
             with open(rules_file, encoding="utf-8") as handle:
                 text = handle.read()
         except (OSError, UnicodeDecodeError) as error:
-            raise _Failure(f"cannot read rules file {rules_file}") from error
+            raise _Failure("rules-file-unreadable", f"cannot read rules file {rules_file}") from error
         try:
             return Clustering.parse_rules(text)
         except ValueError as error:
@@ -284,5 +331,5 @@ def _write(text: str, output: str | None, out: TextIO) -> int:
         with open(output, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(text)
     except OSError as error:
-        raise _Failure(f"cannot write {output}") from error
+        raise _Failure("output-unwritable", f"cannot write {output}") from error
     return 0

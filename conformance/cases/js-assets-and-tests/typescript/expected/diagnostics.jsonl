@@ -1,0 +1,2 @@
+{"level":"warning","code":"build-output-skipped","message":"skipped 2 files in build output (dist, out); add a folder back with --source=<path> if it holds source code","files":["dist","out"]}
+{"level":"warning","code":"non-code-imports","message":"3 imports of non-code files gave no edge (.svg 2, .css 1)"}

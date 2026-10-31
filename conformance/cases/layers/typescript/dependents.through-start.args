@@ -1,0 +1,4 @@
+--transitive
+--through=src/domain/**
+--format=json
+src/infra/clock.ts

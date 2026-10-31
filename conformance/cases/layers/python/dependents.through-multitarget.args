@@ -1,0 +1,5 @@
+--transitive
+--through=src/app/http/**
+--format=json
+src/app/domain/order.py
+src/app/http/router.py

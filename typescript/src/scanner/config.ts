@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { decode } from "../text.js";
 import { parseJsonc } from "./jsonc.js";
 import { folderOf, joinPath } from "./paths.js";
+import { warningDiagnostic, type Diagnostic } from "../diagnostics.js";
 
 /** One key of `paths` or `imports`: exact, or with one `*`. */
 export interface Pattern {
@@ -36,24 +37,24 @@ export interface Config {
   baseUrl: string | undefined;
   /** compilerOptions.outDir as a project-relative folder. */
   outDir: string | undefined;
-  warnings: string[];
+  diagnostics: Diagnostic[];
 }
 
 const DEPENDENCY_FIELDS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
 
 export function loadConfig(root: string, aliasFiles: string[]): Config {
-  const warnings: string[] = [];
-  const config: Config = { aliases: [], baseUrl: undefined, outDir: undefined, warnings };
+  const diagnostics: Diagnostic[] = [];
+  const config: Config = { aliases: [], baseUrl: undefined, outDir: undefined, diagnostics };
 
   for (const file of aliasFiles) {
     // The file is named on the command line, so relative to the working folder; its targets
     // are relative to the project root.
-    const data = readJson("", file, warnings, true);
+    const data = readJson("", file, diagnostics, true);
     if (data === undefined) {
       continue;
     }
     if (!isObject(data)) {
-      warnings.push(`--aliases=${file}: not a JSON object of aliases; ignored`);
+      diagnostics.push(warningDiagnostic("aliases-ignored", `--aliases=${file}: not a JSON object of aliases; ignored`));
       continue;
     }
     config.aliases.push({ patterns: patterns(data, (target) => targetList(target), (path) => joinPath("", path)) });
@@ -61,7 +62,7 @@ export function loadConfig(root: string, aliasFiles: string[]): Config {
 
   const tsconfig = existsSync(join(root, "tsconfig.json")) ? "tsconfig.json" : "jsconfig.json";
   if (existsSync(join(root, tsconfig))) {
-    const options = compilerOptions(root, tsconfig, warnings, new Set());
+    const options = compilerOptions(root, tsconfig, diagnostics, new Set());
     if (options.baseUrl !== undefined) {
       config.baseUrl = options.baseUrl;
     }
@@ -79,8 +80,8 @@ export function loadConfig(root: string, aliasFiles: string[]): Config {
 }
 
 /** A package.json of the project, by id; undefined when it cannot be read. */
-export function readPackage(root: string, id: string, warnings: string[]): Package | undefined {
-  const manifest = readJson(root, id, warnings);
+export function readPackage(root: string, id: string, diagnostics: Diagnostic[]): Package | undefined {
+  const manifest = readJson(root, id, diagnostics);
   if (!isObject(manifest)) {
     return undefined;
   }
@@ -108,12 +109,12 @@ interface CompilerOptions {
 }
 
 /** compilerOptions after following `extends` to files in the project; the extending file wins. */
-function compilerOptions(root: string, file: string, warnings: string[], seen: Set<string>): CompilerOptions {
+function compilerOptions(root: string, file: string, diagnostics: Diagnostic[], seen: Set<string>): CompilerOptions {
   if (seen.has(file)) {
     return {};
   }
   seen.add(file);
-  const data = readJson(root, file, warnings);
+  const data = readJson(root, file, diagnostics);
   if (!isObject(data)) {
     return {};
   }
@@ -129,7 +130,7 @@ function compilerOptions(root: string, file: string, warnings: string[], seen: S
       path += ".json";
     }
     if (path !== undefined && isFile(join(root, path))) {
-      options = { ...options, ...compilerOptions(root, path, warnings, seen) };
+      options = { ...options, ...compilerOptions(root, path, diagnostics, seen) };
     }
   }
   const own = isObject(data.compilerOptions) ? data.compilerOptions : {};
@@ -235,18 +236,20 @@ function firstString(value: unknown): string[] {
   return [];
 }
 
-function readJson(root: string, file: string, warnings: string[], required = false): unknown {
+function readJson(root: string, file: string, diagnostics: Diagnostic[], required = false): unknown {
   const path = root ? join(root, file) : file;
   if (!existsSync(path)) {
     if (required) {
-      warnings.push(`--aliases=${file}: no such file`);
+      diagnostics.push(warningDiagnostic("aliases-ignored", `--aliases=${file}: no such file`));
     }
     return undefined;
   }
   try {
     return parseJsonc(decode(readFileSync(path)));
   } catch (error) {
-    warnings.push(`${file}: cannot read it (${(error as Error).message}); ignoring it`);
+    const message = `${file}: cannot read it (${(error as Error).message}); ignoring it`;
+    // An --aliases file is named relative to the working folder, not the project.
+    diagnostics.push(root ? warningDiagnostic("config-unreadable", message, [file]) : warningDiagnostic("aliases-ignored", message));
     return undefined;
   }
 }
