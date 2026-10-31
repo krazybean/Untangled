@@ -162,6 +162,12 @@ def test_max_depth_below_one_is_refused() -> None:
         find(graph(), ["core/service.py"], True, max_depth=0)
 
 
+@pytest.mark.parametrize("depth", [1, 2])
+def test_max_depth_without_transitive_is_refused(depth: int) -> None:
+    with pytest.raises(ValueError, match="only applies to a transitive search"):
+        find(graph(), ["core/service.py"], False, max_depth=depth)
+
+
 def test_through_only_goes_into_matching_files() -> None:
     def found(through: list[str], targets: list[str] | None = None) -> dict[str, int]:
         return depths(find(graph(), targets or ["core/cache.py"], True, through=through))

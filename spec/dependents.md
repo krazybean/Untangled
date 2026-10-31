@@ -85,7 +85,7 @@ the longest chain is the same as no limit. `--max-depth=1` finds the files
 (the document still says `"transitive": true`). It is a usage error (exit
 code 2) without `--transitive`, rather than ignored: someone who asks for a
 depth expects a walk that goes deeper than one step, and a depth of 1 is what
-the command already does.
+the command already does. A library's function refuses it the same way, with an argument error.
 
 **`--through=<glob>`** (repeatable) limits the walk to some files. A file is
 **eligible** when it matches at least one `--through` glob, using the globs of

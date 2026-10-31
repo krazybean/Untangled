@@ -37,7 +37,7 @@ export interface DependentsOptions {
 /**
  * `filter` keeps only the dependents it keeps once the walk is done. Throws DependentsError when the
  * document is clustered, a target matches nothing or is an absolute path outside `root`, or `maxDepth`
- * is below 1.
+ * is below 1 or given without `transitive`.
  */
 export function findDependents(
   files: PairsDocument,
@@ -49,6 +49,9 @@ export function findDependents(
   const { maxDepth, root } = options;
   if (maxDepth !== undefined && !(maxDepth >= 1)) {
     throw new DependentsError("the maximum depth must be a positive integer");
+  }
+  if (maxDepth !== undefined && !transitive) {
+    throw new DependentsError("the maximum depth only applies to a transitive search");
   }
   const eligible = (options.through ?? []).map((pattern) => new Glob(pattern));
   const symbols = new Map<string, string[]>();

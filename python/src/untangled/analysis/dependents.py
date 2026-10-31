@@ -32,9 +32,11 @@ def find(
     found by way of other files; with `transitive`, `max_depth` is the deepest dependents to find.
     `root`, the absolute project folder, lets an absolute path inside it be a target. Raises
     ValueError when the document is clustered, a target matches nothing or is an absolute path
-    outside `root`, or `max_depth` is below 1."""
+    outside `root`, or `max_depth` is below 1 or given without `transitive`."""
     if max_depth is not None and max_depth < 1:
         raise ValueError("the maximum depth must be a positive integer")
+    if max_depth is not None and not transitive:
+        raise ValueError("the maximum depth only applies to a transitive search")
     eligible = [Glob(pattern) for pattern in through]
     symbols: dict[str, list[str]] = {}
     for node in files.nodes():

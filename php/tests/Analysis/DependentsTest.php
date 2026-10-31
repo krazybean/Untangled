@@ -208,6 +208,18 @@ final class DependentsTest extends TestCase
         (new Dependents())->find(self::graph(), ['core/Service.php'], true, maxDepth: 0);
     }
 
+    public function testMaxDepthWithoutTransitiveIsRefused(): void
+    {
+        foreach ([1, 2] as $depth) {
+            try {
+                (new Dependents())->find(self::graph(), ['core/Service.php'], false, maxDepth: $depth);
+                self::fail("accepted a maximum depth of {$depth} without a transitive search");
+            } catch (\InvalidArgumentException $e) {
+                self::assertSame('the maximum depth only applies to a transitive search', $e->getMessage());
+            }
+        }
+    }
+
     public function testThroughOnlyGoesIntoMatchingFiles(): void
     {
         $find = static fn (array $through, array $targets = ['core/Cache.php']): array => self::depths((new Dependents())->find(self::graph(), $targets, true, through: $through));

@@ -23,7 +23,7 @@ final class Dependents
      * @param ?string $root the absolute project folder, to accept absolute paths inside it as targets
      * @return array<string, mixed> the dependents document
      * @throws \InvalidArgumentException when the document is clustered, a target matches nothing or is
-     *                                   an absolute path outside $root, or $maxDepth is below 1
+     *                                   an absolute path outside $root, or $maxDepth is below 1 or given without $transitive
      */
     public function find(
         PairsDocument $files,
@@ -36,6 +36,9 @@ final class Dependents
     ): array {
         if ($maxDepth !== null && $maxDepth < 1) {
             throw new \InvalidArgumentException('the maximum depth must be a positive integer');
+        }
+        if ($maxDepth !== null && !$transitive) {
+            throw new \InvalidArgumentException('the maximum depth only applies to a transitive search');
         }
         $eligible = array_map(static fn (string $glob): Glob => new Glob($glob), $through);
 

@@ -122,6 +122,14 @@ describe("findDependents: limiting the walk", () => {
     expect(() => findDependents(graph(), ["core/service.ts"], true, undefined, { maxDepth: Number.NaN })).toThrow(DependentsError);
   });
 
+  test("a maximum depth without a transitive search is refused", () => {
+    for (const maxDepth of [1, 2]) {
+      expect(() => findDependents(graph(), ["core/service.ts"], false, undefined, { maxDepth })).toThrow(
+        new DependentsError("the maximum depth only applies to a transitive search"),
+      );
+    }
+  });
+
   test("--through only goes into matching files", () => {
     const found = (through: string[], targets = ["core/cache.ts"]): Record<string, number> => depths(findDependents(graph(), targets, true, undefined, { through }));
     expect(found(["core/**"])).toEqual({ "core/repo.ts": 1, "core/service.ts": 2 });
