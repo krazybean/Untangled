@@ -11,7 +11,9 @@ import pytest
 from untangled.cli import main
 from untangled.diagnostics import ERROR, WARNING, Diagnostic
 from untangled.graph import PairsDocument
-from untangled.scanner.scanner import Scanner
+from untangled.scanner.packages import PackageIndex
+from untangled.scanner.project import Project
+from untangled.scanner.scanner import Scanner, ScanResult
 
 LAYERS = Path(__file__).resolve().parents[2] / "conformance" / "cases" / "layers" / "python"
 
@@ -278,3 +280,77 @@ def test_documents_that_cannot_be_used(tmp_path) -> None:
     assert code == 1 and lines(err)[0]["code"] == "document-clustered"
     code, _, err = run("dependents", str(tmp_path / "clustered.json"), "a", "--diagnostics=json")
     assert code == 1 and lines(err)[0]["code"] == "document-clustered"
+
+
+# Code written before diagnostics existed builds and reads the result types the same way
+
+
+def test_the_old_construction_of_a_scan_result_still_works() -> None:
+    pairs = PairsDocument("python")
+    positional = ScanResult(pairs, ["a.py: cannot parse", "second"])
+    assert (positional.pairs, positional.warnings, positional.diagnostics) == (
+        pairs,
+        ["a.py: cannot parse", "second"],
+        [],
+    )
+    keyword = ScanResult(pairs=pairs, warnings=["only"])
+    assert (keyword.warnings, keyword.diagnostics) == (["only"], [])
+    bare = ScanResult(pairs)
+    assert (bare.warnings, bare.diagnostics) == ([], [])
+
+
+def test_diagnostics_are_an_additional_field_after_the_warnings() -> None:
+    diagnostic = Diagnostic.warning("nothing-scanned", "nothing")
+    result = ScanResult(PairsDocument("python"), ["nothing"], [diagnostic])
+    assert (result.warnings, result.diagnostics) == (["nothing"], [diagnostic])
+    derived = ScanResult.from_diagnostics(
+        PairsDocument("python"),
+        [Diagnostic.warning("a-b", "first"), Diagnostic.error("c-d", "an error"), Diagnostic.warning("e-f", "second")],
+    )
+    assert derived.warnings == ["first", "second"] and len(derived.diagnostics) == 3
+
+
+def test_the_old_construction_of_a_project_still_works(project) -> None:
+    root = project({"a.py": ""})
+    loaded = Project.load(root)
+    old = Project(
+        loaded.root, loaded.files, loaded.tests, loaded.roots, loaded.pyproject, [], [], ["a warning"], loaded._paths
+    )
+    assert (old.warnings, old.diagnostics) == (["a warning"], [])
+    broken = Project.load(project({"pyproject.toml": "[project\n"}))
+    assert broken.warnings == [item.message for item in broken.diagnostics] and len(broken.warnings) == 1
+
+
+def test_package_index_load_still_appends_to_a_warnings_list(project) -> None:
+    root = project({".venv/pyvenv.cfg": ""})
+    warnings: list[str] = []
+    PackageIndex.load(root, [".venv"], {}, warnings)
+    assert warnings == [".venv: a virtualenv without a site-packages folder; its packages are not read"]
+    diagnostics: list[Diagnostic] = []
+    PackageIndex.load(root, [".venv"], {}, diagnostics=diagnostics)
+    assert [(item.code, item.files) for item in diagnostics] == [("venv-without-site-packages", [".venv"])]
+
+
+# A file that cannot be read
+
+
+def test_a_file_that_cannot_be_read_is_reported_as_unreadable(project, monkeypatch) -> None:
+    """Made to fail by replacing `open` in the scanner, so that the test does not depend on file permissions,
+    which differ between platforms and for privileged users."""
+    root = project({"a.py": "import b\n", "b.py": "", "locked.py": "x = 1\n"})
+    real_open = open
+
+    def refuse(path: Any, *args: Any, **kwargs: Any) -> Any:
+        if str(path).endswith("locked.py"):
+            raise PermissionError(13, "Permission denied")
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr("untangled.scanner.scanner.open", refuse, raising=False)
+    result = Scanner().scan(root)
+    assert [(item.level, item.code, item.files) for item in result.diagnostics] == [
+        (WARNING, "file-unreadable", ["locked.py"])
+    ]
+    assert result.diagnostics[0].message.startswith("locked.py: cannot read it")
+    assert result.warnings == [result.diagnostics[0].message]
+    # The file stays in the pairs document, marked as unread.
+    assert result.pairs.node("locked.py")["error"] == "read"

@@ -15,7 +15,8 @@ document and the command-line options are the public interface.
   `--diagnostics=github` is not supported yet.
 
 - `ScanResult.diagnostics` holds the scan's `untangled.diagnostics.Diagnostic` objects.
-  `ScanResult.warnings` is kept: it is the message of each warning diagnostic.
+  `ScanResult.warnings` is kept: it is the message of each warning diagnostic, and
+  `ScanResult(pairs, warnings)` works as before, with `diagnostics` an optional third field.
   `PairsDocument.from_dict()` takes a `diagnostics` list after `warnings`. A failed
   `dependents` query raises `DependentsError` (a `ValueError`) with its code.
 

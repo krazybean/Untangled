@@ -11,21 +11,28 @@ use Untangled\Graph\PairsDocument;
 final class ScanResult
 {
     /**
-     * The messages of the warning diagnostics, kept for callers that read strings. New code
-     * should read $diagnostics.
-     *
-     * @var list<string>
+     * @param list<string> $warnings problems that did not stop the scan, such as parse errors, as text
+     * @param list<Diagnostic> $diagnostics the same problems as data (spec/diagnostics.md); callers that
+     *                                      build a result from strings can leave it out
      */
-    public readonly array $warnings;
-
-    /** @param list<Diagnostic> $diagnostics problems that did not stop the scan, such as parse errors */
     public function __construct(
         public readonly PairsDocument $pairs,
-        public readonly array $diagnostics,
+        public readonly array $warnings = [],
+        public readonly array $diagnostics = [],
     ) {
-        $this->warnings = array_values(array_map(
+    }
+
+    /**
+     * A result whose warnings are the messages of the warning diagnostics, in order.
+     *
+     * @param list<Diagnostic> $diagnostics
+     */
+    public static function fromDiagnostics(PairsDocument $pairs, array $diagnostics): self
+    {
+        $warnings = array_values(array_map(
             static fn (Diagnostic $diagnostic): string => $diagnostic->message,
             array_filter($diagnostics, static fn (Diagnostic $diagnostic): bool => $diagnostic->level === Diagnostic::WARNING),
         ));
+        return new self($pairs, $warnings, $diagnostics);
     }
 }

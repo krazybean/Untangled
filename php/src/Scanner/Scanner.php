@@ -69,7 +69,7 @@ final class Scanner
             $result = $this->fileScanner->scan($root . '/' . $file);
             $results[$file] = $result;
             if ($result->error !== null) {
-                $diagnostics[] = Diagnostic::warning($result->unread === 'read' ? 'file-unreadable' : 'file-unparseable', "{$file}: {$result->error}", [$file]);
+                $diagnostics[] = self::fileDiagnostic($file, $result);
             }
             foreach ($result->includes as $include) {
                 $target = $this->resolveInclude($include, $root, $file, $vendorDir);
@@ -169,7 +169,13 @@ final class Scanner
             }
         }
 
-        return new ScanResult($pairs, $diagnostics);
+        return ScanResult::fromDiagnostics($pairs, $diagnostics);
+    }
+
+    /** The warning for a file that failed: it could not be read, or it did not parse. */
+    private static function fileDiagnostic(string $file, FileResult $result): Diagnostic
+    {
+        return Diagnostic::warning($result->unread === 'read' ? 'file-unreadable' : 'file-unparseable', "{$file}: {$result->error}", [$file]);
     }
 
     /** @param non-empty-list<string> $files */

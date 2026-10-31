@@ -43,8 +43,15 @@ class PackageIndex:
 
     @classmethod
     def load(
-        cls, root: str, venvs: list[str], pyproject: dict[str, Any], diagnostics: list[Diagnostic]
+        cls,
+        root: str,
+        venvs: list[str],
+        pyproject: dict[str, Any],
+        warnings: list[str] | None = None,
+        diagnostics: list[Diagnostic] | None = None,
     ) -> "PackageIndex":
+        """Reads the installed packages of the virtualenvs. Problems are appended to `warnings` as text and to
+        `diagnostics` as data, whichever are given."""
         installed: dict[str, set[str]] = {}
         for venv in venvs:
             folder = os.path.join(root, venv)
@@ -53,13 +60,11 @@ class PackageIndex:
                 + glob.glob(os.path.join(glob.escape(folder), "Lib", "site-packages"))
             )
             if not site_packages:
-                diagnostics.append(
-                    Diagnostic.warning(
-                        "venv-without-site-packages",
-                        f"{venv}: a virtualenv without a site-packages folder; its packages are not read",
-                        [venv],
-                    )
-                )
+                message = f"{venv}: a virtualenv without a site-packages folder; its packages are not read"
+                if warnings is not None:
+                    warnings.append(message)
+                if diagnostics is not None:
+                    diagnostics.append(Diagnostic.warning("venv-without-site-packages", message, [venv]))
             for packages in site_packages:
                 _read_site_packages(packages, installed)
         return cls(installed, _declared(root, pyproject))

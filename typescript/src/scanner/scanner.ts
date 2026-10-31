@@ -20,10 +20,13 @@ export interface ScanOptions {
 
 export interface ScanResult {
   pairs: PairsDocument;
-  /** Problems that did not stop the scan, as spec/diagnostics.md defines them. */
-  diagnostics: Diagnostic[];
-  /** The messages of the warning diagnostics, kept for callers that read strings. New code should read `diagnostics`. */
+  /** Problems that did not stop the scan, as text. */
   warnings: string[];
+  /**
+   * The same problems as data (spec/diagnostics.md). Optional so that a result written as an object literal
+   * before diagnostics existed is still a ScanResult; `scan()` always sets it.
+   */
+  diagnostics?: Diagnostic[];
 }
 
 export const NOTHING_SCANNED =
@@ -32,7 +35,7 @@ export const NOTHING_SCANNED =
 
 const KINDS: Record<string, string> = { builtin: BUILTIN, npm: EXTERNAL, unresolved: UNRESOLVED };
 
-export function scan(root: string, options: ScanOptions = {}): ScanResult {
+export function scan(root: string, options: ScanOptions = {}): ScanResult & { diagnostics: Diagnostic[] } {
   const config = loadConfig(root, options.aliases ?? []);
   const project = new Project(root, { dev: options.dev ?? false, sources: options.sources ?? [], outDir: config.outDir });
   const diagnostics = [...config.diagnostics, ...project.diagnostics];

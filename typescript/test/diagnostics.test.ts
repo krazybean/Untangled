@@ -9,7 +9,7 @@ import { describe, expect, test } from "vitest";
 import { main } from "../src/cli.js";
 import { diagnosticText, encodeDiagnostic, errorDiagnostic, warningDiagnostic, type Diagnostic } from "../src/diagnostics.js";
 import { PairsDocument } from "../src/graph.js";
-import { scan, type ScanOptions } from "../src/scanner/scanner.js";
+import { scan, type ScanOptions, type ScanResult } from "../src/scanner/scanner.js";
 import { Buffered, project } from "./helpers.js";
 
 const LAYERS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "conformance", "cases", "layers", "typescript");
@@ -56,6 +56,18 @@ describe("the value", () => {
     const decoded = JSON.parse(encodeDiagnostic(warningDiagnostic("some-code", "bad \udcff byte", ["na\udcffme.ts"]))) as Diagnostic;
     expect(decoded.message).toBe("bad � byte");
     expect(decoded.files).toEqual(["na�me.ts"]);
+  });
+});
+
+describe("results built before diagnostics existed", () => {
+  test("an object literal with only pairs and warnings is still a ScanResult", () => {
+    const old: ScanResult = { pairs: new PairsDocument("typescript"), warnings: ["a.ts: cannot parse"] };
+    expect(old.warnings).toEqual(["a.ts: cannot parse"]);
+    expect(old.diagnostics).toBeUndefined();
+    // What scan() returns always has the diagnostics.
+    const scanned = scan(project({ "a.ts": "export const x = 1;" }));
+    expect(scanned.diagnostics).toEqual([]);
+    expect(scanned.warnings).toEqual([]);
   });
 });
 

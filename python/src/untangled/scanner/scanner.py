@@ -24,13 +24,15 @@ _NAMESPACE = object()
 @dataclass
 class ScanResult:
     pairs: PairsDocument
+    warnings: list[str] = field(default_factory=list)
+    """Problems that did not stop the scan, as text."""
     diagnostics: list[Diagnostic] = field(default_factory=list)
+    """The same problems as data (spec/diagnostics.md); a result built from strings can leave it empty."""
 
-    @property
-    def warnings(self) -> list[str]:
-        """The messages of the warning diagnostics, kept for callers that read strings. New code should
-        read `diagnostics`."""
-        return [item.message for item in self.diagnostics if item.level == WARNING]
+    @classmethod
+    def from_diagnostics(cls, pairs: PairsDocument, diagnostics: list[Diagnostic]) -> "ScanResult":
+        """A result whose warnings are the messages of the warning diagnostics, in order."""
+        return cls(pairs, [item.message for item in diagnostics if item.level == WARNING], diagnostics)
 
 
 NOTHING_SCANNED = (
@@ -53,7 +55,7 @@ class Scanner:
             if not os.path.isdir(os.path.join(project.root, venv)):
                 diagnostics.append(Diagnostic.warning("venv-not-found", f"--venv={venv}: no such folder", [venv]))
         existing = [venv for venv in venvs if os.path.isdir(os.path.join(project.root, venv))]
-        packages = PackageIndex.load(project.root, existing, project.pyproject, diagnostics)
+        packages = PackageIndex.load(project.root, existing, project.pyproject, diagnostics=diagnostics)
         resolver = _Resolver(project, packages)
 
         # Scan the default files, then any test file a scanned file imports.
@@ -135,7 +137,7 @@ class Scanner:
                     " project's virtualenv first for a complete picture",
                 )
             )
-        return ScanResult(pairs, diagnostics)
+        return ScanResult.from_diagnostics(pairs, diagnostics)
 
 
 class _Resolver:

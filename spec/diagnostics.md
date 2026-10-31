@@ -152,7 +152,8 @@ data, so no one has to run the command and read standard error:
 
 The older `warnings` of a scan result, a list of strings, is kept and is the
 `message` of each diagnostic whose level is `warning`, in the same order. It
-will not gain new meaning; new code should read `diagnostics`.
+will not gain new meaning; new code should read `diagnostics`. A scan result can still be
+built from warning strings alone: `diagnostics` is an optional additional field, empty then.
 
 Reading a pairs document takes a `diagnostics` list next to its older
 `warnings` list for the version warning in the same way.

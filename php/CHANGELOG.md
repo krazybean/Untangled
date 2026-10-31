@@ -15,7 +15,8 @@ document and the command-line options are the public interface.
   `--diagnostics=github` is not supported yet.
 
 - `ScanResult::$diagnostics` holds the scan's `Diagnostic` objects. `ScanResult::$warnings`
-  is kept: it is the message of each warning diagnostic. `PairsDocument::fromArray()` takes
+  is kept: it is the message of each warning diagnostic. `new ScanResult($pairs, $warnings)`
+  works as before, with `$diagnostics` an optional third argument. `PairsDocument::fromArray()` takes
   a `$diagnostics` list after `$warnings`. `DependentsException` (a subclass of
   `InvalidArgumentException`) carries the code of a failed `dependents` query.
 

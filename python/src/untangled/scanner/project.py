@@ -38,13 +38,11 @@ class Project:
     """Folders directly under the root that hold a pyvenv.cfg."""
     extensions: list[str] = field(default_factory=list)
     """Modules without a .py file (see EXTENSION_SUFFIXES), sorted by id: import targets, never scanned."""
-    diagnostics: list[Diagnostic] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    """Problems that did not stop loading, as text: the messages of `diagnostics`."""
     _paths: dict[str, str] = field(default_factory=dict)
-
-    @property
-    def warnings(self) -> list[str]:
-        """The messages of the warning diagnostics, kept for callers that read strings."""
-        return [item.message for item in self.diagnostics if item.level == WARNING]
+    diagnostics: list[Diagnostic] = field(default_factory=list)
+    """The same problems as data (spec/diagnostics.md)."""
 
     @classmethod
     def load(cls, path: str, sources: list[str] | None = None) -> "Project":
@@ -88,7 +86,18 @@ class Project:
             roots.append("src")
         roots.append("")
         unique = list(dict.fromkeys(roots))
-        return cls(root, files, tests, unique, pyproject, venvs, extensions, diagnostics, paths)
+        return cls(
+            root,
+            files,
+            tests,
+            unique,
+            pyproject,
+            venvs,
+            extensions,
+            [item.message for item in diagnostics if item.level == WARNING],
+            paths,
+            diagnostics,
+        )
 
     def has_file(self, file_id: str) -> bool:
         return file_id in self._paths

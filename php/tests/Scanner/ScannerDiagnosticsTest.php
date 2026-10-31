@@ -8,6 +8,9 @@ namespace Untangled\Tests\Scanner;
 use PHPUnit\Framework\TestCase;
 use Untangled\Diagnostic;
 use Untangled\Graph\PairsDocument;
+use Untangled\Scanner\FileResult;
+use Untangled\Scanner\FileScanner;
+use Untangled\Scanner\ScanResult;
 use Untangled\Scanner\Scanner;
 use Untangled\Tests\TempProject;
 
@@ -116,5 +119,20 @@ final class ScannerDiagnosticsTest extends TestCase
         self::assertCount(1, $diagnostics);
         self::assertSame(['warning', 'document-version'], [$diagnostics[0]->level, $diagnostics[0]->code]);
         self::assertSame([$diagnostics[0]->message], $warnings);
+    }
+
+    public function testAFileThatCannotBeReadIsReportedAsUnreadable(): void
+    {
+        // A path that does not exist cannot be read on any platform, whatever the permissions or the user.
+        $result = (new FileScanner())->scan(sys_get_temp_dir() . '/untangled-no-such-file-' . bin2hex(random_bytes(6)) . '.php');
+        self::assertSame('read', $result->unread);
+        self::assertNotNull($result->error);
+
+        // The scanner turns a failed read into file-unreadable, and a failed parse into file-unparseable.
+        $diagnostic = (new \ReflectionMethod(Scanner::class, 'fileDiagnostic'))->invoke(null, 'src/Locked.php', $result);
+        self::assertSame(['warning', 'file-unreadable', ['src/Locked.php']], [$diagnostic->level, $diagnostic->code, $diagnostic->files]);
+        self::assertSame("src/Locked.php: {$result->error}", $diagnostic->message);
+        $parse = (new \ReflectionMethod(Scanner::class, 'fileDiagnostic'))->invoke(null, 'src/Bad.php', FileResult::failed('parse error: x', 'parse'));
+        self::assertSame('file-unparseable', $parse->code);
     }
 }

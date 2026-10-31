@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0-only
-from untangled.diagnostics import Diagnostic
 from untangled.scanner.packages import PackageIndex, normalize
 
 SITE = ".venv/lib/python3.12/site-packages/"
@@ -14,9 +13,8 @@ def dist(name: str, record: list[str], folder: str | None = None) -> dict[str, s
 
 
 def load(root: str, venvs: list[str] | None = None, pyproject: dict | None = None) -> tuple[PackageIndex, list[str]]:
-    diagnostics: list[Diagnostic] = []
-    index = PackageIndex.load(root, [".venv"] if venvs is None else venvs, pyproject or {}, diagnostics)
-    return index, [item.message for item in diagnostics]
+    warnings: list[str] = []
+    return PackageIndex.load(root, [".venv"] if venvs is None else venvs, pyproject or {}, warnings), warnings
 
 
 def test_normalize() -> None:

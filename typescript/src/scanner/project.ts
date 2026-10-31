@@ -7,7 +7,7 @@ import { join } from "node:path";
 
 import { decode } from "../text.js";
 import { isUnder, joinPath } from "./paths.js";
-import { warningDiagnostic, type Diagnostic } from "../diagnostics.js";
+import { warningDiagnostic, warningMessages, type Diagnostic } from "../diagnostics.js";
 
 export const CODE_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"];
 export const DECLARATION_SUFFIXES = [".d.ts", ".d.mts", ".d.cts"];
@@ -30,6 +30,10 @@ export class Project {
   /** The folders holding a node_modules folder ("" for the root). */
   readonly nodeModules = new Set<string>();
   readonly diagnostics: Diagnostic[] = [];
+  /** The messages of the warning diagnostics, for callers that read strings. */
+  get warnings(): string[] {
+    return warningMessages(this.diagnostics);
+  }
 
   constructor(
     readonly root: string,

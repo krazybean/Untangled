@@ -15,7 +15,8 @@ document and the command-line options are the public interface.
   `--diagnostics=github` is not supported yet.
 
 - `scan()` returns `diagnostics` (see `src/diagnostics.ts`) next to `warnings`, which is
-  kept: it is the message of each warning diagnostic. `PairsDocument.fromObject()` takes a
+  kept: it is the message of each warning diagnostic. `ScanResult.diagnostics` is optional in the
+  type, so an object literal with only `pairs` and `warnings` is still a `ScanResult`; `scan()` always sets it. `PairsDocument.fromObject()` takes a
   `diagnostics` list after `warnings`. `DependentsError` has a `code`.
 
 - `dependents --max-depth=N` (with `--transitive`) stops the walk after N steps from the
