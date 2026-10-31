@@ -7,6 +7,19 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+- `dependents --max-depth=N` (with `--transitive`) stops the walk after N steps from the
+  targets, and `--through=<glob>` (repeatable) only walks into files that match, so a
+  test that reaches a target only through application code is not found by way of it.
+  `--include` and `--exclude` still filter the list afterwards. `--max-depth` without
+  `--transitive`, or not a positive integer, is a usage error. See spec/dependents.md.
+
+- `dependents` accepts an absolute path inside the project, and a path written with `./`
+  or `\`. An absolute path outside the project is an error rather than a lookup that
+  finds nothing.
+
+- Globs with a hyphen in the pattern (`--exclude=src/user-controller.ts`) no longer make
+  the command fail: the hyphen was escaped in a way the regular expression rejected.
+
 ## 1.0.2
 
 - New `dependents` command: lists the files that depend on one or more files

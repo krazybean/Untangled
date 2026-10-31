@@ -1,0 +1,4 @@
+--transitive
+--through=src/Domain/**
+--format=json
+src/Infra/Clock.php

@@ -26,6 +26,7 @@ Usage: untangled scan [<path>] [--dev] [--source=<path>]... [--aliases=<file.jso
        untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                          [--title=<text>] [analyze options]
        untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [--transitive]
+                            [--max-depth=<n>] [--through=<glob>]...
                             [--format=text|json] [analyze options]
 
 Commands:
@@ -46,6 +47,9 @@ Options:
                      report: html (default) or dot
                      dependents: text (default) or json
   --transitive       dependents: also the files that depend on a dependent, with their depth
+  --max-depth=N      dependents: with --transitive, stop after N steps from the targets
+  --through=GLOB     dependents: only walk into files matching GLOB (repeatable, any match counts),
+                     so nothing is found by way of other files
   --style=STYLE      report --format=dot only: default, or classic for snakefood's
                      black and white sfood-graph look
   --title=TEXT       report only: the report's title (default: the name in package.json)
@@ -53,8 +57,8 @@ Options:
                      (JavaScript has no namespaces, so namespace:N groups by folder)
   --strict           analyze, report: with rules:<file>, exit 1 instead of warning when a
                      file matches no rule
-  --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
-  --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
+  --include=GLOB     analyze, report, dependents: keep files matching GLOB (repeatable, last match wins)
+  --exclude=GLOB     analyze, report, dependents: drop files matching GLOB (repeatable, last match wins)
   --output=FILE      Write to FILE instead of standard output
   -h, --help         Show this help
   -V, --version      Show the version
@@ -65,9 +69,9 @@ const COMMANDS: Record<string, Set<string>> = {
   scan: new Set([...SCAN, "format", "output"]),
   analyze: new Set([...SCAN, "cluster", "strict", "include", "exclude", "output"]),
   report: new Set([...SCAN, "cluster", "strict", "include", "exclude", "output", "format", "style", "title"]),
-  dependents: new Set([...SCAN, "transitive", "include", "exclude", "output", "format"]),
+  dependents: new Set([...SCAN, "transitive", "max-depth", "through", "include", "exclude", "output", "format"]),
 };
-const REPEATABLE = new Set(["source", "aliases"]);
+const REPEATABLE = new Set(["source", "aliases", "through"]);
 
 export interface Writer {
   write(text: string): unknown;
@@ -95,7 +99,7 @@ export function main(argv: string[], out: Writer = process.stdout, err: Writer =
 function run(args: string[], out: Writer, err: Writer): number {
   const positional: string[] = [];
   const options = new Map<string, string | true>();
-  const repeated: Record<string, string[]> = { source: [], aliases: [] };
+  const repeated: Record<string, string[]> = { source: [], aliases: [], through: [] };
   // Order matters for these, so they are kept as a list rather than by name.
   const patterns: ["include" | "exclude", string][] = [];
   for (const arg of args) {
@@ -168,7 +172,7 @@ function run(args: string[], out: Writer, err: Writer): number {
   }
 
   if (command === "dependents") {
-    return dependents(positional, options, patterns, scanOptions, write, err);
+    return dependents(positional, options, patterns, repeated.through!, scanOptions, write, err);
   }
 
   const format = options.get("format") ?? "html";
@@ -216,6 +220,7 @@ function dependents(
   positional: string[],
   options: Map<string, string | true>,
   patterns: ["include" | "exclude", string][],
+  through: string[],
   scanOptions: ScanOptions,
   write: (text: string) => number,
   err: Writer,
@@ -224,6 +229,18 @@ function dependents(
   if (format !== "text" && format !== "json") {
     throw new Usage(`Unknown format: ${String(format)}`);
   }
+  let maxDepth: number | undefined;
+  const given = options.get("max-depth");
+  if (given !== undefined) {
+    if (typeof given !== "string" || !/^[1-9][0-9]*$/.test(given)) {
+      throw new Usage(`Option --max-depth needs a positive integer, as in --max-depth=2 (got "${String(given)}")`);
+    }
+    if (!options.has("transitive")) {
+      throw new Usage("--max-depth only applies with --transitive");
+    }
+    // More than 9 digits is deeper than any graph, so it is the same as no limit.
+    maxDepth = given.length > 9 ? 999999999 : Number(given);
+  }
   const first = positional[0];
   const hasSource = first !== undefined && (isDirectory(first) || (isFile(first) && first.toLowerCase().endsWith(".json")));
   const targets = hasSource ? positional.slice(1) : positional;
@@ -231,8 +248,10 @@ function dependents(
     throw new Usage("dependents needs at least one file or symbol to look up");
   }
   const pairs = loadPairs(hasSource ? first : ".", scanOptions, err);
+  // Absolute paths are relative to the project when the source is one, else to the current folder.
+  const root = resolve(hasSource && isDirectory(first) ? first : ".");
   try {
-    const document = findDependents(pairs, targets, options.has("transitive"), buildFilter(patterns));
+    const document = findDependents(pairs, targets, options.has("transitive"), buildFilter(patterns), { through, maxDepth, root });
     return write(format === "json" ? encode(document) : renderDependentsText(document));
   } catch (error) {
     throw error instanceof DependentsError ? new Failure(error.message) : error;

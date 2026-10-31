@@ -13,6 +13,7 @@ use Untangled\Composer\ProjectException;
 use Untangled\Graph\DocumentException;
 use Untangled\Graph\Json;
 use Untangled\Graph\PairsDocument;
+use Untangled\Path;
 use Untangled\Report\Dot;
 use Untangled\Report\HtmlReport;
 use Untangled\Report\Report;
@@ -34,6 +35,7 @@ final class Application
                untangled report [<path>|<pairs.json>] [--format=html|dot] [--style=classic]
                                  [--title=<text>] [analyze options]
                untangled dependents [<path>|<pairs.json>] <file-or-symbol>... [--transitive]
+                                    [--max-depth=<n>] [--through=<glob>]...
                                     [--format=text|json] [analyze options]
 
         Commands:
@@ -53,14 +55,17 @@ final class Application
                              report: html (default) or dot
                              dependents: text (default) or json
           --transitive       dependents: also the files that depend on a dependent, with their depth
+          --max-depth=N      dependents: with --transitive, stop after N steps from the targets
+          --through=GLOB     dependents: only walk into files matching GLOB (repeatable, any match counts),
+                             so nothing is found by way of other files
           --style=STYLE      report --format=dot only: default, or classic for snakefood's
                              black and white sfood-graph look
           --title=TEXT       report only: the report's title (default: the Composer package name)
           --cluster=STRATEGY analyze, report: namespace:N, folder:N or rules:<file>
           --strict           analyze, report: with rules:<file>, exit 1 instead of warning when a
                              file matches no rule
-          --include=GLOB     analyze, report: keep files matching GLOB (repeatable, last match wins)
-          --exclude=GLOB     analyze, report: drop files matching GLOB (repeatable, last match wins)
+          --include=GLOB     analyze, report, dependents: keep files matching GLOB (repeatable, last match wins)
+          --exclude=GLOB     analyze, report, dependents: drop files matching GLOB (repeatable, last match wins)
           --output=FILE      Write to FILE instead of standard output
           -h, --help         Show this help
           -V, --version      Show the version
@@ -80,6 +85,7 @@ final class Application
         $positional = [];
         $options = [];
         $patterns = [];
+        $through = [];
         $sources = [];
         $aliases = [];
         foreach ($argv as $arg) {
@@ -96,6 +102,8 @@ final class Application
                 if ($name === 'include' || $name === 'exclude') {
                     // Order matters for these, so they are kept as a list rather than by name.
                     $patterns[] = [$name, $value];
+                } elseif ($name === 'through' && is_string($value)) {
+                    $through[] = $value;
                 } elseif ($name === 'source' && is_string($value)) {
                     $sources[] = $value;
                 } elseif ($name === 'aliases' && is_string($value)) {
@@ -116,7 +124,7 @@ final class Application
             'scan' => ['dev', 'source', 'aliases', 'format', 'output'],
             'analyze' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output'],
             'report' => ['dev', 'source', 'aliases', 'cluster', 'strict', 'include', 'exclude', 'output', 'format', 'style', 'title'],
-            'dependents' => ['dev', 'source', 'aliases', 'transitive', 'include', 'exclude', 'output', 'format'],
+            'dependents' => ['dev', 'source', 'aliases', 'transitive', 'max-depth', 'through', 'include', 'exclude', 'output', 'format'],
         };
         $unknown = array_diff(array_keys($options), $allowed);
         if ($unknown !== []) {
@@ -143,7 +151,7 @@ final class Application
             return $this->analyze($command, $positional[0] ?? '.', $options, $patterns, $scanner);
         }
         if ($command === 'dependents') {
-            return $this->dependents($positional, $options, $patterns, $scanner);
+            return $this->dependents($positional, $options, $patterns, $through, $scanner);
         }
         $format = $options['format'] ?? 'json';
         if (!in_array($format, ['json', 'snakefood'], true)) {
@@ -243,13 +251,28 @@ final class Application
      * @param list<string> $positional
      * @param array<string, string|true> $options
      * @param list<array{string, string}> $patterns include / exclude globs in command-line order
+     * @param list<string> $through --through globs
      */
-    private function dependents(array $positional, array $options, array $patterns, Scanner $scanner): int
+    private function dependents(array $positional, array $options, array $patterns, array $through, Scanner $scanner): int
     {
         $format = $options['format'] ?? 'text';
         if (!in_array($format, ['text', 'json'], true)) {
             fwrite($this->stderr, "Unknown format: {$format}\n");
             return 2;
+        }
+        $maxDepth = null;
+        if (isset($options['max-depth'])) {
+            $given = (string) $options['max-depth'];
+            if (preg_match('/\A[1-9][0-9]*\z/', $given) !== 1) {
+                fwrite($this->stderr, "Option --max-depth needs a positive integer, as in --max-depth=2 (got \"{$given}\")\n");
+                return 2;
+            }
+            // More than 9 digits is deeper than any graph, so it is the same as no limit.
+            $maxDepth = strlen($given) > 9 ? 999999999 : (int) $given;
+            if (!isset($options['transitive'])) {
+                fwrite($this->stderr, "--max-depth only applies with --transitive\n");
+                return 2;
+            }
         }
         $first = $positional[0] ?? null;
         $hasSource = $first !== null && (is_dir($first) || (is_file($first) && str_ends_with(strtolower($first), '.json')));
@@ -263,8 +286,18 @@ final class Application
         if ($pairs === null) {
             return 1;
         }
+        // Absolute paths are relative to the project when the source is one, else to the current folder.
+        $root = realpath($hasSource && is_dir($first) ? $first : '.');
         try {
-            $document = (new Dependents())->find($pairs, $targets, isset($options['transitive']), self::filter($patterns));
+            $document = (new Dependents())->find(
+                $pairs,
+                $targets,
+                isset($options['transitive']),
+                self::filter($patterns),
+                $through,
+                $maxDepth,
+                $root === false ? null : Path::normalize($root),
+            );
         } catch (\InvalidArgumentException $e) {
             fwrite($this->stderr, 'error: ' . $e->getMessage() . "\n");
             return 1;

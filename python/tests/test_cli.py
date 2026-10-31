@@ -314,6 +314,89 @@ def test_dependents_usage_errors(args: list[str], message: str) -> None:
     assert code == 2 and message in err
 
 
+def test_dependents_max_depth_and_through() -> None:
+    pairs = str(LAYERS / "expected" / "pairs.json")
+
+    def ids(*args: str) -> list[str]:
+        return [item["id"] for item in json.loads(run("dependents", pairs, "--format=json", *args)[1])["dependents"]]
+
+    user = "src/app/domain/user.py"
+    assert ids("--transitive", "--max-depth=2", user) == [
+        "src/app/domain/order.py",
+        "src/app/infra/user_repository.py",
+        "src/app/http/user_controller.py",
+    ]
+    assert ids("--transitive", "--through=src/app/domain/**", user) == ["src/app/domain/order.py"]
+    assert ids("--transitive", "--through=src/app/domain/**", "--through=src/app/http/**", "--max-depth=2", user) == [
+        "src/app/domain/order.py",
+        "src/app/http/user_controller.py",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("extra", "message"),
+    [
+        pytest.param(
+            ["--transitive", "--max-depth=0"],
+            'Option --max-depth needs a positive integer, as in --max-depth=2 (got "0")',
+            id="zero",
+        ),
+        pytest.param(["--transitive", "--max-depth=-1"], '(got "-1")', id="negative"),
+        pytest.param(["--transitive", "--max-depth=2.5"], '(got "2.5")', id="fraction"),
+        pytest.param(["--transitive", "--max-depth=02"], '(got "02")', id="leading zero"),
+        pytest.param(["--transitive", "--max-depth=two"], '(got "two")', id="word"),
+        pytest.param(["--transitive", "--max-depth="], '(got "")', id="empty"),
+        pytest.param(["--max-depth=2"], "--max-depth only applies with --transitive", id="not transitive"),
+        pytest.param(["--transitive", "--max-depth"], "Option --max-depth needs a value", id="no value"),
+        pytest.param(["--through"], "Option --through needs a value", id="through without value"),
+    ],
+)
+def test_dependents_max_depth_usage_errors(extra: list[str], message: str) -> None:
+    pairs = str(LAYERS / "expected" / "pairs.json")
+    code, out, err = run("dependents", pairs, "src/app/domain/user.py", *extra)
+    assert (code, out) == (2, "") and message in err
+
+
+def test_through_is_only_for_dependents() -> None:
+    code, _, err = run("analyze", str(LAYERS / "expected" / "pairs.json"), "--through=src/**")
+    assert code == 2 and "Unknown option for analyze: --through" in err
+
+
+def test_dependents_accepts_a_huge_max_depth() -> None:
+    pairs = str(LAYERS / "expected" / "pairs.json")
+    code, out, _ = run(
+        "dependents",
+        pairs,
+        "src/app/domain/user.py",
+        "--transitive",
+        "--max-depth=99999999999999999999",
+        "--format=json",
+    )
+    assert code == 0 and len(json.loads(out)["dependents"]) == 5
+
+
+def test_dependents_accepts_an_absolute_path_inside_the_project(monkeypatch) -> None:
+    project = LAYERS / "project"
+    expected = ["src/app/domain/order.py", "src/app/infra/user_repository.py"]
+
+    def ids(*args: str) -> list[str]:
+        return [item["id"] for item in json.loads(run("dependents", *args, "--format=json")[1])["dependents"]]
+
+    target = project.resolve() / "src" / "app" / "domain" / "user.py"
+    assert ids(str(project), str(target)) == expected
+    # With a saved pairs document, the project is the current folder.
+    monkeypatch.chdir(project)
+    assert ids(str(LAYERS / "expected" / "pairs.json"), str(target)) == expected
+
+
+def test_dependents_refuses_an_absolute_path_outside_the_project() -> None:
+    project = LAYERS / "project"
+    code, out, err = run(
+        "dependents", str(project), str(project.resolve().parent / "src" / "app" / "domain" / "user.py")
+    )
+    assert (code, out) == (1, "") and "is outside the project folder" in err
+
+
 def test_analyze_a_project() -> None:
     code, out, err = run("analyze", str(LAYERS / "project"))
     assert (code, err) == (0, "")

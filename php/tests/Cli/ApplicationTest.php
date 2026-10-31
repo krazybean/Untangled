@@ -338,6 +338,83 @@ final class ApplicationTest extends TestCase
         }
     }
 
+    public function testDependentsMaxDepthAndThrough(): void
+    {
+        $pairs = self::CASES . '/layers/php/expected/pairs.json';
+        $ids = static fn (array $args): array => array_column(json_decode(self::cli(['dependents', $pairs, '--format=json', ...$args])[1], true)['dependents'], 'id');
+        self::assertSame(['src/Domain/Order.php', 'src/Infra/UserRepository.php', 'src/Http/UserController.php'], $ids(['--transitive', '--max-depth=2', 'src/Domain/User.php']));
+        self::assertSame(['src/Domain/Order.php'], $ids(['--transitive', '--through=src/Domain/**', 'src/Domain/User.php']));
+        self::assertSame(
+            ['src/Domain/Order.php', 'src/Http/UserController.php'],
+            $ids(['--transitive', '--through=src/Domain/**', '--through=src/Http/**', '--max-depth=2', 'src/Domain/User.php']),
+        );
+    }
+
+    public function testDependentsMaxDepthUsageErrors(): void
+    {
+        $pairs = self::CASES . '/layers/php/expected/pairs.json';
+        foreach ([
+            [['--transitive', '--max-depth=0'], 'Option --max-depth needs a positive integer, as in --max-depth=2 (got "0")'],
+            [['--transitive', '--max-depth=-1'], '(got "-1")'],
+            [['--transitive', '--max-depth=2.5'], '(got "2.5")'],
+            [['--transitive', '--max-depth=02'], '(got "02")'],
+            [['--transitive', '--max-depth=two'], '(got "two")'],
+            [['--transitive', '--max-depth='], '(got "")'],
+            [['--max-depth=2'], '--max-depth only applies with --transitive'],
+            [['--transitive', '--max-depth'], 'Option --max-depth needs a value'],
+            [['--through'], 'Option --through needs a value'],
+        ] as [$args, $message]) {
+            [$code, $out, $err] = self::cli(['dependents', $pairs, 'src/Domain/User.php', ...$args]);
+            self::assertSame(2, $code, $message);
+            self::assertSame('', $out);
+            self::assertStringContainsString($message, $err);
+        }
+        [$code, , $err] = self::cli(['analyze', $pairs, '--through=src/**']);
+        self::assertSame(2, $code);
+        self::assertStringContainsString('Unknown option for analyze: --through', $err);
+    }
+
+    public function testDependentsAcceptsAHugeMaxDepth(): void
+    {
+        $pairs = self::CASES . '/layers/php/expected/pairs.json';
+        [$code, $out] = self::cli(['dependents', $pairs, 'src/Domain/User.php', '--transitive', '--max-depth=99999999999999999999', '--format=json']);
+        self::assertSame(0, $code);
+        self::assertCount(5, json_decode($out, true)['dependents']);
+    }
+
+    public function testDependentsAcceptsAnAbsolutePathInsideTheProject(): void
+    {
+        $project = (string) realpath(self::CASES . '/layers/php/project');
+        $ids = static fn (array $args): array => array_column(json_decode(self::cli(['dependents', ...$args, '--format=json'])[1], true)['dependents'], 'id');
+        $expected = ['src/Domain/Order.php', 'src/Infra/UserRepository.php'];
+        self::assertSame($expected, $ids([$project, $project . '/src/Domain/User.php']));
+        self::assertSame($expected, $ids([$project, str_replace('/', DIRECTORY_SEPARATOR, $project) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Domain' . DIRECTORY_SEPARATOR . 'User.php']));
+        // With a saved pairs document, the project is the current folder.
+        $previous = getcwd();
+        chdir($project);
+        try {
+            self::assertSame($expected, $ids([self::CASES . '/layers/php/expected/pairs.json', $project . '/src/Domain/User.php']));
+        } finally {
+            chdir($previous);
+        }
+    }
+
+    public function testDependentsRefusesAnAbsolutePathOutsideTheProject(): void
+    {
+        $project = (string) realpath(self::CASES . '/layers/php/project');
+        [$code, $out, $err] = self::cli(['dependents', $project, dirname($project) . '/src/Domain/User.php']);
+        self::assertSame(1, $code);
+        self::assertSame('', $out);
+        self::assertStringContainsString('is outside the project folder', $err);
+    }
+
+    public function testDependentsAcceptsAClassNameWithALeadingBackslash(): void
+    {
+        [$code, $out] = self::cli(['dependents', self::CASES . '/layers/php/expected/pairs.json', '\\App\\Domain\\User', '--format=json']);
+        self::assertSame(0, $code);
+        self::assertSame(['src/Domain/Order.php', 'src/Infra/UserRepository.php'], array_column(json_decode($out, true)['dependents'], 'id'));
+    }
+
     public function testAnalyzeAppliesIncludeAndExcludeInOrder(): void
     {
         $project = self::CASES . '/layers/php/project';

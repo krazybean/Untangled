@@ -99,6 +99,93 @@ describe("findDependents", () => {
   });
 });
 
+describe("findDependents: limiting the walk", () => {
+  const ids = (document: DependentsDocument): string[] => document.dependents.map((item) => item.id);
+
+  test("--max-depth stops the walk", () => {
+    const found = (maxDepth: number): Record<string, number> => depths(findDependents(graph(), ["core/cache.ts"], true, undefined, { maxDepth }));
+    expect(found(1)).toEqual({ "core/repo.ts": 1 });
+    expect(found(2)).toEqual({ "core/repo.ts": 1, "core/service.ts": 2 });
+    expect(found(3)).toEqual({ "core/repo.ts": 1, "core/service.ts": 2, "web/controller.ts": 3, "web/view.ts": 3 });
+    expect(found(1000)).toEqual(found(3));
+  });
+
+  test("a maximum depth of 1 is the direct dependents", () => {
+    const direct = findDependents(graph(), ["core/service.ts"], false);
+    const limited = findDependents(graph(), ["core/service.ts"], true, undefined, { maxDepth: 1 });
+    expect(limited.dependents).toEqual(direct.dependents);
+    expect(limited.transitive).toBe(true);
+  });
+
+  test("a maximum depth below 1 is refused", () => {
+    expect(() => findDependents(graph(), ["core/service.ts"], true, undefined, { maxDepth: 0 })).toThrow(DependentsError);
+    expect(() => findDependents(graph(), ["core/service.ts"], true, undefined, { maxDepth: Number.NaN })).toThrow(DependentsError);
+  });
+
+  test("--through only goes into matching files", () => {
+    const found = (through: string[], targets = ["core/cache.ts"]): Record<string, number> => depths(findDependents(graph(), targets, true, undefined, { through }));
+    expect(found(["core/**"])).toEqual({ "core/repo.ts": 1, "core/service.ts": 2 });
+    // Repo is not eligible, so nothing is found by way of it, even the web files that use service.
+    expect(found(["web/**"])).toEqual({});
+    // The patterns are alternatives.
+    expect(found(["core/**", "web/**"])).toEqual({ "core/repo.ts": 1, "core/service.ts": 2, "web/controller.ts": 3, "web/view.ts": 3 });
+    // The target is the start of the walk whatever it matches: cache is not in the list.
+    expect(found(["core/repo.ts"])).toEqual({ "core/repo.ts": 1 });
+  });
+
+  test("--through finds the shortest path through eligible files only", () => {
+    // c is two steps from t by way of x, but x is not eligible: by way of m and a it is three.
+    const document = build(["x.ts -> t.ts", "c.ts -> x.ts", "a.ts -> t.ts", "m.ts -> a.ts", "c.ts -> m.ts"]);
+    expect(depths(findDependents(document, ["t.ts"], true, undefined, { through: ["a.ts", "m.ts", "c.ts"] }))).toEqual({ "a.ts": 1, "m.ts": 2, "c.ts": 3 });
+    expect(depths(findDependents(document, ["t.ts"], true))).toEqual({ "a.ts": 1, "x.ts": 1, "c.ts": 2, "m.ts": 2 });
+  });
+
+  test("--through applies to direct dependents too", () => {
+    expect(ids(findDependents(graph(), ["core/service.ts"], false, undefined, { through: ["web/controller.ts"] }))).toEqual(["web/controller.ts"]);
+  });
+
+  test("--through combines with --max-depth and the output filter", () => {
+    const both = ["core/**", "web/**"];
+    expect(depths(findDependents(graph(), ["core/cache.ts"], true, undefined, { through: both, maxDepth: 2 }))).toEqual({ "core/repo.ts": 1, "core/service.ts": 2 });
+    // --exclude hides service from the list but the walk still goes through it.
+    const hidden = new Filter().exclude("core/service.ts");
+    expect(depths(findDependents(graph(), ["core/cache.ts"], true, hidden, { through: both }))).toEqual({ "core/repo.ts": 1, "web/controller.ts": 3, "web/view.ts": 3 });
+    // --include cannot bring back a file --through left out.
+    expect(findDependents(graph(), ["core/cache.ts"], true, new Filter().include("**"), { through: ["web/**"] }).dependents).toEqual([]);
+  });
+
+  test("--through with two targets and a cycle lists each file once", () => {
+    const document = findDependents(graph(), ["core/repo.ts", "core/cache.ts"], true, undefined, { through: ["core/**", "web/**"] });
+    expect(depths(document)).toEqual({ "core/service.ts": 1, "web/controller.ts": 2, "web/view.ts": 2 });
+  });
+});
+
+describe("findDependents: target spellings", () => {
+  const nodes = (target: string, root?: string): string[] => findDependents(graph(), [target], false, undefined, { root }).targets[0]!.nodes;
+
+  test("paths are respelled to project ids", () => {
+    for (const target of ["core/service.ts", "./core/service.ts", "core\\service.ts", "core//x/../service.ts", "/work/app/core/service.ts", "/work/app/./core/../core/service.ts"]) {
+      expect(nodes(target, "/work/app"), target).toEqual(["core/service.ts"]);
+    }
+    expect(nodes("C:\\work\\app\\core\\service.ts", "c:/work/app")).toEqual(["core/service.ts"]);
+  });
+
+  test("an absolute path outside the project is refused", () => {
+    for (const target of ["/work/other/core/service.ts", "/work/application/core/service.ts", "/work/app/../app2/x.ts", "D:\\work\\app\\core\\service.ts"]) {
+      expect(() => nodes(target, "/work/app"), target).toThrow(/is outside the project folder \/work\/app/);
+    }
+  });
+
+  test("an absolute path matches nothing without a project folder", () => {
+    expect(() => nodes("/work/app/core/service.ts")).toThrow(/no node or symbol "\/work\/app\/core\/service.ts"/);
+  });
+
+  test("an as-written match still wins over a respelling", () => {
+    const document = build(["./a/b.ts -> a/b.ts"]);
+    expect(findDependents(document, ["./a/b.ts"], false).targets[0]!.nodes).toEqual(["./a/b.ts"]);
+  });
+});
+
 describe("renderDependentsText", () => {
   test("nothing depends on a top-level file", () => {
     const document = findDependents(graph(), ["web/controller.ts"], true);

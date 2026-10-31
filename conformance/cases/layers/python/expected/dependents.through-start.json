@@ -1,0 +1,28 @@
+{
+  "format": "untangled-dependents",
+  "version": "0.1",
+  "language": "python",
+  "generator": {
+    "name": "untangled-python",
+    "version": "1.0.2"
+  },
+  "transitive": true,
+  "targets": [
+    {
+      "target": "src/app/infra/clock.py",
+      "nodes": [
+        "src/app/infra/clock.py"
+      ]
+    }
+  ],
+  "dependents": [
+    {
+      "id": "src/app/domain/user.py",
+      "depth": 1
+    },
+    {
+      "id": "src/app/domain/order.py",
+      "depth": 2
+    }
+  ]
+}

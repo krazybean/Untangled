@@ -1,0 +1,3 @@
+--through=src/Domain/**
+--format=json
+src/Domain/User.php

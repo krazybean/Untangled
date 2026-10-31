@@ -1,0 +1,3 @@
+--transitive
+--through=docs/**
+src/domain/user.ts

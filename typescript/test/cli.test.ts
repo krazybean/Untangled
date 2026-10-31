@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-import { readFileSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 import { main } from "../src/cli.js";
@@ -125,6 +125,59 @@ describe("dependents", () => {
     const root = project({ ...files, "clustered.json": JSON.stringify({ format: "untangled-pairs", version: "0.1", language: "typescript", nodes: [{ id: "a", kind: "cluster" }], edges: [] }) });
     expect(run("dependents", root, "src/nope.ts")).toEqual({ code: 1, out: "", err: 'error: no node or symbol "src/nope.ts" in the pairs document\n' });
     expect(run("dependents", join(root, "clustered.json"), "a")).toMatchObject({ code: 1, err: expect.stringMatching(/already clustered/) });
+  });
+
+  test("--max-depth and --through limit the walk", () => {
+    const root = project(files);
+    const ids = (...args: string[]): string[] => (JSON.parse(run("dependents", root, "lib/c.ts", "--format=json", ...args).out) as { dependents: { id: string }[] }).dependents.map((item) => item.id);
+    expect(ids("--transitive")).toEqual(["src/b.ts", "src/a.ts"]);
+    expect(ids("--transitive", "--max-depth=1")).toEqual(["src/b.ts"]);
+    expect(ids("--transitive", "--through=src/a.ts")).toEqual([]);
+    expect(ids("--transitive", "--through=src/b.ts", "--through=src/a.ts")).toEqual(["src/b.ts", "src/a.ts"]);
+    expect(ids("--transitive", "--through=src/**", "--max-depth=2", "--exclude=src/b.ts")).toEqual(["src/a.ts"]);
+  });
+
+  test("--max-depth is checked", () => {
+    const root = project(files);
+    const cases: [string[], string][] = [
+      [["--transitive", "--max-depth=0"], 'Option --max-depth needs a positive integer, as in --max-depth=2 (got "0")'],
+      [["--transitive", "--max-depth=-1"], '(got "-1")'],
+      [["--transitive", "--max-depth=2.5"], '(got "2.5")'],
+      [["--transitive", "--max-depth=02"], '(got "02")'],
+      [["--transitive", "--max-depth=two"], '(got "two")'],
+      [["--transitive", "--max-depth="], '(got "")'],
+      [["--max-depth=2"], "--max-depth only applies with --transitive"],
+      [["--transitive", "--max-depth"], "Option --max-depth needs a value"],
+      [["--through"], "Option --through needs a value"],
+    ];
+    for (const [extra, message] of cases) {
+      const result = run("dependents", root, "lib/c.ts", ...extra);
+      expect(result.code, message).toBe(2);
+      expect(result.out).toBe("");
+      expect(result.err, message).toContain(message);
+    }
+    expect(run("analyze", root, "--through=src/**")).toMatchObject({ code: 2, err: "Unknown option for analyze: --through\n" });
+    const huge = run("dependents", root, "lib/c.ts", "--transitive", "--max-depth=99999999999999999999", "--format=json");
+    expect(huge.code).toBe(0);
+    expect((JSON.parse(huge.out) as { dependents: unknown[] }).dependents).toHaveLength(2);
+  });
+
+  test("accepts an absolute path inside the project, and refuses one outside", () => {
+    const root = realpathSync(project(files));
+    const ids = (...args: string[]): string[] => (JSON.parse(run("dependents", ...args, "--format=json").out) as { dependents: { id: string }[] }).dependents.map((item) => item.id);
+    expect(ids(root, join(root, "lib", "c.ts"))).toEqual(["src/b.ts"]);
+    // With a saved pairs document, the project is the current folder.
+    run("scan", root, `--output=${join(root, "pairs.json")}`);
+    const previous = process.cwd();
+    process.chdir(root);
+    try {
+      expect(ids(join(root, "pairs.json"), join(root, "lib", "c.ts"))).toEqual(["src/b.ts"]);
+    } finally {
+      process.chdir(previous);
+    }
+    const outside = run("dependents", root, join(dirname(root), "lib", "c.ts"));
+    expect(outside.code).toBe(1);
+    expect(outside.err).toContain("is outside the project folder");
   });
 
   test("usage errors exit with 2", () => {
