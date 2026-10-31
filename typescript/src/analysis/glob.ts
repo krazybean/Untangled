@@ -24,7 +24,7 @@ export class Glob {
       } else if (char === "?") {
         regex += "[^/]";
       } else {
-        regex += char.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&");
+        regex += char.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
       }
     }
     this.regex = new RegExp(`^${regex}$`, "su");
