@@ -7,6 +7,8 @@ document and the command-line options are the public interface.
 
 ## Unreleased
 
+## 1.1.0
+
 - `--diagnostics=json` writes every warning and error as one JSON object per line on
   standard error (`level`, `code`, `message`, and `files` when there are any), so CI and
   agents do not have to read message text. Text stays the default and is unchanged.
