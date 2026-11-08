@@ -47,6 +47,14 @@ tool of its own:
   texts, README, CONTRIBUTING, SECURITY, `.github/`, and the repository
   scripts in `scripts/`.
 
+## Design and maintenance philosophy
+
+**Be uncompromising about correctness, but deliberate about scope.**
+
+Treat reproducible incorrect dependency edges, missing supported references, misleading analysis, and cross-language contract mismatches as bugs, even when the edge case is rare. Verify the expected behavior against the spec, reproduce the failure, fix the root cause, and add regression or conformance coverage where appropriate. When a reference cannot be resolved reliably, prefer an explicit unresolved result or diagnostic to silent false confidence. If a safe fix must wait, acknowledge the limitation and explain its impact.
+
+Feature requests should strengthen Untangled's dependency scanning, graph, queries, analysis, and reporting contracts without absorbing each consumer's workflow orchestration. A workflow-specific convenience can be declined even when the underlying need is real; a correctness problem in supported behavior should not be dismissed merely because it is uncommon. Weigh complexity, compatibility, licensing boundaries, and maintenance across languages. Give contributors a clear rationale when accepting, deferring, or declining a request; taking a bug seriously is not a promise of an immediate fix.
+
 ## Spec first
 
 The [specification](spec/README.md) is authoritative; no language's code is.
